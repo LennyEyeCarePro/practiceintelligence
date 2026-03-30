@@ -28,7 +28,10 @@ export default async function handler(req, res) {
 
         const resp = await fetch(
             `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params}`,
-            { signal: AbortSignal.timeout(45000) }
+            {
+                signal: AbortSignal.timeout(45000),
+                headers: { 'Referer': 'https://practiceintelligence.vercel.app/' },
+            }
         );
 
         if (!resp.ok) {
