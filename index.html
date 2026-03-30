@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Practice Growth Assessment | EyeCarePro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   JEDI v2 — Practice Growth Assessment
+   EyeCarePro © 2026
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+    --brand: #0F4C81;
+    --brand-light: #1A6BB5;
+    --brand-dark: #0A3358;
+    --accent: #00C9A7;
+    --accent-glow: rgba(0,201,167,.25);
+    --warn: #F59E0B;
+    --danger: #EF4444;
+    --success: #10B981;
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --surface-alt: #F1F5F9;
+    --border: #E2E8F0;
+    --text: #1E293B;
+    --text-secondary: #64748B;
+    --text-muted: #94A3B8;
+    --radius: 12px;
+    --radius-lg: 20px;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,.08), 0 12px 48px rgba(0,0,0,.04);
+    --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --mono: 'Space Mono', monospace;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ─── LAYOUT ──────────────────────────────────────────── */
+
+.assessment-wrap {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ─── HEADER ──────────────────────────────────────────── */
+
+.header {
+    text-align: center;
+    padding: 12px 0 8px;
+    margin-bottom: 8px;
+}
+
+.header-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.header-logo svg { width: 32px; height: 32px; }
+
+.header-logo span {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--brand);
+    letter-spacing: -0.3px;
+}
+
+/* ─── SCREENS ─────────────────────────────────────────── */
+
+.screen {
+    display: none;
+    animation: fadeUp .5s ease both;
+    flex: 1;
+}
+
+.screen.active { display: flex; flex-direction: column; }
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── SCREEN 1 — THE ONLY FORM ────────────────────────── */
+
+.intake-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 36px 32px 32px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+}
+
+.intake-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--brand-dark);
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+    margin-bottom: 6px;
+}
+
+.intake-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 28px;
+    line-height: 1.5;
+}
+
+.form-field { margin-bottom: 16px; }
+
+.form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 11px 14px;
+    font-family: var(--font);
+    font-size: 15px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.form-input:focus {
+    border-color: var(--brand-light);
+    box-shadow: 0 0 0 3px rgba(15,76,129,.1);
+}
+
+.form-input::placeholder { color: var(--text-muted); }
+
+.intake-trust {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    margin-bottom: 20px;
+}
+
+.intake-trust svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+.btn-primary {
+    display: block;
+    width: 100%;
+    padding: 14px 24px;
+    font-family: var(--font);
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    letter-spacing: -0.2px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(15,76,129,.3);
+}
+
+.btn-primary:active { transform: translateY(0); }
+
+.btn-primary:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.intake-footer {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.existing-client-banner {
+    display: none;
+    background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+    border: 1px solid #F59E0B;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #92400E;
+    font-weight: 500;
+}
+
+/* ─── SCREEN 2 — SCANNING ANIMATION ──────────────────── */
+
+.scan-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 40px 20px;
+}
+
+.scan-orb-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin-bottom: 32px;
+}
+
+.scan-orb {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--brand), var(--accent), var(--brand-light), var(--brand));
+    animation: orbSpin 2s linear infinite;
+    opacity: .8;
+}
+
+.scan-orb::after {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    background: var(--bg);
+}
+
+.scan-orb-pulse {
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    animation: orbPulse 1.5s ease-in-out infinite;
+    opacity: 0;
+}
+
+@keyframes orbSpin { to { transform: rotate(360deg); } }
+@keyframes orbPulse {
+    0% { transform: scale(1); opacity: .5; }
+    100% { transform: scale(1.25); opacity: 0; }
+}
+
+.scan-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--brand-dark);
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.scan-current-task {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 24px;
+    min-height: 20px;
+    text-align: center;
+}
+
+.scan-steps { width: 100%; max-width: 400px; }
+
+.scan-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--text-muted);
+    transition: color .3s;
+}
+
+.scan-step.active { color: var(--text); font-weight: 500; }
+.scan-step.done { color: var(--success); }
+
+.scan-step-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all .3s;
+    font-size: 11px;
+}
+
+.scan-step.active .scan-step-icon {
+    border-color: var(--brand);
+    background: var(--brand);
+    color: #fff;
+    animation: stepPulse .8s ease infinite;
+}
+
+.scan-step.done .scan-step-icon {
+    border-color: var(--success);
+    background: var(--success);
+    color: #fff;
+}
+
+@keyframes stepPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(15,76,129,.3); }
+    50% { box-shadow: 0 0 0 6px rgba(15,76,129,0); }
+}
+
+/* ─── SCREEN 3 — THE DOSSIER ─────────────────────────── */
+
+.dossier-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.dossier-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    background: rgba(0,201,167,.1);
+    border: 1px solid rgba(0,201,167,.25);
+    border-radius: 20px;
+    margin-bottom: 10px;
+}
+
+.dossier-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--brand-dark);
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+}
+
+.dossier-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.dossier-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+}
+
+.dossier-card-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.dossier-card-title svg { width: 14px; height: 14px; }
+
+.dossier-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 5px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--surface-alt);
+}
+
+.dossier-row:last-child { border-bottom: none; }
+
+.dossier-row-label { color: var(--text-secondary); font-weight: 500; }
+.dossier-row-value { color: var(--text); font-weight: 600; text-align: right; max-width: 60%; }
+
+.dossier-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px;
+    margin: 1px 2px;
+}
+
+.tag-green { background: #D1FAE5; color: #065F46; }
+.tag-blue { background: #DBEAFE; color: #1E40AF; }
+.tag-amber { background: #FEF3C7; color: #92400E; }
+.tag-red { background: #FEE2E2; color: #991B1B; }
+.tag-purple { background: #EDE9FE; color: #5B21B6; }
+.tag-gray { background: #F1F5F9; color: #475569; }
+
+.dossier-score-ring {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin: 16px 0 8px;
+    flex-wrap: wrap;
+}
+
+.score-ring-item { text-align: center; }
+
+.score-ring-item .ring-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.score-ring-svg { width: 64px; height: 64px; }
+
+.score-ring-bg { fill: none; stroke: var(--surface-alt); stroke-width: 5; }
+
+.score-ring-fill {
+    fill: none;
+    stroke-width: 5;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transition: stroke-dashoffset 1.2s ease;
+}
+
+.score-ring-text {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    fill: var(--text);
+    text-anchor: middle;
+    dominant-baseline: central;
+}
+
+.dossier-gaps { list-style: none; }
+
+.dossier-gap-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.gap-severity {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+}
+
+.gap-critical { background: var(--danger); }
+.gap-moderate { background: var(--warn); }
+.gap-opportunity { background: var(--brand-light); }
+.gap-competitor { background: #7C3AED; }
+.gap-low { background: var(--text-muted); }
+
+.dossier-confirm-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.btn-confirm {
+    flex: 1;
+    padding: 12px 16px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    transition: all .2s;
+}
+
+.btn-confirm-yes {
+    background: var(--brand);
+    color: #fff;
+}
+
+.btn-confirm-yes:hover { background: var(--brand-light); }
+
+.btn-confirm-edit {
+    background: var(--surface-alt);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.btn-confirm-edit:hover { background: var(--border); }
+
+/* ─── SCREEN 4 — STRATEGIC QUESTIONS ─────────────────── */
+
+.strategic-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+}
+
+.strategic-q-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--accent);
+    margin-bottom: 6px;
+}
+
+.strategic-q-text {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--brand-dark);
+    margin-bottom: 14px;
+    line-height: 1.3;
+}
+
+.strategic-options { display: flex; flex-direction: column; gap: 6px; }
+
+.strategic-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface-alt);
+    border: 1.5px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .2s;
+    font-weight: 500;
+}
+
+.strategic-option:hover { border-color: var(--brand-light); background: #EFF6FF; }
+.strategic-option.selected { border-color: var(--brand); background: #EFF6FF; color: var(--brand); }
+
+.strategic-option-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .2s;
+}
+
+.strategic-option.selected .strategic-option-dot {
+    border-color: var(--brand);
+    background: var(--brand);
+}
+
+.strategic-option.selected .strategic-option-dot::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    border-radius: 50%;
+}
+
+.strategic-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 11px 14px;
+    font-family: var(--font);
+    font-size: 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    resize: vertical;
+    outline: none;
+    color: var(--text);
+    transition: border-color .2s;
+    margin-top: 8px;
+}
+
+.strategic-textarea:focus { border-color: var(--brand-light); }
+
+/* ─── SCREEN 5 — RESULTS ─────────────────────────────── */
+
+.results-hero {
+    text-align: center;
+    padding: 28px 20px;
+    background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 50%, var(--brand-light) 100%);
+    border-radius: var(--radius-lg);
+    color: #fff;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.results-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(0,201,167,.15) 0%, transparent 60%);
+}
+
+.results-hero > * { position: relative; }
+
+.results-score-big {
+    font-family: var(--mono);
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.results-score-label {
+    font-size: 13px;
+    font-weight: 500;
+    opacity: .8;
+    margin-bottom: 12px;
+}
+
+.results-tier-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.results-section {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+}
+
+.results-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--brand-dark);
+    margin-bottom: 12px;
+}
+
+.results-insight {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--surface-alt);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.results-insight:last-child { border-bottom: none; }
+
+.insight-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+.insight-icon-red { background: #FEE2E2; }
+.insight-icon-amber { background: #FEF3C7; }
+.insight-icon-green { background: #D1FAE5; }
+.insight-icon-blue { background: #DBEAFE; }
+
+.insight-text strong { color: var(--text); }
+.insight-text { color: var(--text-secondary); }
+
+.results-cta {
+    text-align: center;
+    padding: 28px 20px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    margin-top: 8px;
+}
+
+.results-cta-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--brand-dark);
+    margin-bottom: 4px;
+}
+
+.results-cta-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.btn-cta-calendly {
+    display: inline-block;
+    padding: 14px 32px;
+    font-family: var(--font);
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), #00A389);
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+}
+
+.btn-cta-calendly:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0,201,167,.35);
+}
+
+.results-footer {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* ─── UTILITIES ───────────────────────────────────────── */
+
+.hidden { display: none !important; }
+
+@media (max-width: 600px) {
+    .intake-card { padding: 24px 18px 20px; }
+    .intake-title { font-size: 22px; }
+    .dossier-score-ring { gap: 12px; }
+    .score-ring-svg { width: 56px; height: 56px; }
+    .results-score-big { font-size: 44px; }
+}
+</style>
+</head>
+<body>
+
+<div class="assessment-wrap">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-logo">
+            <svg viewBox="0 0 36 36" fill="none">
+                <circle cx="18" cy="18" r="16" fill="#0F4C81"/>
+                <path d="M18 10c-6 0-11 4-13 8 2 4 7 8 13 8s11-4 13-8c-2-4-7-8-13-8z" fill="none" stroke="#fff" stroke-width="1.5"/>
+                <circle cx="18" cy="18" r="4" fill="#00C9A7"/>
+                <circle cx="18" cy="18" r="1.5" fill="#fff"/>
+            </svg>
+            <span>EyeCarePro</span>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SCREEN 1 — THE ONLY FORM (3 Fields)
+         ══════════════════════════════════════════════════════ -->
+    <div id="screen1" class="screen active">
+        <div class="intake-card">
+            <h1 class="intake-title">How much growth is your practice leaving on the table?</h1>
+            <p class="intake-subtitle">Enter your info below and we'll analyze your practice's digital presence, competitive position, and growth opportunities — in about 30 seconds.</p>
+
+            <div id="existingClientBanner" class="existing-client-banner">
+                It looks like you may already be an EyeCarePro client. This assessment will still work — we'll show you fresh insights.
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" for="inName">Your Name</label>
+                <input class="form-input" type="text" id="inName" placeholder="Dr. Jane Smith" autocomplete="name">
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" for="inEmail">Email</label>
+                <input class="form-input" type="email" id="inEmail" placeholder="jane@yourpractice.com" autocomplete="email">
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" for="inUrl">Practice Website</label>
+                <input class="form-input" type="url" id="inUrl" placeholder="https://www.yourpractice.com" autocomplete="url" oninput="checkForExistingClient()" onblur="normalizeUrl()">
+            </div>
+
+            <div class="intake-trust">
+                <svg viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="#94A3B8" stroke-width="1.2"/><path d="M5 7V5a3 3 0 016 0v2" stroke="#94A3B8" stroke-width="1.2" fill="none"/></svg>
+                Your data is secure and never shared with third parties.
+            </div>
+
+            <button class="btn-primary" id="btnAnalyze" onclick="startAnalysis()">Analyze My Practice</button>
+
+            <div class="intake-footer">
+                Free assessment &bull; No credit card &bull; Results in 30 seconds
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SCREEN 2 — SCANNING ANIMATION
+         ══════════════════════════════════════════════════════ -->
+    <div id="screen2" class="screen">
+        <div class="scan-screen">
+            <div class="scan-orb-container">
+                <div class="scan-orb"></div>
+                <div class="scan-orb-pulse"></div>
+            </div>
+            <div class="scan-title">Analyzing Your Practice</div>
+            <div class="scan-current-task" id="scanCurrentTask">Connecting...</div>
+            <div class="scan-steps" id="scanSteps">
+                <div class="scan-step" data-step="website"><div class="scan-step-icon"></div>Reading your website</div>
+                <div class="scan-step" data-step="doctors"><div class="scan-step-icon"></div>Identifying doctors &amp; services</div>
+                <div class="scan-step" data-step="performance"><div class="scan-step-icon"></div>Running Google Lighthouse audit</div>
+                <div class="scan-step" data-step="social"><div class="scan-step-icon"></div>Checking social media presence</div>
+                <div class="scan-step" data-step="competitors"><div class="scan-step-icon"></div>Analyzing competitive landscape</div>
+                <div class="scan-step" data-step="scoring"><div class="scan-step-icon"></div>Calculating growth score</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SCREEN 3 — THE DOSSIER
+         ══════════════════════════════════════════════════════ -->
+    <div id="screen3" class="screen">
+        <div class="dossier-header">
+            <div class="dossier-badge">Intelligence Report</div>
+            <h2 class="dossier-title" id="dossierPracticeName">Your Practice</h2>
+            <p class="dossier-subtitle">Here's what we found from your website — did we get it right?</p>
+        </div>
+
+        <!-- Practice Identity -->
+        <div class="dossier-card">
+            <div class="dossier-card-title">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v4c0 3.3 2.6 6.4 6 7 3.4-.6 6-3.7 6-7V4L8 1z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                Practice Profile
+            </div>
+            <div id="dossierIdentity"></div>
+        </div>
+
+        <!-- Doctors -->
+        <div class="dossier-card" id="dossierDoctorsCard">
+            <div class="dossier-card-title">
+                <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M2 14c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                Providers Detected
+            </div>
+            <div id="dossierDoctors"></div>
+        </div>
+
+        <!-- Services -->
+        <div class="dossier-card">
+            <div class="dossier-card-title">
+                <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.2"/></svg>
+                Services &amp; Capabilities
+            </div>
+            <div id="dossierServices"></div>
+        </div>
+
+        <!-- Digital Infrastructure -->
+        <div class="dossier-card">
+            <div class="dossier-card-title">
+                <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M1 6h14" stroke="currentColor" stroke-width="1.2"/></svg>
+                Digital Infrastructure
+            </div>
+            <div id="dossierDigital"></div>
+        </div>
+
+        <!-- Performance Scores -->
+        <div class="dossier-card">
+            <div class="dossier-card-title">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M2 12l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+                Performance Scores
+            </div>
+            <div class="dossier-score-ring" id="dossierScores"></div>
+        </div>
+
+        <!-- Top Gaps -->
+        <div class="dossier-card">
+            <div class="dossier-card-title">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M8 1l1.5 5H15l-4 3 1.5 5L8 11l-4.5 3L5 9 1 6h5.5z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                Key Findings
+            </div>
+            <ul class="dossier-gaps" id="dossierGaps"></ul>
+        </div>
+
+        <div class="dossier-confirm-row">
+            <button class="btn-confirm btn-confirm-yes" onclick="goToStrategic()">Looks Right — Show My Opportunities</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SCREEN 4 — STRATEGIC QUESTIONS
+         ══════════════════════════════════════════════════════ -->
+    <div id="screen4" class="screen">
+        <div class="strategic-card">
+            <div class="strategic-q-label">Question 1 of 3</div>
+            <div class="strategic-q-text">What's the #1 thing you want to grow this year?</div>
+            <div class="strategic-options" id="q1Options"></div>
+        </div>
+
+        <div class="strategic-card">
+            <div class="strategic-q-label">Question 2 of 3</div>
+            <div class="strategic-q-text">What's your biggest frustration with your current marketing?</div>
+            <div class="strategic-options" id="q2Options"></div>
+        </div>
+
+        <div class="strategic-card">
+            <div class="strategic-q-label">Question 3 of 3</div>
+            <div class="strategic-q-text">Anything else we should know?</div>
+            <textarea class="strategic-textarea" id="q3Freetext" placeholder="Optional — any specific challenges, goals, or context that would help us personalize your results..."></textarea>
+        </div>
+
+        <button class="btn-primary" id="btnShowResults" onclick="showResults()">Show My Growth Plan</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SCREEN 5 — PERSONALIZED RESULTS
+         ══════════════════════════════════════════════════════ -->
+    <div id="screen5" class="screen">
+        <div class="results-hero">
+            <div class="results-score-big" id="resultsScoreBig">--</div>
+            <div class="results-score-label">Practice Growth Score</div>
+            <div class="results-tier-badge" id="resultsTierBadge"></div>
+        </div>
+
+        <div class="results-section" id="resultsInsights">
+            <div class="results-section-title">Your Personalized Growth Insights</div>
+        </div>
+
+        <div class="results-section" id="resultsMissing">
+            <div class="results-section-title">Revenue You're Leaving on the Table</div>
+        </div>
+
+        <div class="results-cta">
+            <div class="results-cta-text">Ready to close these gaps?</div>
+            <div class="results-cta-sub">Book a free 30-minute strategy session and we'll walk through your results together.</div>
+            <a class="btn-cta-calendly" href="https://calendly.com/eyecarepro-business-development/30-min-consultation-with-eyecarepro" target="_blank" id="calendlyLink">Book Your Strategy Session</a>
+        </div>
+
+        <div class="results-footer">
+            &copy; 2026 EyeCarePro &bull; <a href="https://www.eyecarepro.net" target="_blank" style="color:var(--text-muted)">eyecarepro.net</a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   JEDI v2 — ASSESSMENT ENGINE
+   ═══════════════════════════════════════════════════════════ */
+
+// ─── CONFIGURATION ──────────────────────────────────────────
+const CONFIG = {
+    // API proxies — all tokens live server-side in Vercel env vars
+    APIFY_PROXY_URL: '/api/scrape',
+    LIGHTHOUSE_PROXY_URL: '/api/lighthouse',
+
+    // Google Sheets
+    GOOGLE_SHEETS_URL: 'https://script.google.com/macros/s/AKfycbxLsUjvOu5wFAbNPTAed9W-mYgxXPysYhPGSbUQXHJAgpW0rzSuznJ0rzVSTVg3IWLjZw/exec',
+
+    // Existing client domains to flag
+    EXISTING_CLIENTS: ['eyecarepro.net', 'eyecarepro.com'],
+
+    // Timing
+    PAGESPEED_TIMEOUT: 45000,
+    ANIMATION_CEILING: 60000,
+};
+
+// ─── STATE ──────────────────────────────────────────────────
+let dossier = null;        // Apify scrape results
+let lighthouseData = null; // PageSpeed results
+let userAnswers = {};
+
+// ─── GOAL / PAIN OPTIONS BY PRACTICE TYPE ───────────────────
+const GOAL_OPTIONS = {
+    optometry: [
+        'New patient volume',
+        'Specialty services revenue (dry eye, myopia)',
+        'Optical sales & frame revenue',
+        'Online visibility & local search ranking',
+        'Patient retention & recall',
+    ],
+    ophthalmology: [
+        'Surgical case volume (cataract, LASIK)',
+        'Referral network growth',
+        'Premium IOL & refractive conversions',
+        'Multi-location brand consistency',
+        'Online reputation & patient reviews',
+    ],
+    optical: [
+        'Frame sales & average transaction value',
+        'Online/e-commerce eyewear sales',
+        'Brand awareness & foot traffic',
+        'Social media & Instagram presence',
+        'Customer retention & loyalty',
+    ],
+    default: [
+        'New patient volume',
+        'Revenue per patient',
+        'Online visibility & search ranking',
+        'Patient experience & retention',
+        'Brand awareness in my market',
+    ],
+};
+
+const PAIN_OPTIONS = {
+    optometry: [
+        'We don\'t show up on Google when patients search',
+        'Our website feels outdated but we don\'t know where to start',
+        'We\'re spending money on ads with no clear ROI',
+        'Patients aren\'t booking specialty services',
+        'Our current vendor doesn\'t understand eye care',
+    ],
+    ophthalmology: [
+        'Referral sources don\'t know our full capabilities',
+        'We\'re losing surgical cases to competitors with better marketing',
+        'Our website doesn\'t reflect the quality of our practice',
+        'We need more premium IOL conversions',
+        'We have no real digital strategy — just a website that sits there',
+    ],
+    optical: [
+        'People don\'t know we exist — no foot traffic',
+        'Our Instagram and social media get no engagement',
+        'We can\'t compete with online retailers like Warby Parker',
+        'Our website doesn\'t showcase our frames well',
+        'We have no email marketing or customer follow-up',
+    ],
+    default: [
+        'Our website feels outdated',
+        'We don\'t show up on Google',
+        'No clear ROI from current marketing',
+        'Patients go to competitors with better online presence',
+        'We have no digital marketing strategy',
+    ],
+};
+
+// ─── URL NORMALIZATION ──────────────────────────────────────
+function normalizeUrl() {
+    const input = document.getElementById('inUrl');
+    let val = input.value.trim();
+    if (!val) return;
+    val = val.replace(/^https?:\/\//i, '');
+    val = val.replace(/\/+$/, '');
+    const parts = val.split('/')[0].split('.');
+    if (parts.length === 2) val = 'www.' + val;
+    input.value = 'https://' + val;
+}
+
+function checkForExistingClient() {
+    const val = document.getElementById('inUrl').value.toLowerCase();
+    const isClient = CONFIG.EXISTING_CLIENTS.some(d => val.includes(d));
+    document.getElementById('existingClientBanner').style.display = isClient ? 'block' : 'none';
+}
+
+// ─── SCREEN NAVIGATION ─────────────────────────────────────
+function showScreen(num) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('screen' + num);
+    if (target) {
+        target.classList.add('active');
+        target.style.animation = 'none';
+        target.offsetHeight; // trigger reflow
+        target.style.animation = '';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── START ANALYSIS ─────────────────────────────────────────
+async function startAnalysis() {
+    const name = document.getElementById('inName').value.trim();
+    const email = document.getElementById('inEmail').value.trim();
+    const url = document.getElementById('inUrl').value.trim();
+
+    // Validate
+    if (!name || !email || !url) {
+        alert('Please fill in all three fields.');
+        return;
+    }
+    if (!email.includes('@') || !email.includes('.')) {
+        alert('Please enter a valid email address.');
+        return;
+    }
+
+    userAnswers = { name, email, url };
+
+    // Disable button
+    const btn = document.getElementById('btnAnalyze');
+    btn.disabled = true;
+    btn.textContent = 'Starting analysis...';
+
+    // Switch to scan screen
+    showScreen(2);
+
+    // Fire BOTH scraper and Lighthouse simultaneously
+    const apifyPromise = runApifyScraper(url);
+    const lighthousePromise = runLighthouse(url);
+
+    // Run scan animation alongside real API calls
+    runScanAnimation(apifyPromise, lighthousePromise);
+}
+
+// ─── APIFY SCRAPER (via serverless proxy — token is server-side) ───
+async function runApifyScraper(url) {
+    try {
+        const resp = await fetch(CONFIG.APIFY_PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url, maxPages: 15 }),
+        });
+
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.error || `Server returned ${resp.status}`);
+        }
+
+        const dossier = await resp.json();
+        if (dossier.error) throw new Error(dossier.error);
+        return dossier;
+    } catch (err) {
+        console.error('Apify scraper error:', err);
+        return runFallbackScraper(url);
+    }
+}
+
+// ─── FALLBACK SCRAPER (works without Apify) ─────────────────
+async function runFallbackScraper(url) {
+    // Use PageSpeed API's "lighthouseResult" which includes some DOM data,
+    // plus extract what we can from the URL pattern itself
+    const domain = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+
+    return {
+        meta: { url, domain, scrapedAt: new Date().toISOString(), fallback: true },
+        practice: {
+            name: domain.split('.')[0].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+            type: 'unknown',
+            subType: null,
+        },
+        doctors: [],
+        locations: { addresses: [], count: 1, phones: [], emails: [] },
+        services: { detected: [], categories: {}, totalCount: 0, missingHighValue: [] },
+        optical: { hasOptical: false, frameBrands: {}, totalBrands: 0, positioning: 'unknown' },
+        insurance: { detected: [], acceptsInsurance: false },
+        digital: {
+            cms: null,
+            marketingVendor: null,
+            isCompetitorClient: false,
+            scheduling: { hasOnlineScheduling: false, platform: null },
+            analytics: [],
+            reviewPlatforms: [],
+            forms: [],
+            payment: [],
+            telehealth: [],
+            accessibility: [],
+        },
+        social: { links: [], platformCount: 0, hasFacebook: false, hasInstagram: false },
+        technical: { ssl: url.startsWith('https') ? 'valid' : 'missing' },
+        content: { homepage: { wordCount: 0 }, blogExists: false, totalWordCount: 0 },
+        ehrPms: [],
+        gaps: [
+            { category: 'marketing', severity: 'opportunity', finding: 'Full website analysis requires Apify integration — connect your API key for complete intelligence' },
+        ],
+        scores: { digitalPresence: 0, contentQuality: 0, patientExperience: 0, marketingMaturity: 0, overall: 0 },
+        recommendedTier: 'Schedule a call to discuss',
+    };
+}
+
+// ─── LIGHTHOUSE / PAGESPEED (via serverless proxy — key is server-side) ───
+async function runLighthouse(url) {
+    try {
+        const resp = await fetch(CONFIG.LIGHTHOUSE_PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url }),
+        });
+
+        if (!resp.ok) throw new Error(`Lighthouse proxy ${resp.status}`);
+        const data = await resp.json();
+        if (data.error) throw new Error(data.error);
+        return data;
+    } catch (err) {
+        console.error('Lighthouse error:', err);
+        return null;
+    }
+}
+
+// ─── SCAN ANIMATION ─────────────────────────────────────────
+async function runScanAnimation(apifyPromise, lighthousePromise) {
+    const steps = document.querySelectorAll('#scanSteps .scan-step');
+    const taskLabel = document.getElementById('scanCurrentTask');
+    const stepNames = ['website', 'doctors', 'performance', 'social', 'competitors', 'scoring'];
+    const taskTexts = [
+        'Crawling homepage & subpages...',
+        'Extracting doctor credentials & services...',
+        'Running Google Lighthouse audit...',
+        'Scanning social media profiles...',
+        'Mapping competitive landscape...',
+        'Calculating growth score...',
+    ];
+
+    let apifyDone = false;
+    let lighthouseDone = false;
+
+    apifyPromise.then(result => { dossier = result; apifyDone = true; }).catch(() => { apifyDone = true; });
+    lighthousePromise.then(result => { lighthouseData = result; lighthouseDone = true; }).catch(() => { lighthouseDone = true; });
+
+    // Animate through steps, pacing based on real API progress
+    for (let i = 0; i < stepNames.length; i++) {
+        // Mark current step active
+        steps[i].classList.add('active');
+        steps[i].querySelector('.scan-step-icon').innerHTML = '●';
+        taskLabel.textContent = taskTexts[i];
+
+        // Wait — faster for early steps, slower for API-dependent ones
+        const isApiStep = (i === 0 || i === 2); // website crawl + lighthouse
+        if (isApiStep) {
+            // Wait for the actual API to finish, with a ceiling
+            const start = Date.now();
+            while (Date.now() - start < 20000) {
+                if ((i === 0 && apifyDone) || (i === 2 && lighthouseDone)) break;
+                if (apifyDone && lighthouseDone) break;
+                await new Promise(r => setTimeout(r, 500));
+            }
+        } else {
+            await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000));
+        }
+
+        // Mark step done
+        steps[i].classList.remove('active');
+        steps[i].classList.add('done');
+        steps[i].querySelector('.scan-step-icon').innerHTML = '✓';
+    }
+
+    // Final ceiling — make sure both APIs are done (or timed out)
+    const ceilingStart = Date.now();
+    while ((!apifyDone || !lighthouseDone) && Date.now() - ceilingStart < 15000) {
+        await new Promise(r => setTimeout(r, 500));
+    }
+
+    // Merge Lighthouse data into dossier scores
+    if (dossier && lighthouseData) {
+        dossier._lighthouse = lighthouseData;
+
+        // Boost scores with Lighthouse data
+        if (lighthouseData.performance >= 80) dossier.scores.digitalPresence = Math.min(dossier.scores.digitalPresence + 10, 100);
+        if (lighthouseData.seo >= 80) dossier.scores.contentQuality = Math.min(dossier.scores.contentQuality + 10, 100);
+        if (lighthouseData.accessibility >= 80) dossier.scores.patientExperience = Math.min(dossier.scores.patientExperience + 5, 100);
+
+        // Recalculate overall
+        dossier.scores.overall = Math.round(
+            (dossier.scores.digitalPresence * 0.25) +
+            (dossier.scores.contentQuality * 0.20) +
+            (dossier.scores.patientExperience * 0.30) +
+            (dossier.scores.marketingMaturity * 0.25)
+        );
+
+        // Add Lighthouse-specific gaps
+        if (lighthouseData.performance < 50) {
+            dossier.gaps.push({ category: 'technical', severity: 'critical', finding: `Site performance score is ${lighthouseData.performance}/100 — your site is costing you patients` });
+        }
+        if (lighthouseData.seo < 70) {
+            dossier.gaps.push({ category: 'technical', severity: 'moderate', finding: `SEO score is ${lighthouseData.seo}/100 — Google isn't ranking you as high as it could` });
+        }
+        if (lighthouseData.accessibility < 70) {
+            dossier.gaps.push({ category: 'technical', severity: 'moderate', finding: `Accessibility score is ${lighthouseData.accessibility}/100 — potential ADA compliance issue` });
+        }
+    }
+
+    // If no dossier at all, create minimal fallback
+    if (!dossier) {
+        dossier = await runFallbackScraper(userAnswers.url);
+    }
+
+    // Render dossier and go to screen 3
+    renderDossier();
+    showScreen(3);
+}
+
+// ─── RENDER DOSSIER (Screen 3) ──────────────────────────────
+function renderDossier() {
+    const d = dossier;
+
+    // Practice name in header
+    document.getElementById('dossierPracticeName').textContent = d.practice?.name || 'Your Practice';
+
+    // ─── Identity card ───
+    const idRows = [];
+    idRows.push(['Practice Type', formatPracticeType(d.practice?.type)]);
+    if (d.practice?.subType) idRows.push(['Practice Size', formatSubType(d.practice.subType)]);
+    if (d.practice?.yearEstablished) idRows.push(['Established', String(d.practice.yearEstablished)]);
+    if (d.locations?.count > 0) idRows.push(['Locations', String(d.locations.count)]);
+    if (d.locations?.phones?.length > 0) idRows.push(['Phone', d.locations.phones[0]]);
+    if (d.locations?.addresses?.length > 0) idRows.push(['Address', d.locations.addresses[0]]);
+    if (d.locations?.hours) idRows.push(['Hours', d.locations.hours]);
+
+    document.getElementById('dossierIdentity').innerHTML = idRows.map(([l, v]) =>
+        `<div class="dossier-row"><span class="dossier-row-label">${l}</span><span class="dossier-row-value">${v}</span></div>`
+    ).join('');
+
+    // ─── Doctors card ───
+    if (d.doctors?.length > 0) {
+        document.getElementById('dossierDoctors').innerHTML = d.doctors.map(doc => {
+            const tagClass = doc.type === 'ophthalmologist' ? 'tag-blue' : doc.type === 'optometrist' ? 'tag-green' : 'tag-gray';
+            const tagLabel = doc.type === 'ophthalmologist' ? 'MD' : doc.type === 'optometrist' ? 'OD' : doc.credential || '?';
+            return `<div class="dossier-row">
+                <span class="dossier-row-label">${doc.name}</span>
+                <span class="dossier-tag ${tagClass}">${tagLabel}</span>
+            </div>`;
+        }).join('');
+    } else {
+        document.getElementById('dossierDoctorsCard').classList.add('hidden');
+    }
+
+    // ─── Services card ───
+    const svcHtml = [];
+    if (d.services?.detected?.length > 0) {
+        // Group by category
+        const cats = d.services.categories || {};
+        for (const [cat, labels] of Object.entries(cats)) {
+            const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, ' ');
+            svcHtml.push(`<div style="margin-bottom:8px"><span class="dossier-row-label" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px">${catLabel}</span><div style="margin-top:4px">${labels.map(l => `<span class="dossier-tag tag-blue">${l}</span>`).join(' ')}</div></div>`);
+        }
+    }
+    if (d.services?.missingHighValue?.length > 0) {
+        svcHtml.push(`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--surface-alt)"><span class="dossier-row-label" style="font-size:11px;color:var(--danger);text-transform:uppercase;letter-spacing:.5px">Not Found on Your Site</span><div style="margin-top:4px">${d.services.missingHighValue.map(l => `<span class="dossier-tag tag-red">${l}</span>`).join(' ')}</div></div>`);
+    }
+    if (svcHtml.length === 0) svcHtml.push('<div style="font-size:13px;color:var(--text-muted)">Connect Apify for full service detection</div>');
+    document.getElementById('dossierServices').innerHTML = svcHtml.join('');
+
+    // ─── Digital infrastructure card ───
+    const digRows = [];
+    digRows.push(['Website Platform', d.digital?.cms?.name || 'Not detected']);
+    digRows.push(['Marketing Vendor', d.digital?.marketingVendor ? `<span class="dossier-tag ${d.digital.isCompetitorClient ? 'tag-amber' : 'tag-green'}">${d.digital.marketingVendor.name}${d.digital.isCompetitorClient ? ' ⚠️' : ''}</span>` : 'None detected']);
+    digRows.push(['Online Scheduling', d.digital?.scheduling?.hasOnlineScheduling ?
+        (d.digital.scheduling.platform ? d.digital.scheduling.platform.name : 'Yes (basic form)') :
+        '<span class="dossier-tag tag-red">None</span>']);
+    digRows.push(['Social Profiles', d.social?.platformCount > 0 ?
+        d.social.links.map(l => `<span class="dossier-tag tag-blue">${l.platform}</span>`).join(' ') :
+        '<span class="dossier-tag tag-red">None found</span>']);
+    digRows.push(['Blog', d.content?.blogExists ? `Yes (est. ${d.content.estimatedBlogPosts || '?'} posts)` : '<span class="dossier-tag tag-red">None</span>']);
+    digRows.push(['Analytics', d.digital?.analytics?.length > 0 ?
+        d.digital.analytics.map(a => a.name).join(', ') : 'None detected']);
+    if (d.insurance?.detected?.length > 0) {
+        digRows.push(['Insurance Plans', d.insurance.detected.map(i => i.name).join(', ')]);
+    }
+    if (d.digital?.payment?.length > 0) {
+        digRows.push(['Payment/Financing', d.digital.payment.map(p => p.name).join(', ')]);
+    }
+
+    document.getElementById('dossierDigital').innerHTML = digRows.map(([l, v]) =>
+        `<div class="dossier-row"><span class="dossier-row-label">${l}</span><span class="dossier-row-value">${v}</span></div>`
+    ).join('');
+
+    // ─── Scores ───
+    const scores = [];
+    if (lighthouseData) {
+        scores.push({ label: 'Performance', value: lighthouseData.performance, color: scoreColor(lighthouseData.performance) });
+        scores.push({ label: 'SEO', value: lighthouseData.seo, color: scoreColor(lighthouseData.seo) });
+        scores.push({ label: 'Accessibility', value: lighthouseData.accessibility, color: scoreColor(lighthouseData.accessibility) });
+    }
+    scores.push({ label: 'Digital', value: d.scores?.digitalPresence || 0, color: scoreColor(d.scores?.digitalPresence || 0) });
+    scores.push({ label: 'Content', value: d.scores?.contentQuality || 0, color: scoreColor(d.scores?.contentQuality || 0) });
+    scores.push({ label: 'Patient Exp', value: d.scores?.patientExperience || 0, color: scoreColor(d.scores?.patientExperience || 0) });
+
+    document.getElementById('dossierScores').innerHTML = scores.map(s => {
+        const circumference = 2 * Math.PI * 27;
+        const offset = circumference * (1 - s.value / 100);
+        return `<div class="score-ring-item">
+            <svg class="score-ring-svg" viewBox="0 0 64 64">
+                <circle class="score-ring-bg" cx="32" cy="32" r="27"/>
+                <circle class="score-ring-fill" cx="32" cy="32" r="27"
+                    stroke="${s.color}" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"/>
+                <text class="score-ring-text" x="32" y="32">${s.value}</text>
+            </svg>
+            <div class="ring-label">${s.label}</div>
+        </div>`;
+    }).join('');
+
+    // ─── Gaps ───
+    const gaps = (d.gaps || []).slice(0, 8); // Show top 8
+    document.getElementById('dossierGaps').innerHTML = gaps.map(g =>
+        `<li class="dossier-gap-item">
+            <div class="gap-severity gap-${g.severity}"></div>
+            <span>${g.finding}</span>
+        </li>`
+    ).join('');
+}
+
+function scoreColor(val) {
+    if (val >= 80) return '#10B981';
+    if (val >= 50) return '#F59E0B';
+    return '#EF4444';
+}
+
+function formatPracticeType(type) {
+    const map = {
+        optometry: 'Optometry Practice',
+        ophthalmology: 'Ophthalmology Practice',
+        optical: 'Optical / Eyewear',
+        multi_specialty: 'Multi-Specialty Eye Care',
+    };
+    return map[type] || type || 'Eye Care Practice';
+}
+
+function formatSubType(sub) {
+    const map = { solo: 'Solo Provider', group: 'Group Practice', large_group: 'Large Group (6+ providers)' };
+    return map[sub] || sub || '';
+}
+
+// ─── SCREEN 4 — STRATEGIC QUESTIONS ─────────────────────────
+function goToStrategic() {
+    const practiceType = dossier?.practice?.type || 'default';
+
+    // Populate goal options (Q1)
+    const goals = GOAL_OPTIONS[practiceType] || GOAL_OPTIONS.default;
+    document.getElementById('q1Options').innerHTML = goals.map((g, i) =>
+        `<div class="strategic-option" onclick="selectOption(this, 'goal', '${g.replace(/'/g, "\\'")}')">
+            <div class="strategic-option-dot"></div>${g}
+        </div>`
+    ).join('');
+
+    // Populate pain options (Q2)
+    const pains = PAIN_OPTIONS[practiceType] || PAIN_OPTIONS.default;
+    document.getElementById('q2Options').innerHTML = pains.map((p, i) =>
+        `<div class="strategic-option" onclick="selectOption(this, 'pain', '${p.replace(/'/g, "\\'")}')">
+            <div class="strategic-option-dot"></div>${p}
+        </div>`
+    ).join('');
+
+    showScreen(4);
+}
+
+function selectOption(el, key, value) {
+    // Deselect siblings
+    el.parentElement.querySelectorAll('.strategic-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    userAnswers[key] = value;
+}
+
+// ─── SCREEN 5 — RESULTS ────────────────────────────────────
+function showResults() {
+    userAnswers.freetext = document.getElementById('q3Freetext').value.trim();
+
+    const d = dossier;
+    const score = d.scores?.overall || 0;
+
+    // Score
+    document.getElementById('resultsScoreBig').textContent = score;
+    document.getElementById('resultsTierBadge').textContent = d.recommendedTier || 'Schedule a call';
+
+    // Generate personalized insights
+    const insights = generateInsights(d);
+    const insightsContainer = document.getElementById('resultsInsights');
+    insightsContainer.innerHTML = `<div class="results-section-title">Your Personalized Growth Insights</div>` +
+        insights.map(ins => `
+            <div class="results-insight">
+                <div class="insight-icon ${ins.iconClass}">${ins.icon}</div>
+                <div class="insight-text"><strong>${ins.title}</strong><br>${ins.text}</div>
+            </div>
+        `).join('');
+
+    // Missing revenue opportunities
+    const missing = generateMissingRevenue(d);
+    const missingContainer = document.getElementById('resultsMissing');
+    missingContainer.innerHTML = `<div class="results-section-title">Revenue You're Leaving on the Table</div>` +
+        missing.map(m => `
+            <div class="results-insight">
+                <div class="insight-icon insight-icon-amber">💰</div>
+                <div class="insight-text"><strong>${m.title}</strong><br>${m.text}</div>
+            </div>
+        `).join('');
+
+    showScreen(5);
+
+    // Submit to Google Sheets
+    submitToSheets();
+}
+
+function generateInsights(d) {
+    const insights = [];
+    const lh = lighthouseData;
+
+    // Competitor vendor insight
+    if (d.digital?.isCompetitorClient) {
+        insights.push({
+            icon: '⚠️', iconClass: 'insight-icon-amber',
+            title: `You're currently with ${d.digital.competitorName}`,
+            text: `We see this often — practices outgrow their current vendor but don't realize there's a better option. Let's compare what you're getting today vs. what's possible.`,
+        });
+    }
+
+    // Performance
+    if (lh && lh.performance < 60) {
+        insights.push({
+            icon: '🐌', iconClass: 'insight-icon-red',
+            title: `Your site loads slowly (Performance: ${lh.performance}/100)`,
+            text: `Google penalizes slow sites in search rankings. Every second of delay costs you approximately 7% in conversions. ${lh.lcp ? `Your largest content takes ${lh.lcp} to appear.` : ''}`,
+        });
+    } else if (lh && lh.performance >= 80) {
+        insights.push({
+            icon: '⚡', iconClass: 'insight-icon-green',
+            title: `Your site performance is solid (${lh.performance}/100)`,
+            text: `This is above average for eye care sites. Your site speed isn't holding you back — let's focus on what is.`,
+        });
+    }
+
+    // Social media
+    if (d.social?.platformCount === 0) {
+        insights.push({
+            icon: '📱', iconClass: 'insight-icon-red',
+            title: 'No social media presence detected',
+            text: `Your competitors are building patient trust on Instagram and Facebook every day. Without a social presence, you're invisible to an entire generation of patients.`,
+        });
+    } else if (!d.social?.hasInstagram && (d.practice?.type === 'optical' || d.optical?.hasOptical)) {
+        insights.push({
+            icon: '📸', iconClass: 'insight-icon-amber',
+            title: 'Missing Instagram — your #1 eyewear platform',
+            text: `For practices with optical, Instagram is the top driver of frame awareness. Patients discover eyewear through visual platforms before they walk in your door.`,
+        });
+    }
+
+    // Scheduling
+    if (!d.digital?.scheduling?.hasOnlineScheduling) {
+        insights.push({
+            icon: '📅', iconClass: 'insight-icon-red',
+            title: 'No online scheduling detected',
+            text: `68% of patients prefer to book online. Without it, you're losing appointments to practices that make booking easy — especially after hours.`,
+        });
+    }
+
+    // Blog / Content
+    if (!d.content?.blogExists) {
+        insights.push({
+            icon: '✍️', iconClass: 'insight-icon-amber',
+            title: 'No blog or content strategy',
+            text: `Practices with active blogs get 55% more website traffic. Each blog post is a new page Google can rank — and a new reason for patients to trust your expertise.`,
+        });
+    }
+
+    // Doctor count vs web presence
+    if (d.doctors?.length >= 4 && d.content?.totalWordCount < 2000) {
+        insights.push({
+            icon: '👥', iconClass: 'insight-icon-amber',
+            title: `${d.doctors.length} providers but thin web presence`,
+            text: `You have a team of ${d.doctors.length} but your website doesn't showcase their expertise. Individual provider pages with bio, specialties, and patient reviews dramatically boost local search and patient trust.`,
+        });
+    }
+
+    // Multi-location
+    if (d.locations?.count >= 3) {
+        insights.push({
+            icon: '🏢', iconClass: 'insight-icon-blue',
+            title: `${d.locations.count} locations detected`,
+            text: `Multi-location practices need centralized brand management with location-specific SEO. Each office needs its own Google Business Profile, local landing pages, and review strategy.`,
+        });
+    }
+
+    // SEO
+    if (lh && lh.seo < 70) {
+        insights.push({
+            icon: '🔍', iconClass: 'insight-icon-red',
+            title: `SEO score needs work (${lh.seo}/100)`,
+            text: `Your site has technical SEO issues that are hurting your Google ranking. Basic fixes like proper meta tags, schema markup, and alt text could make an immediate impact.`,
+        });
+    }
+
+    return insights.slice(0, 6); // Max 6
+}
+
+function generateMissingRevenue(d) {
+    const items = [];
+
+    if (d.services?.missingHighValue?.includes('Dry Eye Treatment')) {
+        items.push({
+            title: 'Dry Eye Treatment Services',
+            text: 'Dry eye affects 1 in 3 adults. Practices offering dedicated dry eye care report $150K–$400K+ in annual revenue from this single service line.',
+        });
+    }
+
+    if (d.services?.missingHighValue?.includes('Myopia Management')) {
+        items.push({
+            title: 'Myopia Management Program',
+            text: 'Myopia management (ortho-k, atropine, MiSight) generates $1,500–$3,000 per patient annually with high retention. Pediatric parents are actively searching for this.',
+        });
+    }
+
+    if (d.services?.missingHighValue?.includes('Premium IOLs') && d.practice?.type === 'ophthalmology') {
+        items.push({
+            title: 'Premium IOL Conversion',
+            text: 'Moving just 10% of cataract patients to premium IOLs at $2,000+ out-of-pocket per eye can add $200K–$500K in annual revenue.',
+        });
+    }
+
+    if (!d.digital?.scheduling?.hasOnlineScheduling) {
+        items.push({
+            title: 'Online Booking = More Appointments',
+            text: 'Practices with real-time online booking see 20–30% more new patient appointments, especially from after-hours searches when your phone isn\'t answered.',
+        });
+    }
+
+    if (d.social?.platformCount < 2) {
+        items.push({
+            title: 'Social Media Patient Acquisition',
+            text: 'Practices with active social media presence report 15–25% of new patients citing social as their discovery channel.',
+        });
+    }
+
+    if (!d.content?.blogExists) {
+        items.push({
+            title: 'Content Marketing & SEO Traffic',
+            text: 'An active blog can increase organic search traffic by 55%. Each post targeting "[your city] + [eye condition]" is a patient magnet that works 24/7.',
+        });
+    }
+
+    return items.slice(0, 5);
+}
+
+// ─── GOOGLE SHEETS SUBMISSION ───────────────────────────────
+function submitToSheets() {
+    if (!CONFIG.GOOGLE_SHEETS_URL || CONFIG.GOOGLE_SHEETS_URL.includes('PASTE_YOUR')) return;
+
+    const d = dossier;
+    const lh = lighthouseData || {};
+
+    const payload = {
+        timestamp: new Date().toISOString(),
+        // User input
+        name: userAnswers.name,
+        email: userAnswers.email,
+        url: userAnswers.url,
+        // Strategic answers
+        growthGoal: userAnswers.goal || '',
+        biggestPain: userAnswers.pain || '',
+        freetext: userAnswers.freetext || '',
+        // Practice identity
+        practiceName: d.practice?.name || '',
+        practiceType: d.practice?.type || '',
+        practiceSubType: d.practice?.subType || '',
+        yearEstablished: d.practice?.yearEstablished || '',
+        // Doctors
+        doctorCount: d.doctors?.length || 0,
+        mdCount: (d.doctors || []).filter(dr => dr.type === 'ophthalmologist').length,
+        odCount: (d.doctors || []).filter(dr => dr.type === 'optometrist').length,
+        doctorNames: (d.doctors || []).map(dr => `${dr.name} (${dr.credential || dr.type})`).join('; '),
+        // Locations
+        locationCount: d.locations?.count || 0,
+        phone: (d.locations?.phones || [])[0] || '',
+        address: (d.locations?.addresses || [])[0] || '',
+        // Services
+        servicesDetected: (d.services?.detected || []).map(s => s.label).join('; '),
+        servicesCount: d.services?.totalCount || 0,
+        missingServices: (d.services?.missingHighValue || []).join('; '),
+        // Digital
+        cms: d.digital?.cms?.name || '',
+        marketingVendor: d.digital?.marketingVendor?.name || '',
+        isCompetitorClient: d.digital?.isCompetitorClient ? 'YES' : 'No',
+        hasScheduling: d.digital?.scheduling?.hasOnlineScheduling ? 'Yes' : 'No',
+        schedulingPlatform: d.digital?.scheduling?.platform?.name || '',
+        analyticsTools: (d.digital?.analytics || []).map(a => a.name).join('; '),
+        // Social
+        socialPlatforms: (d.social?.links || []).map(l => l.platform).join('; '),
+        socialCount: d.social?.platformCount || 0,
+        facebookUrl: d.social?.facebookUrl || '',
+        instagramUrl: d.social?.instagramUrl || '',
+        // Content
+        blogExists: d.content?.blogExists ? 'Yes' : 'No',
+        homepageWordCount: d.content?.homepage?.wordCount || 0,
+        totalWordCount: d.content?.totalWordCount || 0,
+        // Lighthouse
+        lighthousePerformance: lh.performance || '',
+        lighthouseSeo: lh.seo || '',
+        lighthouseAccessibility: lh.accessibility || '',
+        lighthouseBestPractices: lh.bestPractices || '',
+        lighthouseFcp: lh.fcp || '',
+        lighthouseLcp: lh.lcp || '',
+        // Scores
+        scoreDigital: d.scores?.digitalPresence || 0,
+        scoreContent: d.scores?.contentQuality || 0,
+        scorePatientExp: d.scores?.patientExperience || 0,
+        scoreMarketing: d.scores?.marketingMaturity || 0,
+        scoreOverall: d.scores?.overall || 0,
+        // Recommendation
+        recommendedTier: d.recommendedTier || '',
+        gapCount: (d.gaps || []).length,
+        topGaps: (d.gaps || []).slice(0, 5).map(g => `[${g.severity}] ${g.finding}`).join('; '),
+        // Optical
+        hasOptical: d.optical?.hasOptical ? 'Yes' : 'No',
+        frameBrandCount: d.optical?.totalBrands || 0,
+        brandPositioning: d.optical?.positioning || '',
+        // Insurance
+        insurancePlans: (d.insurance?.detected || []).map(i => i.name).join('; '),
+    };
+
+    try {
+        fetch(CONFIG.GOOGLE_SHEETS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+    } catch (e) {
+        console.warn('Sheets submission error:', e);
+    }
+}
+
+</script>
+
+</body>
+</html>
