@@ -1612,9 +1612,13 @@ function renderStep3() {
     digRows.push(['Analytics', d.digital?.analytics?.length > 0 ?
         d.digital.analytics.map(a => a.name).join(', ') : 'None detected']);
 
-    // Lighthouse scores row
+    // Lighthouse scores row — hide for EyeCarePro clients
+    const isECP = dossier?.digital?.isEyeCarePro;
     let lighthouseHtml = '';
-    if (lighthouseData) {
+    if (isECP) {
+        // Don't show Lighthouse scores to existing EyeCarePro clients
+        lighthouseHtml = '';
+    } else if (lighthouseData) {
         const lh = lighthouseData;
         lighthouseHtml = `
             <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--surface-alt)">
@@ -1796,14 +1800,17 @@ function mergeLighthouseData() {
         (dossier.scores.marketingMaturity * 0.25)
     );
 
-    if (lighthouseData.performance < 50) {
-        dossier.gaps.push({ category: 'technical', severity: 'critical', finding: `Site performance score is ${lighthouseData.performance}/100 — your site is costing you patients` });
-    }
-    if (lighthouseData.seo < 70) {
-        dossier.gaps.push({ category: 'technical', severity: 'moderate', finding: `SEO score is ${lighthouseData.seo}/100 — Google isn't ranking you as high as it could` });
-    }
-    if (lighthouseData.accessibility < 70) {
-        dossier.gaps.push({ category: 'technical', severity: 'moderate', finding: `Accessibility score is ${lighthouseData.accessibility}/100 — potential ADA compliance issue` });
+    // Don't add Lighthouse-based gaps for EyeCarePro clients
+    if (!dossier.digital?.isEyeCarePro) {
+        if (lighthouseData.performance < 50) {
+            dossier.gaps.push({ category: 'technical', severity: 'critical', finding: `Site performance score is ${lighthouseData.performance}/100 — your site is costing you patients` });
+        }
+        if (lighthouseData.seo < 70) {
+            dossier.gaps.push({ category: 'technical', severity: 'moderate', finding: `SEO score is ${lighthouseData.seo}/100 — Google isn't ranking you as high as it could` });
+        }
+        if (lighthouseData.accessibility < 70) {
+            dossier.gaps.push({ category: 'technical', severity: 'moderate', finding: `Accessibility score is ${lighthouseData.accessibility}/100 — potential ADA compliance issue` });
+        }
     }
 }
 
@@ -1895,9 +1902,9 @@ function renderFullStory() {
     if (d.social?.platformCount > 0) digParts.push(`${d.social.platformCount} social`);
     document.getElementById('accDigitalSummary').textContent = digParts.join(' + ') || 'View details';
 
-    // Scores
+    // Scores — hide Lighthouse for EyeCarePro clients
     const scores = [];
-    if (lighthouseData) {
+    if (lighthouseData && !d.digital?.isEyeCarePro) {
         scores.push({ label: 'Performance', value: lighthouseData.performance, color: scoreColor(lighthouseData.performance) });
         scores.push({ label: 'SEO', value: lighthouseData.seo, color: scoreColor(lighthouseData.seo) });
         scores.push({ label: 'Accessibility', value: lighthouseData.accessibility, color: scoreColor(lighthouseData.accessibility) });
@@ -2002,11 +2009,14 @@ function generateNarrative(d) {
     const strengths = [];
     const weaknesses = [];
 
-    if (lh?.seo >= 80) strengths.push('strong SEO fundamentals');
-    else if (lh?.seo < 70) weaknesses.push('SEO needs attention');
+    // Skip Lighthouse-based narrative for EyeCarePro clients
+    if (!d.digital?.isEyeCarePro) {
+        if (lh?.seo >= 80) strengths.push('strong SEO fundamentals');
+        else if (lh?.seo < 70) weaknesses.push('SEO needs attention');
 
-    if (lh?.performance >= 80) strengths.push('fast site speed');
-    else if (lh?.performance < 50) weaknesses.push('slow page load times');
+        if (lh?.performance >= 80) strengths.push('fast site speed');
+        else if (lh?.performance < 50) weaknesses.push('slow page load times');
+    }
 
     if (socialCount >= 3) strengths.push('active social media presence');
     else if (socialCount === 0) weaknesses.push('no social media presence');
@@ -2233,18 +2243,21 @@ function generateInsights(d) {
         });
     }
 
-    if (lh && lh.performance < 60) {
-        insights.push({
-            icon: '🐌', iconClass: 'insight-icon-red',
-            title: `Your site loads slowly (Performance: ${lh.performance}/100)`,
-            text: `Google penalizes slow sites in search rankings. Every second of delay costs you approximately 7% in conversions. ${lh.lcp ? `Your largest content takes ${lh.lcp} to appear.` : ''}`,
-        });
-    } else if (lh && lh.performance >= 80) {
-        insights.push({
-            icon: '⚡', iconClass: 'insight-icon-green',
-            title: `Your site performance is solid (${lh.performance}/100)`,
-            text: `This is above average for eye care sites. Your site speed isn't holding you back — let's focus on what is.`,
-        });
+    // Skip Lighthouse-based insights for EyeCarePro clients
+    if (!d.digital?.isEyeCarePro) {
+        if (lh && lh.performance < 60) {
+            insights.push({
+                icon: '🐌', iconClass: 'insight-icon-red',
+                title: `Your site loads slowly (Performance: ${lh.performance}/100)`,
+                text: `Google penalizes slow sites in search rankings. Every second of delay costs you approximately 7% in conversions. ${lh.lcp ? `Your largest content takes ${lh.lcp} to appear.` : ''}`,
+            });
+        } else if (lh && lh.performance >= 80) {
+            insights.push({
+                icon: '⚡', iconClass: 'insight-icon-green',
+                title: `Your site performance is solid (${lh.performance}/100)`,
+                text: `This is above average for eye care sites. Your site speed isn't holding you back — let's focus on what is.`,
+            });
+        }
     }
 
     if (d.social?.platformCount === 0) {
@@ -2379,56 +2392,4 @@ function submitToSheets() {
         locationCount: d.locations?.count || 0,
         phone: (d.locations?.phones || [])[0] || '',
         address: (d.locations?.addresses || [])[0] || '',
-        servicesDetected: (d.services?.detected || []).map(s => s.label).join('; '),
-        servicesCount: d.services?.totalCount || 0,
-        missingServices: (d.services?.missingHighValue || []).join('; '),
-        cms: d.digital?.cms?.name || '',
-        marketingVendor: d.digital?.marketingVendor?.name || '',
-        isCompetitorClient: d.digital?.isCompetitorClient ? 'YES' : 'No',
-        isEyeCarePro: d.digital?.isEyeCarePro ? 'YES' : 'No',
-        hasScheduling: d.digital?.scheduling?.hasOnlineScheduling ? 'Yes' : 'No',
-        schedulingPlatform: d.digital?.scheduling?.platform?.name || '',
-        analyticsTools: (d.digital?.analytics || []).map(a => a.name).join('; '),
-        socialPlatforms: (d.social?.links || []).map(l => l.platform).join('; '),
-        socialCount: d.social?.platformCount || 0,
-        facebookUrl: d.social?.facebookUrl || '',
-        instagramUrl: d.social?.instagramUrl || '',
-        blogExists: d.content?.blogExists ? 'Yes' : 'No',
-        homepageWordCount: d.content?.homepage?.wordCount || 0,
-        totalWordCount: d.content?.totalWordCount || 0,
-        lighthousePerformance: lh.performance || '',
-        lighthouseSeo: lh.seo || '',
-        lighthouseAccessibility: lh.accessibility || '',
-        lighthouseBestPractices: lh.bestPractices || '',
-        lighthouseFcp: lh.fcp || '',
-        lighthouseLcp: lh.lcp || '',
-        scoreDigital: d.scores?.digitalPresence || 0,
-        scoreContent: d.scores?.contentQuality || 0,
-        scorePatientExp: d.scores?.patientExperience || 0,
-        scoreMarketing: d.scores?.marketingMaturity || 0,
-        scoreOverall: d.scores?.overall || 0,
-        recommendedTier: d.recommendedTier || '',
-        gapCount: (d.gaps || []).length,
-        topGaps: (d.gaps || []).slice(0, 5).map(g => `[${g.severity}] ${g.finding}`).join('; '),
-        hasOptical: d.optical?.hasOptical ? 'Yes' : 'No',
-        frameBrandCount: d.optical?.totalBrands || 0,
-        brandPositioning: d.optical?.positioning || '',
-        insurancePlans: (d.insurance?.detected || []).map(i => i.name).join('; '),
-    };
-
-    try {
-        fetch(CONFIG.GOOGLE_SHEETS_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-    } catch (e) {
-        console.warn('Sheets submission error:', e);
-    }
-}
-
-</script>
-
-</body>
-</html>
+        servicesDetected: (d.services?.detected |
