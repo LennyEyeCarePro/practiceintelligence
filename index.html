@@ -1239,9 +1239,11 @@ async function runScanAnimation(apifyPromise, lighthousePromise) {
         // Wait — faster for early steps, slower for API-dependent ones
         const isApiStep = (i === 0 || i === 2); // website crawl + lighthouse
         if (isApiStep) {
-            // Wait for the actual API to finish, with a ceiling
+            // Wait for the actual API to finish, with generous ceiling
+            // Apify can take 60-90s for full crawl; Lighthouse ~10-20s
+            const ceiling = (i === 0) ? 60000 : 25000;
             const start = Date.now();
-            while (Date.now() - start < 20000) {
+            while (Date.now() - start < ceiling) {
                 if ((i === 0 && apifyDone) || (i === 2 && lighthouseDone)) break;
                 if (apifyDone && lighthouseDone) break;
                 await new Promise(r => setTimeout(r, 500));
@@ -1257,8 +1259,9 @@ async function runScanAnimation(apifyPromise, lighthousePromise) {
     }
 
     // Final ceiling — make sure both APIs are done (or timed out)
+    // Give Apify up to 30 more seconds after animation completes
     const ceilingStart = Date.now();
-    while ((!apifyDone || !lighthouseDone) && Date.now() - ceilingStart < 15000) {
+    while ((!apifyDone || !lighthouseDone) && Date.now() - ceilingStart < 30000) {
         await new Promise(r => setTimeout(r, 500));
     }
 
