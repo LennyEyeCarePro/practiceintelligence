@@ -30,7 +30,7 @@ export default async function handler(req, res) {
             `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params}`,
             {
                 signal: AbortSignal.timeout(45000),
-                headers: { 'Referer': 'https://practiceintelligence.vercel.app/' },
+                headers: { 'Referer': 'https://practiceintelligence-lennys-projects-2067cb84.vercel.app/' },
             }
         );
 

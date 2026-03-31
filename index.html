@@ -486,6 +486,7 @@ body {
 .gap-opportunity { background: var(--brand-light); }
 .gap-competitor { background: #7C3AED; }
 .gap-low { background: var(--text-muted); }
+.gap-existing_client { background: #3B82F6; }
 
 .dossier-confirm-row {
     display: flex;
@@ -1345,7 +1346,8 @@ function renderDossier() {
         // Group by category
         const cats = d.services.categories || {};
         for (const [cat, labels] of Object.entries(cats)) {
-            const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, ' ');
+            const catLabelMap = { comanagement: 'Co-Management', vision_therapy: 'Vision Therapy', dry_eye: 'Dry Eye', surgical: 'Surgical', optometry: 'Core Optometry', specialty: 'Specialty Services' };
+            const catLabel = catLabelMap[cat] || (cat.charAt(0).toUpperCase() + cat.slice(1).replace(/_/g, ' '));
             svcHtml.push(`<div style="margin-bottom:8px"><span class="dossier-row-label" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px">${catLabel}</span><div style="margin-top:4px">${labels.map(l => `<span class="dossier-tag tag-blue">${l}</span>`).join(' ')}</div></div>`);
         }
     }
@@ -1358,14 +1360,18 @@ function renderDossier() {
     // ─── Digital infrastructure card ───
     const digRows = [];
     digRows.push(['Website Platform', d.digital?.cms?.name || 'Not detected']);
-    digRows.push(['Marketing Vendor', d.digital?.marketingVendor ? `<span class="dossier-tag ${d.digital.isCompetitorClient ? 'tag-amber' : 'tag-green'}">${d.digital.marketingVendor.name}${d.digital.isCompetitorClient ? ' ⚠️' : ''}</span>` : 'None detected']);
+    digRows.push(['Marketing Vendor', d.digital?.marketingVendor ? (() => {
+        if (d.digital.isEyeCarePro) return `<span class="dossier-tag tag-blue">EyeCarePro (Existing Client)</span> <span style="font-size:11px;color:var(--text-muted)">— may be website-only or looking for upgrade</span>`;
+        if (d.digital.isCompetitorClient) return `<span class="dossier-tag tag-amber">${d.digital.marketingVendor.name} ⚠️</span>`;
+        return `<span class="dossier-tag tag-green">${d.digital.marketingVendor.name}</span>`;
+    })() : 'None detected']);
     digRows.push(['Online Scheduling', d.digital?.scheduling?.hasOnlineScheduling ?
         (d.digital.scheduling.platform ? d.digital.scheduling.platform.name : 'Yes (basic form)') :
         '<span class="dossier-tag tag-red">None</span>']);
     digRows.push(['Social Profiles', d.social?.platformCount > 0 ?
         d.social.links.map(l => `<span class="dossier-tag tag-blue">${l.platform}</span>`).join(' ') :
         '<span class="dossier-tag tag-red">None found</span>']);
-    digRows.push(['Blog', d.content?.blogExists ? `Yes (est. ${d.content.estimatedBlogPosts || '?'} posts)` : '<span class="dossier-tag tag-red">None</span>']);
+    digRows.push(['Blog', d.content?.blogExists ? `Yes${d.content.estimatedBlogPosts > 0 ? ` (est. ${d.content.estimatedBlogPosts} posts)` : ''}` : '<span class="dossier-tag tag-red">None</span>']);
     digRows.push(['Analytics', d.digital?.analytics?.length > 0 ?
         d.digital.analytics.map(a => a.name).join(', ') : 'None detected']);
     if (d.insurance?.detected?.length > 0) {
