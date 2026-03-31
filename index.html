@@ -389,6 +389,201 @@ body {
 
 .dossier-card-title svg { width: 14px; height: 14px; }
 
+/* ─── NARRATIVE SUMMARY ─────────────────────────────── */
+
+.narrative-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+}
+
+.narrative-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+}
+
+.narrative-text strong { color: var(--brand); font-weight: 700; }
+
+.narrative-text .highlight-stat {
+    display: inline;
+    font-weight: 700;
+    color: var(--brand);
+}
+
+.narrative-text p { margin-bottom: 12px; }
+.narrative-text p:last-child { margin-bottom: 0; }
+
+/* ─── ACCORDION SECTIONS ────────────────────────────── */
+
+.accordion-section {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: box-shadow .2s;
+}
+
+.accordion-section:hover { box-shadow: var(--shadow); }
+
+.accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s;
+}
+
+.accordion-header:hover { background: var(--surface-alt); }
+
+.accordion-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.accordion-header-left svg { width: 14px; height: 14px; color: var(--text-muted); }
+
+.accordion-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.accordion-summary {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.accordion-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+    transition: transform .25s ease;
+    flex-shrink: 0;
+}
+
+.accordion-section.open .accordion-chevron { transform: rotate(180deg); }
+
+.accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .3s ease, padding .3s ease;
+    padding: 0 20px;
+}
+
+.accordion-section.open .accordion-body {
+    max-height: 800px;
+    padding: 0 20px 16px;
+}
+
+/* ─── CONFIRM / FEEDBACK SECTION ────────────────────── */
+
+.confirm-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-top: 20px;
+    text-align: center;
+}
+
+.confirm-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.confirm-card p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 0;
+}
+
+.btn-confirm-primary {
+    flex: 2;
+    padding: 12px 16px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    background: var(--brand);
+    color: #fff;
+    transition: all .2s;
+}
+
+.btn-confirm-primary:hover { background: var(--brand-light); }
+
+.btn-confirm-secondary {
+    flex: 1;
+    padding: 12px 16px;
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    transition: all .2s;
+}
+
+.btn-confirm-secondary:hover { background: var(--surface-alt); border-color: var(--text-muted); }
+
+.correction-box {
+    display: none;
+    margin-top: 14px;
+    text-align: left;
+}
+
+.correction-box.visible { display: block; }
+
+.correction-box textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    font-family: var(--font);
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    resize: vertical;
+    color: var(--text);
+    background: var(--surface-alt);
+    outline: none;
+    transition: border-color .2s;
+}
+
+.correction-box textarea:focus { border-color: var(--brand); }
+
+.correction-box textarea::placeholder { color: var(--text-muted); }
+
+.correction-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
 .dossier-row {
     display: flex;
     justify-content: space-between;
@@ -853,65 +1048,109 @@ body {
         <div class="dossier-header">
             <div class="dossier-badge">Intelligence Report</div>
             <h2 class="dossier-title" id="dossierPracticeName">Your Practice</h2>
-            <p class="dossier-subtitle">Here's what we found from your website — did we get it right?</p>
         </div>
 
-        <!-- Practice Identity -->
+        <!-- Narrative Summary — tells their story -->
+        <div class="narrative-card">
+            <div class="narrative-text" id="narrativeSummary"></div>
+        </div>
+
+        <!-- Score Rings -->
         <div class="dossier-card">
-            <div class="dossier-card-title">
-                <svg viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v4c0 3.3 2.6 6.4 6 7 3.4-.6 6-3.7 6-7V4L8 1z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
-                Practice Profile
-            </div>
-            <div id="dossierIdentity"></div>
-        </div>
-
-        <!-- Doctors -->
-        <div class="dossier-card" id="dossierDoctorsCard">
-            <div class="dossier-card-title">
-                <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M2 14c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
-                Providers Detected
-            </div>
-            <div id="dossierDoctors"></div>
-        </div>
-
-        <!-- Services -->
-        <div class="dossier-card">
-            <div class="dossier-card-title">
-                <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.2"/></svg>
-                Services &amp; Capabilities
-            </div>
-            <div id="dossierServices"></div>
-        </div>
-
-        <!-- Digital Infrastructure -->
-        <div class="dossier-card">
-            <div class="dossier-card-title">
-                <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M1 6h14" stroke="currentColor" stroke-width="1.2"/></svg>
-                Digital Infrastructure
-            </div>
-            <div id="dossierDigital"></div>
-        </div>
-
-        <!-- Performance Scores -->
-        <div class="dossier-card">
-            <div class="dossier-card-title">
-                <svg viewBox="0 0 16 16" fill="none"><path d="M2 12l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
-                Performance Scores
-            </div>
             <div class="dossier-score-ring" id="dossierScores"></div>
         </div>
 
-        <!-- Top Gaps -->
-        <div class="dossier-card">
-            <div class="dossier-card-title">
-                <svg viewBox="0 0 16 16" fill="none"><path d="M8 1l1.5 5H15l-4 3 1.5 5L8 11l-4.5 3L5 9 1 6h5.5z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
-                Key Findings
+        <!-- Accordion Details -->
+        <div id="accordionWrap">
+            <!-- Practice Profile -->
+            <div class="accordion-section" id="accProfile">
+                <div class="accordion-header" onclick="toggleAccordion('accProfile')">
+                    <div class="accordion-header-left">
+                        <svg viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v4c0 3.3 2.6 6.4 6 7 3.4-.6 6-3.7 6-7V4L8 1z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                        Practice Profile
+                    </div>
+                    <div class="accordion-header-right">
+                        <span class="accordion-summary" id="accProfileSummary"></span>
+                        <svg class="accordion-chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                </div>
+                <div class="accordion-body"><div id="dossierIdentity"></div></div>
             </div>
-            <ul class="dossier-gaps" id="dossierGaps"></ul>
+
+            <!-- Providers -->
+            <div class="accordion-section" id="accDoctors">
+                <div class="accordion-header" onclick="toggleAccordion('accDoctors')">
+                    <div class="accordion-header-left">
+                        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M2 14c0-3 2.7-5 6-5s6 2 6 5" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                        Providers Detected
+                    </div>
+                    <div class="accordion-header-right">
+                        <span class="accordion-summary" id="accDoctorsSummary"></span>
+                        <svg class="accordion-chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                </div>
+                <div class="accordion-body"><div id="dossierDoctors"></div></div>
+            </div>
+
+            <!-- Services -->
+            <div class="accordion-section" id="accServices">
+                <div class="accordion-header" onclick="toggleAccordion('accServices')">
+                    <div class="accordion-header-left">
+                        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.2"/></svg>
+                        Services &amp; Capabilities
+                    </div>
+                    <div class="accordion-header-right">
+                        <span class="accordion-summary" id="accServicesSummary"></span>
+                        <svg class="accordion-chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                </div>
+                <div class="accordion-body"><div id="dossierServices"></div></div>
+            </div>
+
+            <!-- Digital Infrastructure -->
+            <div class="accordion-section" id="accDigital">
+                <div class="accordion-header" onclick="toggleAccordion('accDigital')">
+                    <div class="accordion-header-left">
+                        <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M1 6h14" stroke="currentColor" stroke-width="1.2"/></svg>
+                        Digital Infrastructure
+                    </div>
+                    <div class="accordion-header-right">
+                        <span class="accordion-summary" id="accDigitalSummary"></span>
+                        <svg class="accordion-chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                </div>
+                <div class="accordion-body"><div id="dossierDigital"></div></div>
+            </div>
+
+            <!-- Key Findings -->
+            <div class="accordion-section open" id="accFindings">
+                <div class="accordion-header" onclick="toggleAccordion('accFindings')">
+                    <div class="accordion-header-left">
+                        <svg viewBox="0 0 16 16" fill="none"><path d="M8 1l1.5 5H15l-4 3 1.5 5L8 11l-4.5 3L5 9 1 6h5.5z" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+                        Key Findings
+                    </div>
+                    <div class="accordion-header-right">
+                        <span class="accordion-summary" id="accFindingsSummary"></span>
+                        <svg class="accordion-chevron" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                </div>
+                <div class="accordion-body"><ul class="dossier-gaps" id="dossierGaps"></ul></div>
+            </div>
         </div>
 
-        <div class="dossier-confirm-row">
-            <button class="btn-confirm btn-confirm-yes" onclick="goToStrategic()">Looks Right — Show My Opportunities</button>
+        <!-- Confirmation + Feedback -->
+        <div class="confirm-card">
+            <h3>Does this look right?</h3>
+            <p>If we missed anything — a service you offer, a doctor we didn't catch, or anything else — let us know so we can give you the most accurate recommendations.</p>
+            <div class="confirm-actions">
+                <button class="btn-confirm-primary" onclick="goToStrategic()">That's Us — Show My Opportunities</button>
+                <button class="btn-confirm-secondary" onclick="showCorrectionBox()">Add Details</button>
+            </div>
+            <div class="correction-box" id="correctionBox">
+                <textarea id="correctionText" placeholder="Tell us what we missed or got wrong — additional services, providers, locations, anything that would help us understand your practice better..."></textarea>
+                <div class="correction-hint">This helps us tailor your growth plan to your actual practice.</div>
+                <button class="btn-confirm-primary" style="margin-top:10px;width:100%" onclick="submitCorrections()">Got It — Now Show My Opportunities</button>
+            </div>
         </div>
     </div>
 
@@ -1312,7 +1551,10 @@ function renderDossier() {
     // Practice name in header
     document.getElementById('dossierPracticeName').textContent = d.practice?.name || 'Your Practice';
 
-    // ─── Identity card ───
+    // ─── NARRATIVE SUMMARY ───
+    document.getElementById('narrativeSummary').innerHTML = generateNarrative(d);
+
+    // ─── Identity card (accordion) ───
     const idRows = [];
     idRows.push(['Practice Type', formatPracticeType(d.practice?.type)]);
     if (d.practice?.subType) idRows.push(['Practice Size', formatSubType(d.practice.subType)]);
@@ -1325,8 +1567,9 @@ function renderDossier() {
     document.getElementById('dossierIdentity').innerHTML = idRows.map(([l, v]) =>
         `<div class="dossier-row"><span class="dossier-row-label">${l}</span><span class="dossier-row-value">${v}</span></div>`
     ).join('');
+    document.getElementById('accProfileSummary').textContent = formatPracticeType(d.practice?.type);
 
-    // ─── Doctors card ───
+    // ─── Doctors (accordion) ───
     if (d.doctors?.length > 0) {
         document.getElementById('dossierDoctors').innerHTML = d.doctors.map(doc => {
             const tagClass = doc.type === 'ophthalmologist' ? 'tag-blue' : doc.type === 'optometrist' ? 'tag-green' : 'tag-gray';
@@ -1336,14 +1579,19 @@ function renderDossier() {
                 <span class="dossier-tag ${tagClass}">${tagLabel}</span>
             </div>`;
         }).join('');
+        const mdCount = d.doctors.filter(doc => doc.type === 'ophthalmologist').length;
+        const odCount = d.doctors.filter(doc => doc.type === 'optometrist').length;
+        const parts = [];
+        if (odCount) parts.push(`${odCount} OD${odCount > 1 ? 's' : ''}`);
+        if (mdCount) parts.push(`${mdCount} MD${mdCount > 1 ? 's' : ''}`);
+        document.getElementById('accDoctorsSummary').textContent = parts.join(', ') || `${d.doctors.length} providers`;
     } else {
-        document.getElementById('dossierDoctorsCard').classList.add('hidden');
+        document.getElementById('accDoctors').style.display = 'none';
     }
 
-    // ─── Services card ───
+    // ─── Services (accordion) ───
     const svcHtml = [];
     if (d.services?.detected?.length > 0) {
-        // Group by category
         const cats = d.services.categories || {};
         for (const [cat, labels] of Object.entries(cats)) {
             const catLabelMap = { comanagement: 'Co-Management', vision_therapy: 'Vision Therapy', dry_eye: 'Dry Eye', surgical: 'Surgical', optometry: 'Core Optometry', specialty: 'Specialty Services' };
@@ -1354,10 +1602,11 @@ function renderDossier() {
     if (d.services?.missingHighValue?.length > 0) {
         svcHtml.push(`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--surface-alt)"><span class="dossier-row-label" style="font-size:11px;color:var(--danger);text-transform:uppercase;letter-spacing:.5px">Not Found on Your Site</span><div style="margin-top:4px">${d.services.missingHighValue.map(l => `<span class="dossier-tag tag-red">${l}</span>`).join(' ')}</div></div>`);
     }
-    if (svcHtml.length === 0) svcHtml.push('<div style="font-size:13px;color:var(--text-muted)">Connect Apify for full service detection</div>');
+    if (svcHtml.length === 0) svcHtml.push('<div style="font-size:13px;color:var(--text-muted)">No services detected</div>');
     document.getElementById('dossierServices').innerHTML = svcHtml.join('');
+    document.getElementById('accServicesSummary').textContent = `${d.services?.detected?.length || 0} services found`;
 
-    // ─── Digital infrastructure card ───
+    // ─── Digital infrastructure (accordion) ───
     const digRows = [];
     digRows.push(['Website Platform', d.digital?.cms?.name || 'Not detected']);
     digRows.push(['Marketing Vendor', d.digital?.marketingVendor ? (() => {
@@ -1384,6 +1633,11 @@ function renderDossier() {
     document.getElementById('dossierDigital').innerHTML = digRows.map(([l, v]) =>
         `<div class="dossier-row"><span class="dossier-row-label">${l}</span><span class="dossier-row-value">${v}</span></div>`
     ).join('');
+    // Digital summary
+    const digParts = [];
+    if (d.digital?.cms?.name) digParts.push(d.digital.cms.name);
+    if (d.social?.platformCount > 0) digParts.push(`${d.social.platformCount} social`);
+    document.getElementById('accDigitalSummary').textContent = digParts.join(' + ') || 'View details';
 
     // ─── Scores ───
     const scores = [];
@@ -1410,14 +1664,150 @@ function renderDossier() {
         </div>`;
     }).join('');
 
-    // ─── Gaps ───
-    const gaps = (d.gaps || []).slice(0, 8); // Show top 8
+    // ─── Gaps (accordion - open by default) ───
+    const gaps = (d.gaps || []).slice(0, 8);
     document.getElementById('dossierGaps').innerHTML = gaps.map(g =>
         `<li class="dossier-gap-item">
             <div class="gap-severity gap-${g.severity}"></div>
             <span>${g.finding}</span>
         </li>`
     ).join('');
+    document.getElementById('accFindingsSummary').textContent = `${gaps.length} finding${gaps.length !== 1 ? 's' : ''}`;
+}
+
+// ─── NARRATIVE GENERATOR ─────────────────────────────────────
+function generateNarrative(d) {
+    const name = d.practice?.name || 'Your practice';
+    const type = d.practice?.type;
+    const lh = lighthouseData;
+    const doctorCount = d.doctors?.length || 0;
+    const mdCount = (d.doctors || []).filter(dr => dr.type === 'ophthalmologist').length;
+    const odCount = (d.doctors || []).filter(dr => dr.type === 'optometrist').length;
+    const svcCount = d.services?.detected?.length || 0;
+    const missingCount = d.services?.missingHighValue?.length || 0;
+    const hasScheduling = d.digital?.scheduling?.hasOnlineScheduling;
+    const hasBlog = d.content?.blogExists;
+    const socialCount = d.social?.platformCount || 0;
+    const overallScore = d.scores?.overall || 0;
+
+    let html = '<p>';
+
+    // Opening — who they are
+    html += `We took a close look at <strong>${name}</strong> and here's what we see: `;
+
+    // Practice type + team
+    if (type === 'multi_specialty') {
+        html += `you're running a <strong>multi-specialty eye care practice</strong>`;
+        if (mdCount && odCount) html += ` with both ophthalmologists and optometrists on staff`;
+    } else if (type === 'ophthalmology') {
+        html += `you're an <strong>ophthalmology practice</strong>`;
+        if (mdCount > 1) html += ` with a team of ${mdCount} surgeons`;
+    } else if (type === 'optometry') {
+        html += `you're an <strong>optometry practice</strong>`;
+    } else {
+        html += `you're an <strong>eye care practice</strong>`;
+    }
+
+    if (doctorCount > 0) {
+        const names = d.doctors.slice(0, 3).map(dr => `Dr. ${dr.name.split(' ').pop()}`);
+        if (doctorCount <= 3) {
+            html += ` — led by ${names.join(', ')}`;
+        } else {
+            html += ` — including ${names.join(', ')}, and ${doctorCount - 3} more`;
+        }
+    }
+    html += '.</p>';
+
+    // Services story
+    if (svcCount > 0) {
+        html += '<p>';
+        const cats = Object.keys(d.services?.categories || {});
+        if (cats.includes('surgical') || cats.includes('comanagement')) {
+            if (cats.includes('surgical')) {
+                const surgicalSvcs = d.services.categories.surgical || [];
+                html += `You offer a strong surgical program`;
+                if (surgicalSvcs.length > 0) html += ` — including ${surgicalSvcs.slice(0, 3).join(', ').toLowerCase()}`;
+                html += ` — alongside comprehensive eye care`;
+            } else {
+                html += `You provide <strong>comprehensive eye care</strong> with surgical co-management referrals`;
+            }
+        } else {
+            html += `We found <strong>${svcCount} services</strong> on your website`;
+        }
+        if (cats.includes('specialty')) {
+            const specialtySvcs = d.services.categories.specialty || [];
+            html += `, plus specialty services like ${specialtySvcs.slice(0, 2).join(' and ').toLowerCase()}`;
+        }
+        html += '.';
+        if (missingCount > 0) {
+            html += ` That said, there are <strong>${missingCount} high-value service${missingCount > 1 ? 's' : ''}</strong> we didn't find on your site — that's potential revenue you may be leaving on the table.`;
+        }
+        html += '</p>';
+    }
+
+    // Digital presence story
+    html += '<p>';
+    const strengths = [];
+    const weaknesses = [];
+
+    if (lh?.seo >= 80) strengths.push('strong SEO fundamentals');
+    else if (lh?.seo < 70) weaknesses.push('SEO needs attention');
+
+    if (lh?.performance >= 80) strengths.push('fast site speed');
+    else if (lh?.performance < 50) weaknesses.push('slow page load times');
+
+    if (socialCount >= 3) strengths.push('active social media presence');
+    else if (socialCount === 0) weaknesses.push('no social media presence');
+
+    if (hasScheduling) strengths.push('online booking');
+    else weaknesses.push('no online scheduling');
+
+    if (hasBlog) strengths.push('a blog');
+    else weaknesses.push('no content marketing');
+
+    if (strengths.length > 0) {
+        html += `On the digital side, you've got some things working well — <strong>${strengths.join(', ')}</strong>.`;
+    }
+    if (weaknesses.length > 0) {
+        html += ` But ${strengths.length > 0 ? 'we also see gaps' : 'there are clear gaps'}: <strong>${weaknesses.join(', ')}</strong>.`;
+    }
+
+    // EyeCarePro client note
+    if (d.digital?.isEyeCarePro) {
+        html += ` We also noticed you're already an EyeCarePro client — so we'll factor that in as we look at opportunities to level up your current setup.`;
+    } else if (d.digital?.isCompetitorClient) {
+        html += ` We see you're currently with <strong>${d.digital.competitorName || d.digital.marketingVendor?.name}</strong> for marketing. We'll show you where there may be room for improvement.`;
+    }
+    html += '</p>';
+
+    // Closing hook
+    html += '<p>';
+    if (overallScore >= 70) {
+        html += `Overall, you're in <strong>solid shape</strong> — but there are still untapped growth opportunities we want to show you.`;
+    } else if (overallScore >= 40) {
+        html += `You have a <strong>good foundation</strong>, but there's meaningful room to grow. Let's show you where the biggest opportunities are.`;
+    } else {
+        html += `There's a lot of <strong>untapped potential</strong> here. The good news? The biggest gaps are also the biggest opportunities for growth.`;
+    }
+    html += '</p>';
+
+    return html;
+}
+
+// ─── ACCORDION TOGGLE ────────────────────────────────────────
+function toggleAccordion(id) {
+    document.getElementById(id).classList.toggle('open');
+}
+
+// ─── CORRECTION BOX ──────────────────────────────────────────
+function showCorrectionBox() {
+    document.getElementById('correctionBox').classList.add('visible');
+    document.getElementById('correctionText').focus();
+}
+
+function submitCorrections() {
+    userAnswers.corrections = document.getElementById('correctionText').value.trim();
+    goToStrategic();
 }
 
 function scoreColor(val) {
