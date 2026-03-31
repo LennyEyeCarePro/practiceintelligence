@@ -1456,7 +1456,6 @@ function renderStep1() {
     const idRows = [];
     idRows.push(['Practice Name', `<strong>${d.practice?.name || 'Not detected'}</strong>`]);
     idRows.push(['Practice Type', formatPracticeType(d.practice?.type)]);
-    if (d.practice?.subType) idRows.push(['Practice Size', formatSubType(d.practice.subType)]);
     if (d.locations?.count > 0) idRows.push(['Locations', String(d.locations.count)]);
     if (d.locations?.phones?.length > 0) idRows.push(['Phone', d.locations.phones[0]]);
     if (d.locations?.addresses?.length > 0) idRows.push(['Address', d.locations.addresses[0]]);
@@ -1829,7 +1828,6 @@ function renderFullStory() {
     // Identity accordion
     const idRows = [];
     idRows.push(['Practice Type', formatPracticeType(d.practice?.type)]);
-    if (d.practice?.subType) idRows.push(['Practice Size', formatSubType(d.practice.subType)]);
     if (d.locations?.count > 0) idRows.push(['Locations', String(d.locations.count)]);
     if (d.locations?.phones?.length > 0) idRows.push(['Phone', d.locations.phones[0]]);
     if (d.locations?.addresses?.length > 0) idRows.push(['Address', d.locations.addresses[0]]);
