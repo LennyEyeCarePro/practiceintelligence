@@ -1432,6 +1432,7 @@ function updateBgAnalysisBar() {
 
 // ─── APIFY COMPLETE → Show Step 1 ──────────────────────────
 function onApifyComplete() {
+    updateBgAnalysisBar();
     if (!dossier) {
         // Fallback
         runFallbackScraper(userAnswers.url).then(fb => {
