@@ -1437,11 +1437,74 @@ function onApifyComplete() {
         // Fallback
         runFallbackScraper(userAnswers.url).then(fb => {
             dossier = fb;
+            if (isNonEyeCare(dossier)) { renderNonEyeCareRedirect(); return; }
             renderStep1();
         });
         return;
     }
+    if (isNonEyeCare(dossier)) { renderNonEyeCareRedirect(); return; }
     renderStep1();
+}
+
+// ─── NON-EYE-CARE DETECTION ─────────────────────────────────
+function isNonEyeCare(d) {
+    if (!d) return true;
+    const hasKnownType = d.practice?.type && d.practice.type !== 'unknown';
+    const hasDoctors = d.doctors?.length > 0;
+    const hasServices = d.services?.totalCount > 0 || d.services?.detected?.length > 0;
+    const hasEyeCareVendor = !!d.digital?.marketingVendor;
+    const hasEyeCareEhr = !!d.digital?.ehr;
+    return !hasKnownType && !hasDoctors && !hasServices && !hasEyeCareVendor && !hasEyeCareEhr;
+}
+
+function renderNonEyeCareRedirect() {
+    // Hide step progress bar and analysis bar
+    document.querySelector('.step-progress').style.display = 'none';
+    document.getElementById('bgAnalysisBar').style.display = 'none';
+
+    const container = document.getElementById('stepContainer');
+    container.innerHTML = `
+        <div class="dossier-card" style="text-align:center;padding:48px 32px;">
+            <div style="font-size:48px;margin-bottom:16px;">🔍</div>
+            <h2 style="font-size:22px;font-weight:700;color:var(--brand);margin-bottom:12px;">
+                This Tool Is Built for Eye Care Practices
+            </h2>
+            <p style="color:var(--text-secondary);font-size:15px;line-height:1.6;max-width:480px;margin:0 auto 24px;">
+                Our Practice Growth Assessment is specifically designed for optometry and ophthalmology practices.
+                We weren't able to detect eye care signals on <strong>${userAnswers.url}</strong>.
+            </p>
+            <p style="color:var(--text-secondary);font-size:14px;line-height:1.6;max-width:480px;margin:0 auto 32px;">
+                If you're in a different healthcare vertical, a potential partner, or believe this is a mistake — we'd love to chat.
+            </p>
+            <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
+                <a href="https://calendly.com/lennyblockecp/45-minutes-get-know-you" target="_blank" rel="noopener"
+                   style="display:inline-flex;align-items:center;gap:8px;background:var(--brand);color:#fff;padding:14px 32px;border-radius:var(--radius);font-weight:600;font-size:15px;text-decoration:none;transition:background .2s;">
+                    📅 Schedule a Call
+                </a>
+                <button onclick="resetToStart()" style="background:none;border:1px solid var(--border);color:var(--text-secondary);padding:10px 24px;border-radius:var(--radius);font-size:14px;cursor:pointer;font-family:var(--font);transition:border-color .2s;">
+                    ← Try Another Website
+                </button>
+            </div>
+        </div>`;
+}
+
+function resetToStart() {
+    // Reset state and go back to screen 1
+    dossier = null;
+    lighthouseData = null;
+    apifyDone = false;
+    lighthouseDone = false;
+    userAnswers = {};
+    document.getElementById('inName').value = '';
+    document.getElementById('inEmail').value = '';
+    document.getElementById('inUrl').value = '';
+    const btn = document.getElementById('btnAnalyze');
+    btn.disabled = false;
+    btn.textContent = 'Analyze My Practice';
+    // Restore step progress bar visibility
+    document.querySelector('.step-progress').style.display = '';
+    document.getElementById('bgAnalysisBar').style.display = '';
+    showScreen(1);
 }
 
 // ═══════════════════════════════════════════════════════════
