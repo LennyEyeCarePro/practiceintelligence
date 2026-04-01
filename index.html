@@ -1968,30 +1968,39 @@ function renderFullStory() {
     if (d.social?.platformCount > 0) digParts.push(`${d.social.platformCount} social`);
     document.getElementById('accDigitalSummary').textContent = digParts.join(' + ') || 'View details';
 
-    // Scores
-    const scores = [];
-    if (lighthouseData && !d.digital?.isEyeCarePro) {
-        scores.push({ label: 'Performance', value: lighthouseData.performance, color: scoreColor(lighthouseData.performance) });
-        scores.push({ label: 'SEO', value: lighthouseData.seo, color: scoreColor(lighthouseData.seo) });
-        scores.push({ label: 'Accessibility', value: lighthouseData.accessibility, color: scoreColor(lighthouseData.accessibility) });
-    }
-    scores.push({ label: 'Digital', value: d.scores?.digitalPresence || 0, color: scoreColor(d.scores?.digitalPresence || 0) });
-    scores.push({ label: 'Content', value: d.scores?.contentQuality || 0, color: scoreColor(d.scores?.contentQuality || 0) });
-    scores.push({ label: 'Patient Exp', value: d.scores?.patientExperience || 0, color: scoreColor(d.scores?.patientExperience || 0) });
+    // Scores (hidden entirely for EyeCarePro clients)
+    const isECP = d.digital?.isEyeCarePro;
+    const dossierScoresEl = document.getElementById('dossierScores');
+    const scoresCard = dossierScoresEl.closest('.dossier-card');
+    if (isECP) {
+        scoresCard.style.display = 'none';
+    } else {
+        scoresCard.style.display = '';
+        dossierScoresEl.style.display = '';
+        const scores = [];
+        if (lighthouseData) {
+            scores.push({ label: 'Performance', value: lighthouseData.performance, color: scoreColor(lighthouseData.performance) });
+            scores.push({ label: 'SEO', value: lighthouseData.seo, color: scoreColor(lighthouseData.seo) });
+            scores.push({ label: 'Accessibility', value: lighthouseData.accessibility, color: scoreColor(lighthouseData.accessibility) });
+        }
+        scores.push({ label: 'Digital', value: d.scores?.digitalPresence || 0, color: scoreColor(d.scores?.digitalPresence || 0) });
+        scores.push({ label: 'Content', value: d.scores?.contentQuality || 0, color: scoreColor(d.scores?.contentQuality || 0) });
+        scores.push({ label: 'Patient Exp', value: d.scores?.patientExperience || 0, color: scoreColor(d.scores?.patientExperience || 0) });
 
-    document.getElementById('dossierScores').innerHTML = scores.map(s => {
-        const circumference = 2 * Math.PI * 27;
-        const offset = circumference * (1 - s.value / 100);
-        return `<div class="score-ring-item">
-            <svg class="score-ring-svg" viewBox="0 0 64 64">
-                <circle class="score-ring-bg" cx="32" cy="32" r="27"/>
-                <circle class="score-ring-fill" cx="32" cy="32" r="27"
-                    stroke="${s.color}" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"/>
-                <text class="score-ring-text" x="32" y="32">${s.value}</text>
-            </svg>
-            <div class="ring-label">${s.label}</div>
-        </div>`;
-    }).join('');
+        dossierScoresEl.innerHTML = scores.map(s => {
+            const circumference = 2 * Math.PI * 27;
+            const offset = circumference * (1 - s.value / 100);
+            return `<div class="score-ring-item">
+                <svg class="score-ring-svg" viewBox="0 0 64 64">
+                    <circle class="score-ring-bg" cx="32" cy="32" r="27"/>
+                    <circle class="score-ring-fill" cx="32" cy="32" r="27"
+                        stroke="${s.color}" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"/>
+                    <text class="score-ring-text" x="32" y="32">${s.value}</text>
+                </svg>
+                <div class="ring-label">${s.label}</div>
+            </div>`;
+        }).join('');
+    }
 
     // Gaps
     const gaps = (d.gaps || []).slice(0, 8);
