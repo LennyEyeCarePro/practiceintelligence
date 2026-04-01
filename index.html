@@ -2380,13 +2380,30 @@ function showResults() {
     // ── Insights (Growth Opportunities) ──
     const insights = generateInsights(d);
     const insightsContainer = document.getElementById('resultsInsights');
-    insightsContainer.innerHTML = `<div class="results-section-title">${isECP ? 'Where Your Program Can Do More' : 'Growth Opportunities'}</div>` +
-        insights.map(ins => `
+    if (insights.length > 0) {
+        insightsContainer.style.display = '';
+        insightsContainer.innerHTML = `<div class="results-section-title">${isECP ? 'Where Your Program Can Do More' : 'Growth Opportunities'}</div>` +
+            insights.map(ins => `
+                <div class="results-insight">
+                    <div class="insight-icon ${ins.iconClass}">${ins.icon}</div>
+                    <div class="insight-text"><strong>${ins.title}</strong><br>${ins.text}</div>
+                </div>
+            `).join('');
+    } else if (isECP) {
+        // Well-equipped ECP client — acknowledge strength, suggest optimization
+        insightsContainer.style.display = '';
+        insightsContainer.innerHTML = `<div class="results-section-title">Your Digital Program Is Well-Positioned</div>
             <div class="results-insight">
-                <div class="insight-icon ${ins.iconClass}">${ins.icon}</div>
-                <div class="insight-text"><strong>${ins.title}</strong><br>${ins.text}</div>
+                <div class="insight-icon insight-icon-green">✅</div>
+                <div class="insight-text"><strong>Strong foundation across the board</strong><br>Your website covers your services, you have online scheduling, active social media, and content in place. The next level of growth comes from <strong>optimization</strong> — conversion rate improvements, advanced SEO, patient recall automation, and ensuring every page is working as hard as your clinical team.</div>
             </div>
-        `).join('');
+            <div class="results-insight">
+                <div class="insight-icon insight-icon-blue">📊</div>
+                <div class="insight-text"><strong>Data-driven next steps</strong><br>With the foundation handled, the highest-ROI investments are in analytics-driven optimization: which pages convert, which services are searched most in your market, and where patients drop off before booking. A strategy review can identify exactly where to push next.</div>
+            </div>`;
+    } else {
+        insightsContainer.style.display = 'none';
+    }
 
     // ── Missing Revenue ──
     const missing = generateMissingRevenue(d);
