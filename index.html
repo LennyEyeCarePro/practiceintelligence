@@ -1413,6 +1413,7 @@ async function startAnalysis() {
 // ─── BACKGROUND ANALYSIS BAR ────────────────────────────────
 function updateBgAnalysisBar() {
     const bar = document.getElementById('bgAnalysisBar');
+    if (!bar) return;
     const text = document.getElementById('bgAnalysisText');
 
     if (apifyDone && lighthouseDone) {
@@ -1421,6 +1422,7 @@ function updateBgAnalysisBar() {
         return;
     }
 
+    if (!text) return;
     if (apifyDone && !lighthouseDone) {
         text.textContent = 'Website crawl complete — running performance audit...';
     } else if (!apifyDone && lighthouseDone) {
@@ -1501,9 +1503,12 @@ function resetToStart() {
     const btn = document.getElementById('btnAnalyze');
     btn.disabled = false;
     btn.textContent = 'Analyze My Practice';
-    // Restore step progress bar visibility
+    // Restore step progress bar and analysis bar to original state
     document.querySelector('.step-progress').style.display = '';
-    document.getElementById('bgAnalysisBar').style.display = '';
+    const bgBar = document.getElementById('bgAnalysisBar');
+    bgBar.style.display = '';
+    bgBar.classList.remove('complete');
+    bgBar.innerHTML = '<div class="spinner"></div><span id="bgAnalysisText">Analyzing your practice website...</span>';
     showScreen(1);
 }
 
