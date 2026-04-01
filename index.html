@@ -1096,7 +1096,7 @@ body {
         <!-- Background analysis indicator -->
         <div class="bg-analysis-bar" id="bgAnalysisBar">
             <div class="spinner"></div>
-            <span id="bgAnalysisText">Analyzing your practice website...</span>
+            <span id="bgAnalysisText">Gathering data about your practice...</span>
         </div>
 
         <!-- Step containers — revealed progressively -->
@@ -1391,6 +1391,46 @@ const ECP_PACKAGES = {
     },
 };
 
+// ─── OPHTHALMOLOGY-SPECIFIC DATA ──────────────────────────
+const EYEMDPRO_PACKAGES = {
+    silver: { name: 'EyeMDPRO Silver', description: 'Single surgeon / small practice' },
+    gold:   { name: 'EyeMDPRO Gold',   description: 'Multi-surgeon or multi-location ophthalmology' },
+};
+
+const OPHTHALMOLOGY_SERVICES = {
+    surgical: [
+        { id: 'cataract',            label: 'Cataract Surgery' },
+        { id: 'premium_iol',         label: 'Premium IOLs (Multifocal, Toric, EDOF)' },
+        { id: 'lasik',               label: 'LASIK / Refractive Surgery' },
+        { id: 'retina',              label: 'Retinal Surgery & Treatment' },
+        { id: 'glaucoma_surgery',    label: 'Glaucoma Surgery (MIGS, SLT, Trabeculectomy)' },
+        { id: 'corneal_transplant',  label: 'Corneal Transplant' },
+        { id: 'oculoplastics',       label: 'Oculoplastics / Eyelid Surgery' },
+        { id: 'strabismus',          label: 'Strabismus Surgery' },
+    ],
+    medical: [
+        { id: 'retina_medical',      label: 'Medical Retina (Injections, DME, AMD)' },
+        { id: 'glaucoma_medical',    label: 'Glaucoma Management' },
+        { id: 'cornea',              label: 'Cornea & External Disease' },
+        { id: 'neuro_ophthalmology', label: 'Neuro-Ophthalmology' },
+        { id: 'uveitis',             label: 'Uveitis' },
+        { id: 'pediatric',           label: 'Pediatric Ophthalmology' },
+        { id: 'dry_eye',             label: 'Dry Eye Treatment' },
+    ],
+    optometry: [
+        { id: 'myopia',              label: 'Myopia Management' },
+        { id: 'scleral_lens',        label: 'Scleral Lens Fitting' },
+        { id: 'vision_therapy',      label: 'Vision Therapy' },
+        { id: 'contact_lens',        label: 'Contact Lens Fitting' },
+    ],
+};
+
+// Helper: is this an ophthalmology or multi-specialty practice?
+function isOphthalmologyPractice(d) {
+    const type = d?.practice?.type;
+    return type === 'ophthalmology' || type === 'multi_specialty';
+}
+
 // ─── URL NORMALIZATION ──────────────────────────────────────
 function normalizeUrl() {
     const input = document.getElementById('inUrl');
@@ -1487,11 +1527,11 @@ function updateBgAnalysisBar() {
 
     if (!text) return;
     if (apifyDone && !lighthouseDone) {
-        text.textContent = 'Website crawl complete — running performance audit...';
+        text.textContent = 'Data collected — running performance audit...';
     } else if (!apifyDone && lighthouseDone) {
-        text.textContent = 'Performance audit done — still crawling your website...';
+        text.textContent = 'Still gathering data...';
     } else {
-        text.textContent = 'Analyzing your practice website...';
+        text.textContent = 'Gathering data about your practice...';
     }
 }
 
@@ -1571,7 +1611,7 @@ function resetToStart() {
     const bgBar = document.getElementById('bgAnalysisBar');
     bgBar.style.display = '';
     bgBar.classList.remove('complete');
-    bgBar.innerHTML = '<div class="spinner"></div><span id="bgAnalysisText">Analyzing your practice website...</span>';
+    bgBar.innerHTML = '<div class="spinner"></div><span id="bgAnalysisText">Gathering data about your practice...</span>';
     showScreen(1);
 }
 
@@ -2141,62 +2181,58 @@ function generateNarrative(d) {
     if (!isECP && lh?.seo >= 80) strengths.push('strong SEO fundamentals');
 
     if (strengths.length > 0) {
-        html += `<p>You're already doing some important things well: <strong>${strengths.join(', ')}</strong>. That foundation matters — it means the practice has invested in growth.`;
+        html += `<p>A few things stand out right away: <strong>${strengths.join(', ')}</strong>. That's a meaningful foundation — it tells us the practice has already invested in being accessible to patients digitally.`;
         html += '</p>';
     }
 
-    // ── SECTION 2: The Revenue Gap (consultative, not critical) ──
-    const gaps = [];
-    const revenueEstimates = [];
+    // ── SECTION 2: Observations & Questions (consultative, curious) ──
+    const isOphth = isOphthalmologyPractice(d);
+    const observations = [];
 
-    missingHV.forEach(svc => {
-        const key = svc.replace(/\s+/g, '').toLowerCase();
-        if (key.includes('dryeye')) {
-            gaps.push('dedicated dry eye care');
-            revenueEstimates.push(`Dry eye alone represents $${INDUSTRY.specialty.dryEye.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.dryEye.perPatientYear[1].toLocaleString()} per patient per year`);
-        } else if (key.includes('myopia')) {
-            gaps.push('myopia management');
-            revenueEstimates.push(`Myopia management programs generate $${INDUSTRY.specialty.myopia.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.myopia.perPatientYear[1].toLocaleString()} annually per enrolled child`);
-        } else if (key.includes('scleral')) {
-            gaps.push('scleral lens services');
-        } else if (key.includes('visiontherapy')) {
-            gaps.push('vision therapy');
-        } else if (key.includes('premiumiol') || key.includes('premium')) {
-            gaps.push('premium IOL education for patients');
-            revenueEstimates.push(`Premium cataract conversions average $${INDUSTRY.surgical.premiumCataract.perEye[0].toLocaleString()}–$${INDUSTRY.surgical.premiumCataract.perEye[1].toLocaleString()} per eye`);
-        }
-    });
-
-    if (!hasScheduling) {
-        gaps.push('online scheduling');
-        revenueEstimates.push(`${Math.round(INDUSTRY.benchmarks.patientsPreferOnlineBooking * 100)}% of patients prefer to book online — without it, after-hours searches convert to your competitors`);
+    // Service observations — framed as questions, practice-type-aware
+    if (isOphth) {
+        if (missingHV.some(s => /premium|iol/i.test(s))) observations.push('premium IOL patient education');
+        if (missingHV.some(s => /retina|macular|amd/i.test(s))) observations.push('retinal services');
+        if (missingHV.some(s => /glaucoma/i.test(s))) observations.push('glaucoma management');
+        if (missingHV.some(s => /lasik|refractive/i.test(s))) observations.push('LASIK/refractive surgery');
+        if (missingHV.some(s => /oculoplastic|eyelid/i.test(s))) observations.push('oculoplastics');
+        if (missingHV.some(s => /dry.?eye/i.test(s))) observations.push('dry eye treatment');
+    } else {
+        if (missingHV.some(s => /dry.?eye/i.test(s))) observations.push('dry eye care');
+        if (missingHV.some(s => /myopia/i.test(s))) observations.push('myopia management');
+        if (missingHV.some(s => /scleral/i.test(s))) observations.push('scleral lens services');
+        if (missingHV.some(s => /vision.?therapy/i.test(s))) observations.push('vision therapy');
     }
-    if (socialCount === 0) gaps.push('any social media presence');
-    else if (socialCount < 2) gaps.push('a consistent social media strategy');
-    if (!hasBlog) gaps.push('content marketing');
-    if (!isECP && lh && lh.performance < 50) gaps.push('site speed optimization');
 
-    if (gaps.length > 0) {
+    // Digital observations
+    if (!hasScheduling) observations.push('online scheduling');
+
+    if (observations.length > 0) {
         html += '<p>';
-        html += `Here's where we see <strong>revenue being left on the table</strong>: the practice is missing ${gaps.slice(0, 3).join(', ')}${gaps.length > 3 ? `, and ${gaps.length - 3} more areas` : ''}.`;
-        if (revenueEstimates.length > 0) {
-            html += ` To put that in context — ${revenueEstimates[0]}.`;
+        const svcObs = observations.filter(o => !['online scheduling'].includes(o));
+        if (svcObs.length > 0) {
+            html += `Something we found interesting — <strong>${svcObs.slice(0, 3).join(', ')}</strong>${svcObs.length > 3 ? ` and ${svcObs.length - 3} other areas` : ''} ${svcObs.length === 1 ? 'doesn\'t appear' : 'don\'t appear'} to have a strong presence on your website. `;
+            html += `<strong>We're curious — are these services you offer in-practice but haven't showcased online yet?</strong> `;
+            html += `It's a question worth exploring, because patients in your area are actively searching for these services.`;
+        }
+        if (!hasScheduling) {
+            html += ` We also noticed online scheduling doesn't seem to be set up yet — have you considered it? With ${Math.round(INDUSTRY.benchmarks.patientsPreferOnlineBooking * 100)}% of patients preferring to book online, practices that add it often see an immediate lift.`;
         }
         html += '</p>';
     }
 
-    // ── SECTION 3: Root Cause (strategic, not accusatory) ──
+    // ── SECTION 3: The Bigger Question (curious, not accusatory) ──
     html += '<p>';
     if (isECP) {
-        html += `You're already an EyeCarePro client, which means your digital foundation is handled. The question now is whether your current program is <strong>fully leveraging what's available</strong> — specialty landing pages, advanced SEO, patient recalls, and the tools that turn website visitors into booked appointments.`;
+        html += `Since you're already an EyeCarePro client, the digital foundation is in place. The question that's worth exploring: <strong>is your current program fully reflecting what the practice is capable of?</strong> Specialty landing pages, advanced SEO, patient recalls — there may be tools already available to you that could be doing more.`;
     } else if (d.digital?.isCompetitorClient) {
-        html += `Your current marketing provider, <strong>${d.digital.competitorName || d.digital.marketingVendor?.name}</strong>, is handling the basics. But the gaps above suggest the strategy may not be keeping pace with the practice's clinical capabilities. ${userPain ? `You mentioned that <em>"${userPain.toLowerCase()}"</em> — that's a sign the current approach needs recalibration.` : 'When the digital presence doesn\'t match the clinical offering, patients never discover what makes your practice different.'}`;
+        html += `We can see that <strong>${d.digital.competitorName || d.digital.marketingVendor?.name}</strong> is managing your marketing. ${userPain ? `You mentioned that <em>"${userPain.toLowerCase()}"</em> — have you had a chance to discuss that with them?` : 'Here\'s what we\'d ask: is the digital strategy keeping pace with what your clinical team is capable of?'} When the website doesn't reflect the full scope of what a practice offers, patients make decisions based on incomplete information.`;
     } else {
         if (userPain) {
-            html += `You mentioned that <em>"${userPain.toLowerCase()}"</em> — `;
-            html += `this is often a symptom of a deeper issue: the practice's <strong>clinical excellence isn't translating into digital visibility</strong>. Patients can't choose you if they can't find you.`;
+            html += `You mentioned that <em>"${userPain.toLowerCase()}"</em> — that's something we hear from a lot of practices. `;
+            html += `It often comes down to a gap between <strong>clinical capability and digital visibility</strong>. The expertise is there — the question is whether patients can find it.`;
         } else {
-            html += `The common thread in these gaps is that <strong>clinical excellence alone doesn't drive growth</strong>. The practices that are winning in your market are the ones making it easy for patients to discover, evaluate, and book — before they ever walk through the door.`;
+            html += `Here's what we find fascinating about practices like yours: the clinical depth is clearly there. <strong>The question is whether your digital presence is telling that story.</strong> The practices growing fastest in your market are the ones making it effortless for patients to discover, evaluate, and book online.`;
         }
     }
     html += '</p>';
@@ -2382,7 +2418,7 @@ function showResults() {
     const insightsContainer = document.getElementById('resultsInsights');
     if (insights.length > 0) {
         insightsContainer.style.display = '';
-        insightsContainer.innerHTML = `<div class="results-section-title">${isECP ? 'Where Your Program Can Do More' : 'Growth Opportunities'}</div>` +
+        insightsContainer.innerHTML = `<div class="results-section-title">${isECP ? 'Where Your Program Can Do More' : 'What We Noticed'}</div>` +
             insights.map(ins => `
                 <div class="results-insight">
                     <div class="insight-icon ${ins.iconClass}">${ins.icon}</div>
@@ -2410,7 +2446,7 @@ function showResults() {
     const missingContainer = document.getElementById('resultsMissing');
     if (missing.length > 0) {
         missingContainer.style.display = '';
-        missingContainer.innerHTML = `<div class="results-section-title">${isECP ? 'Untapped Revenue in Your Current Program' : 'Revenue You\'re Leaving on the Table'}</div>` +
+        missingContainer.innerHTML = `<div class="results-section-title">${isECP ? 'Untapped Revenue in Your Current Program' : 'Revenue Potential — If These Services Are in Play'}</div>` +
             missing.map(m => `
                 <div class="results-insight">
                     <div class="insight-icon insight-icon-amber">💰</div>
@@ -2436,7 +2472,7 @@ function showResults() {
         reflectionEl.style.display = 'none';
     }
 
-    // ── CTA (ECP-aware) ──
+    // ── CTA (practice-type and relationship-aware) ──
     const ctaTitle = document.getElementById('ctaTitle');
     const ctaSub = document.getElementById('ctaSub');
     if (isECP) {
@@ -2445,8 +2481,11 @@ function showResults() {
     } else if (d.digital?.isCompetitorClient) {
         ctaTitle.textContent = 'Ready to see what a strategic partner looks like?';
         ctaSub.textContent = 'Book a free 30-minute consultation. We\'ll walk through your results and show you what\'s possible.';
+    } else if (isOphthalmologyPractice(d)) {
+        ctaTitle.textContent = 'Let\'s talk about your digital strategy';
+        ctaSub.textContent = 'Book a complimentary consultation. We\'ll discuss what we found and how EyeMDPRO helps ophthalmology practices grow.';
     } else {
-        ctaTitle.textContent = 'Ready to close these gaps?';
+        ctaTitle.textContent = 'Let\'s discuss what we found';
         ctaSub.textContent = 'Book a free 30-minute strategy session and we\'ll walk through your results together.';
     }
 
@@ -2467,34 +2506,34 @@ function generateReflection(d) {
     // Pick the most resonant reflection based on context
     if (isECP) {
         if (missingHV.length >= 2) {
-            return `Your EyeCarePro program handles your digital foundation well. But with ${missingHV.length} high-value services not yet visible online, is the current setup capturing the full revenue potential of what ${name} offers in-practice?`;
+            return `Here's something worth thinking about: your EyeCarePro program handles the digital foundation well, but ${missingHV.length} services that you may offer aren't visible online yet. What would it look like if every service ${name} provides was easy to find?`;
         }
-        return `Your website is built on a solid platform. The question is whether it's working as hard as your clinical team — bringing in the right patients, for the right services, at the right time.`;
+        return `Your website is built on a solid platform. But here's what we'd love to explore with you: is it working as hard as your clinical team? Is it bringing in the right patients, for the right services, at the right time?`;
     }
 
     if (type === 'ophthalmology' || type === 'multi_specialty') {
         if (missingHV.some(s => s.toLowerCase().includes('premium'))) {
-            return `If ${name} could convert just a small percentage more cataract patients to premium IOLs through better patient education and digital visibility — what would that mean for the practice this year?`;
+            return `Here's a question we think is worth sitting with: what would it look like if even a small percentage more of your cataract patients chose premium IOLs — because they understood their options before the consultation? What would that mean for ${name} this year?`;
         }
         if (providerCount >= 3) {
-            return `With ${providerCount} providers and ${locCount > 1 ? locCount + ' locations' : 'a growing team'}, ${name} has the clinical capacity. The question is whether your digital presence is filling that capacity with the patients who need you most.`;
+            return `With ${providerCount} providers${locCount > 1 ? ' across ' + locCount + ' locations' : ''}, ${name} clearly has the clinical capacity. The interesting question is: is your digital presence filling that capacity with the patients who need what you uniquely offer?`;
         }
     }
 
     if (userGoal.toLowerCase().includes('specialty') || userGoal.toLowerCase().includes('dry eye') || userGoal.toLowerCase().includes('myopia')) {
-        return `Specialty services are where the highest per-patient revenue lives. But if patients can't find your expertise online, they'll choose whoever shows up first. What would it mean for ${name} if those patients found you instead?`;
+        return `Specialty services are where the highest per-patient revenue lives — but only when patients can find your expertise. What would it look like for ${name} if the patients searching for those services in your area landed on your site instead of a competitor's?`;
     }
 
     if (userGoal.toLowerCase().includes('patient') || userGoal.toLowerCase().includes('volume')) {
-        return `Every practice wants more patients — but the real question is whether you're attracting the right patients for the services that matter most to your bottom line. What does the ideal new patient look like for ${name}?`;
+        return `Here's what we'd ask: is the goal simply more patients, or more of the <em>right</em> patients for the services that matter most to your bottom line? What does the ideal new patient look like for ${name}?`;
     }
 
     if (d.digital?.isCompetitorClient) {
-        return `You're investing in marketing — the question is whether that investment is returning what ${name} deserves. If the gaps in this report haven't been addressed by your current partner, it may be worth asking: what would a fully strategic approach look like?`;
+        return `You're already investing in marketing — which is smart. The question worth exploring: is that investment returning what ${name} deserves? If the opportunities in this report haven't been raised by your current partner, it might be worth a conversation about what a more proactive approach looks like.`;
     }
 
     // Default
-    return `If ${name} could capture even a fraction of the revenue identified in this report — what would that mean for the practice over the next 12 months? That's the conversation we'd like to have with you.`;
+    return `If ${name} could capture even a fraction of the opportunities identified here — what would that look like over the next 12 months? That's the kind of conversation we'd love to have with you.`;
 }
 
 function generateInsights(d) {
@@ -2502,136 +2541,184 @@ function generateInsights(d) {
     const lh = lighthouseData;
     const isECP = d.digital?.isEyeCarePro;
     const type = d.practice?.type || 'default';
+    const isOphth = isOphthalmologyPractice(d);
     const locCount = d.locations?.count || 1;
     const providerCount = d.doctors?.length || 0;
     const missingHV = d.services?.missingHighValue || [];
     const hasScheduling = d.digital?.scheduling?.hasOnlineScheduling;
 
-    // ── Specialty Revenue Opportunities (highest-value first) ──
+    // ── Service Insights (practice-type-aware, posed as questions) ──
 
-    if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) {
-        insights.push({
-            icon: '💧', iconClass: 'insight-icon-amber', priority: 10,
-            title: 'Dry Eye: A High-Revenue Service Line Not Visible on Your Site',
-            text: `Dry eye treatment generates <strong>$${INDUSTRY.specialty.dryEye.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.dryEye.perPatientYear[1].toLocaleString()} per patient per year</strong> in recurring revenue. Whether you offer it or not, patients in your market are searching for it. Without a dedicated page, that demand is going to competitors who show up first.`,
-        });
+    if (isOphth) {
+        // OPHTHALMOLOGY-SPECIFIC service insights
+        if (missingHV.some(s => s.toLowerCase().includes('premium') || s.toLowerCase().includes('iol'))) {
+            insights.push({
+                icon: '🔬', iconClass: 'insight-icon-amber', priority: 10,
+                title: 'Premium IOL Education — Are Patients Aware of Their Options?',
+                text: `We didn't find dedicated premium IOL content on your website. Many cataract patients don't know multifocal, toric, or EDOF lenses are available to them. <strong>Practices that educate patients before the consultation see significantly higher premium conversion rates.</strong> Is this something you'd like to highlight?`,
+            });
+        }
+
+        if (missingHV.some(s => /retina|macular|amd|dme/i.test(s.toLowerCase()))) {
+            insights.push({
+                icon: '👁️', iconClass: 'insight-icon-amber', priority: 9,
+                title: 'Retinal Services — Are Patients Finding Your Expertise?',
+                text: `Retinal conditions like AMD and diabetic macular edema require specialized care that patients actively search for. We didn't see dedicated retinal pages on your site — is this a service line you're looking to grow, or is the website not reflecting what you already do?`,
+            });
+        }
+
+        if (missingHV.some(s => /glaucoma/i.test(s.toLowerCase()))) {
+            insights.push({
+                icon: '🔵', iconClass: 'insight-icon-amber', priority: 9,
+                title: 'Glaucoma — Surgical and Medical Visibility',
+                text: `MIGS, SLT, and medical glaucoma management are high-value services that patients search for by name. We didn't find strong glaucoma content on your site. Is this a core offering that could use more visibility, or something you refer out?`,
+            });
+        }
+
+        if (missingHV.some(s => /oculoplastic|eyelid|blepharoplasty/i.test(s.toLowerCase()))) {
+            insights.push({
+                icon: '✨', iconClass: 'insight-icon-amber', priority: 8,
+                title: 'Oculoplastics — A Growing Cash-Pay Opportunity',
+                text: `Eyelid surgery and oculoplastics have strong patient demand, often as cash-pay procedures. We didn't see this on your site — do you offer oculoplastics, or is this a referral area? Practices with dedicated pages capture patients searching for cosmetic and functional eyelid services.`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('lasik') || s.toLowerCase().includes('refractive'))) {
+            insights.push({
+                icon: '⚡', iconClass: 'insight-icon-amber', priority: 8,
+                title: 'LASIK / Refractive Surgery — Are You Capturing This Demand?',
+                text: `Refractive surgery patients are actively researching online before choosing a surgeon. We didn't find LASIK-specific content on your site. If you perform refractive procedures, a dedicated landing page with surgeon credentials is one of the highest-converting assets you can have.`,
+            });
+        }
+
+        // Dry eye is relevant for both ophthalmology and optometry
+        if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) {
+            insights.push({
+                icon: '💧', iconClass: 'insight-icon-amber', priority: 7,
+                title: 'Dry Eye — Is This on Your Website?',
+                text: `We noticed dry eye treatment isn't prominently featured on your site. Dry eye is one of the most searched eye care conditions and generates strong recurring revenue. Do you offer dry eye services in-practice, or is this an area you're considering adding?`,
+            });
+        }
+
+    } else {
+        // OPTOMETRY-SPECIFIC service insights
+        if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) {
+            insights.push({
+                icon: '💧', iconClass: 'insight-icon-amber', priority: 10,
+                title: 'Dry Eye — Is This a Service You Offer?',
+                text: `We noticed dry eye treatment isn't visible on your website. It's one of the most searched conditions and generates <strong>$${INDUSTRY.specialty.dryEye.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.dryEye.perPatientYear[1].toLocaleString()} per patient per year</strong> in recurring revenue. Do you offer dry eye services, or is this something you're considering adding?`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('myopia'))) {
+            insights.push({
+                icon: '👁️', iconClass: 'insight-icon-amber', priority: 9,
+                title: 'Myopia Management — Do You Offer This in Practice?',
+                text: `We didn't find myopia management on your website. Parents are increasingly searching for these services, and practices with dedicated programs see <strong>$${INDUSTRY.specialty.myopia.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.myopia.perPatientYear[1].toLocaleString()} per enrolled child annually</strong>. Is this something you offer but haven't added to the site yet, or an area you're exploring?`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('scleral'))) {
+            insights.push({
+                icon: '🔵', iconClass: 'insight-icon-amber', priority: 8,
+                title: 'Scleral Lenses — A Specialty Worth Highlighting',
+                text: `We noticed scleral lens services aren't on your website. If you fit scleral lenses, a dedicated page helps patients with complex needs find your expertise — these patients are actively searching and are among the highest-value in optometry.`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('vision therapy'))) {
+            insights.push({
+                icon: '🧠', iconClass: 'insight-icon-amber', priority: 7,
+                title: 'Vision Therapy — Is This Part of Your Practice?',
+                text: `Vision therapy isn't visible on your site. If you offer it, a dedicated page captures referrals from pediatricians and schools. If not, it may be worth considering — VT practices often see strong patient loyalty and referral networks.`,
+            });
+        }
     }
 
-    if (missingHV.some(s => s.toLowerCase().includes('myopia'))) {
-        insights.push({
-            icon: '👁️', iconClass: 'insight-icon-amber', priority: 9,
-            title: 'Myopia Management: Growing Demand, No Presence on Your Site',
-            text: `Parents are actively searching for myopia management solutions. Practices with dedicated programs see <strong>$${INDUSTRY.specialty.myopia.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.myopia.perPatientYear[1].toLocaleString()} per enrolled child annually</strong> through ortho-k, atropine, and specialty lenses — with multi-year retention built in.`,
-        });
-    }
+    // ── Digital Infrastructure (relevant for all practice types) ──
 
-    if (missingHV.some(s => s.toLowerCase().includes('premium')) && (type === 'ophthalmology' || type === 'multi_specialty')) {
-        insights.push({
-            icon: '🔬', iconClass: 'insight-icon-amber', priority: 9,
-            title: 'Premium IOLs: A Conversion Opportunity Worth Capturing',
-            text: `Premium cataract lenses average <strong>$${INDUSTRY.surgical.premiumCataract.perEye[0].toLocaleString()}–$${INDUSTRY.surgical.premiumCataract.perEye[1].toLocaleString()} per eye</strong> out-of-pocket. If even 10% more cataract patients choose premium options, the revenue impact is substantial. Patient education content on your site is the first step in that conversation.`,
-        });
-    }
-
-    if (missingHV.some(s => s.toLowerCase().includes('scleral'))) {
-        insights.push({
-            icon: '🔵', iconClass: 'insight-icon-amber', priority: 8,
-            title: 'Scleral Lenses: Specialty Fitting Revenue',
-            text: `Scleral lens patients represent <strong>$${INDUSTRY.specialty.scleralLens.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.scleralLens.perPatientYear[1].toLocaleString()} per patient annually</strong>. These patients actively seek out practices with visible expertise — a dedicated page signals that you're equipped to handle complex fits.`,
-        });
-    }
-
-    // ── Digital Infrastructure Gaps ──
-
-    if (!d.digital?.scheduling?.hasOnlineScheduling) {
+    if (!hasScheduling) {
         insights.push({
             icon: '📅', iconClass: 'insight-icon-red', priority: 8,
-            title: `No Online Scheduling — You're Losing After-Hours Patients`,
-            text: `<strong>${Math.round(INDUSTRY.benchmarks.patientsPreferOnlineBooking * 100)}% of patients prefer to book online</strong>, and most searches happen outside office hours. Practices with real-time scheduling see ${Math.round(INDUSTRY.benchmarks.onlineBookingLift[0] * 100)}–${Math.round(INDUSTRY.benchmarks.onlineBookingLift[1] * 100)}% more new patient appointments. Every night without online booking is a night your competitors are capturing your patients.`,
+            title: `Online Scheduling Could Be Bringing In More Patients`,
+            text: `<strong>${Math.round(INDUSTRY.benchmarks.patientsPreferOnlineBooking * 100)}% of patients prefer to book online</strong>, and most searches happen after hours. Practices with real-time scheduling see ${Math.round(INDUSTRY.benchmarks.onlineBookingLift[0] * 100)}–${Math.round(INDUSTRY.benchmarks.onlineBookingLift[1] * 100)}% more new patient appointments. Is this something you've considered?`,
         });
     }
 
     if (!isECP && lh && lh.performance < 50) {
         insights.push({
             icon: '🐌', iconClass: 'insight-icon-red', priority: 7,
-            title: `Slow Site Speed Is Costing You Patients`,
-            text: `Your site performance score is ${lh.performance}/100. Every second of load delay costs roughly <strong>${Math.round(INDUSTRY.benchmarks.conversionLossPerSecond * 100)}% of potential conversions</strong>. ${lh.lcp ? `Your main content takes ${lh.lcp} to appear — ` : ''}patients will leave for a faster competitor before your page finishes loading.`,
+            title: `How Fast Does Your Website Load for Patients?`,
+            text: `We measured a performance score of ${lh.performance}/100. Here's why that matters: every second of load delay costs roughly <strong>${Math.round(INDUSTRY.benchmarks.conversionLossPerSecond * 100)}% of potential conversions</strong>. ${lh.lcp ? `Your main content takes ${lh.lcp} to appear. ` : ''}Have you noticed patients mentioning difficulty with the site, or high bounce rates in your analytics?`,
         });
     } else if (!isECP && lh && lh.performance < 70) {
         insights.push({
             icon: '⚡', iconClass: 'insight-icon-amber', priority: 5,
-            title: `Site Speed: Room for Improvement (${lh.performance}/100)`,
-            text: `Your site isn't critically slow, but it's not fast enough to give you a competitive edge. Performance optimization can improve both your Google ranking and your patient conversion rate.`,
+            title: `Site Speed: Could It Be Faster? (${lh.performance}/100)`,
+            text: `Your site isn't slow, but it's not giving you a competitive edge either. Have you explored performance optimization? It can improve both Google ranking and conversion rate.`,
         });
     }
 
     if (d.social?.platformCount === 0) {
         insights.push({
             icon: '📱', iconClass: 'insight-icon-red', priority: 7,
-            title: 'No Social Media Presence Detected',
-            text: `Patients — especially younger demographics — evaluate practices on social media before booking. Without any social presence, you're invisible in a channel where your competitors are actively building trust and name recognition.`,
+            title: 'We Didn\'t Find Social Media — Is That Intentional?',
+            text: `We couldn't detect social media profiles linked to your practice. Patients — especially younger demographics — often check social media before choosing a provider. Is this something you've considered, or is social handled separately?`,
         });
     } else if (!d.social?.hasInstagram && (type === 'optical' || d.optical?.hasOptical)) {
         insights.push({
             icon: '📸', iconClass: 'insight-icon-amber', priority: 6,
-            title: 'No Instagram Presence for Your Optical',
-            text: `Instagram is the #1 discovery platform for eyewear. With an optical department and no Instagram presence, you're missing the channel where patients discover frames, compare styles, and choose where to shop.`,
+            title: 'Have You Explored Instagram for Your Optical?',
+            text: `Instagram is the #1 discovery platform for eyewear, and you have an optical department. Have you considered showcasing your frame selection there? Practices that do often see it become a meaningful traffic source.`,
         });
     }
 
     if (!d.content?.blogExists) {
         insights.push({
             icon: '✍️', iconClass: 'insight-icon-amber', priority: 6,
-            title: 'No Content Strategy — You\'re Leaving SEO Traffic on the Table',
-            text: `Practices with active content see up to <strong>${Math.round(INDUSTRY.benchmarks.blogTrafficLift * 100)}% more organic search traffic</strong>. Each article targeting "[your city] + [eye condition]" is a patient-magnet that works 24/7. Without it, Google has fewer reasons to rank your practice.`,
+            title: 'Have You Considered a Content Strategy?',
+            text: `Practices with active content see up to <strong>${Math.round(INDUSTRY.benchmarks.blogTrafficLift * 100)}% more organic search traffic</strong>. Each article targeting a local keyword becomes a permanent patient-acquisition asset. Has content marketing been part of your strategy?`,
         });
     }
 
     if (providerCount >= 4 && d.content?.totalWordCount < 2000) {
         insights.push({
             icon: '👥', iconClass: 'insight-icon-amber', priority: 5,
-            title: `${providerCount} Providers, But Limited Web Visibility`,
-            text: `You have a team of ${providerCount}, yet your website's content is thin. Individual provider pages with bios, specialties, and credentials dramatically improve local SEO — each doctor name becomes a searchable asset.`,
+            title: `${providerCount} Providers — Do They Each Have a Strong Online Presence?`,
+            text: `With ${providerCount} providers, each doctor's name is a potential search asset. Do they each have individual pages with bios, specialties, and credentials? That kind of content dramatically improves local SEO.`,
         });
     }
 
     if (locCount >= 3) {
         insights.push({
             icon: '🏢', iconClass: 'insight-icon-blue', priority: 5,
-            title: `${locCount} Locations — Each Needs Its Own Digital Strategy`,
-            text: `Multi-location practices need location-specific landing pages, individual Google Business Profiles, and localized content. A centralized approach with local execution ensures each office competes effectively in its own market.`,
+            title: `${locCount} Locations — Does Each One Have Its Own Digital Footprint?`,
+            text: `With ${locCount} locations, is each office optimized individually? Location-specific landing pages, Google Business Profiles, and localized content help each office compete in its own market. It's often one of the highest-impact changes a multi-location practice can make.`,
         });
     }
 
     if (!isECP && lh && lh.seo < 70) {
         insights.push({
             icon: '🔍', iconClass: 'insight-icon-red', priority: 6,
-            title: `Technical SEO Issues Are Limiting Your Visibility`,
-            text: `Your SEO score of ${lh.seo}/100 means there are structural issues — missing meta descriptions, poor heading hierarchy, or missing schema markup — that are actively holding back your Google ranking. These are fixable with the right technical foundation.`,
+            title: `Are Technical SEO Issues Holding You Back?`,
+            text: `Your SEO score of ${lh.seo}/100 suggests there may be structural issues — missing meta descriptions, heading hierarchy, or schema markup — that could be limiting your Google visibility. Have you had an SEO audit recently?`,
         });
     }
 
-    // ── ECP Client: Upsell Opportunities ──
+    // ── ECP Client: Exploration Opportunities ──
     if (isECP) {
         if (!hasScheduling) {
             insights.push({
                 icon: '🚀', iconClass: 'insight-icon-blue', priority: 8,
-                title: 'Upgrade Opportunity: Real-Time Scheduling',
-                text: `Your EyeCarePro site is doing the work of attracting visitors — but without real-time scheduling, you're stopping short of conversion. Adding online booking captures the patients your site is already bringing in.`,
+                title: 'Have You Looked Into Adding Online Scheduling?',
+                text: `Your EyeCarePro site is attracting visitors — but without real-time scheduling, some of those visitors may not convert. Have you explored adding online booking to capture the patients your site is already bringing in?`,
             });
         }
         if (missingHV.length >= 2) {
             insights.push({
                 icon: '📈', iconClass: 'insight-icon-blue', priority: 7,
-                title: 'Your Site May Not Reflect Your Full Clinical Offering',
-                text: `We found ${missingHV.length} high-value services that aren't visible on your website. If you offer these services in-practice, dedicated landing pages can capture patients who are actively searching for them.`,
-            });
-        }
-        if (d.social?.platformCount < 2) {
-            insights.push({
-                icon: '📣', iconClass: 'insight-icon-blue', priority: 6,
-                title: 'Social Media Could Amplify Your Digital Program',
-                text: `Your website is your home base, but social media extends your reach into the community. A coordinated social strategy alongside your EyeCarePro program turns passive visitors into active followers and referral sources.`,
+                title: 'Does Your Site Show Everything You Offer?',
+                text: `We found ${missingHV.length} services that don't appear on your website. If you offer these in-practice, dedicated landing pages could capture patients who are already searching for them. It's worth checking whether the site matches what's happening in your exam rooms.`,
             });
         }
     }
@@ -2640,8 +2727,8 @@ function generateInsights(d) {
     if (d.digital?.isCompetitorClient) {
         insights.unshift({
             icon: '🔄', iconClass: 'insight-icon-amber', priority: 10,
-            title: `Currently with ${d.digital.competitorName || d.digital.marketingVendor?.name}`,
-            text: `The gaps identified below suggest your current program may not be keeping pace with your practice's growth potential. A strategic marketing partner should be closing these gaps — not leaving them open.`,
+            title: `Currently with ${d.digital.competitorName || d.digital.marketingVendor?.name} — How's It Going?`,
+            text: `The opportunities we've identified suggest there may be room to do more. Have you discussed these gaps with your current partner? A strategic marketing program should be proactively addressing these for you.`,
         });
     }
 
@@ -2655,82 +2742,94 @@ function generateMissingRevenue(d) {
     const missingHV = d.services?.missingHighValue || [];
     const type = d.practice?.type || 'default';
     const isECP = d.digital?.isEyeCarePro;
+    const isOphth = isOphthalmologyPractice(d);
     const providerCount = d.doctors?.length || 1;
 
     // Helper: estimate practice-scaled revenue
     const scaleByProviders = (perProviderLow, perProviderHigh) => {
-        const factor = Math.min(providerCount, 6); // cap scaling at 6 providers
+        const factor = Math.min(providerCount, 6);
         return [`$${(perProviderLow * factor).toLocaleString()}`, `$${(perProviderHigh * factor).toLocaleString()}`];
     };
 
-    // ── Specialty service revenue gaps ──
+    // ── Revenue items are ONLY dollar-quantified service opportunities ──
+    // (Digital infrastructure gaps are covered in Insights — no overlap)
 
-    if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) {
-        const est = scaleByProviders(15000, 50000);
-        items.push({
-            title: 'Dry Eye Revenue Opportunity',
-            text: `At $${INDUSTRY.specialty.dryEye.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.dryEye.perPatientYear[1].toLocaleString()} per patient per year in recurring revenue, a dedicated dry eye program could represent <strong>${est[0]}–${est[1]}+ annually</strong> for a practice your size. Patients are already searching for this — the question is whether they find you or a competitor.`,
-            estimate: est,
-        });
+    if (isOphth) {
+        // OPHTHALMOLOGY revenue opportunities
+        if (missingHV.some(s => s.toLowerCase().includes('premium') || s.toLowerCase().includes('iol'))) {
+            items.push({
+                title: 'What If More Cataract Patients Chose Premium?',
+                text: `Premium IOLs average <strong>$${INDUSTRY.surgical.premiumCataract.perEye[0].toLocaleString()}–$${INDUSTRY.surgical.premiumCataract.perEye[1].toLocaleString()} per eye</strong> out-of-pocket. If your practice performs 200+ cataract procedures a year, what would an additional 15% premium conversion look like? In many practices, that's <strong>$150K–$300K in additional annual revenue</strong> — driven by patient education that starts on the website.`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('lasik') || s.toLowerCase().includes('refractive'))) {
+            items.push({
+                title: 'Are LASIK Patients Finding You Online?',
+                text: `At <strong>$${INDUSTRY.surgical.lasik.perEye.toLocaleString()} per eye</strong> average, LASIK patients do extensive research before choosing a surgeon. A dedicated page with credentials, technology, and outcomes is often what tips the decision. How are patients currently finding your refractive services?`,
+            });
+        }
+
+        if (missingHV.some(s => /retina|macular|amd/i.test(s.toLowerCase()))) {
+            items.push({
+                title: 'Could Retinal Visibility Capture More Referrals?',
+                text: `Medical and surgical retina — anti-VEGF injections, vitrectomy, laser — is a growing service line. With an aging population, patient and referral searches for retinal specialists are increasing. How are optometrists and PCPs in your area finding your retinal team?`,
+            });
+        }
+
+        if (missingHV.some(s => /oculoplastic|eyelid|blepharoplasty/i.test(s.toLowerCase()))) {
+            items.push({
+                title: 'Oculoplastics — What Does Cash-Pay Demand Look Like?',
+                text: `Cosmetic and functional eyelid procedures are high-demand, often cash-pay. Patients actively search for blepharoplasty and ptosis repair by name. If you offer these services, how visible are they to patients searching in your area?`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) {
+            const est = scaleByProviders(15000, 50000);
+            items.push({
+                title: 'Is Dry Eye a Revenue Opportunity for Your Practice?',
+                text: `Dry eye generates <strong>$${INDUSTRY.specialty.dryEye.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.dryEye.perPatientYear[1].toLocaleString()} per patient per year</strong> in recurring revenue. For a practice your size, that could mean <strong>${est[0]}–${est[1]}+ annually</strong>. Many ophthalmology practices are adding dry eye as a medical service line — is that something you're exploring?`,
+            });
+        }
+
+    } else {
+        // OPTOMETRY revenue opportunities
+        if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) {
+            const est = scaleByProviders(15000, 50000);
+            items.push({
+                title: 'What Could Dry Eye Mean for Your Practice?',
+                text: `At $${INDUSTRY.specialty.dryEye.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.dryEye.perPatientYear[1].toLocaleString()} per patient per year in recurring revenue, a dedicated dry eye program could represent <strong>${est[0]}–${est[1]}+ annually</strong> for a practice your size. Is this something you've been thinking about?`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('myopia'))) {
+            items.push({
+                title: 'Have You Considered Myopia Management?',
+                text: `Myopia programs generate <strong>$${INDUSTRY.specialty.myopia.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.myopia.perPatientYear[1].toLocaleString()} per child per year</strong> through ortho-k, atropine, and specialty lenses — with multi-year retention. An enrolled base of just 20 children represents $30K–$80K annually. Is this a direction you've explored?`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('scleral'))) {
+            items.push({
+                title: 'Are Scleral Lens Patients Finding You?',
+                text: `Scleral lens patients generate <strong>$${INDUSTRY.specialty.scleralLens.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.scleralLens.perPatientYear[1].toLocaleString()} per patient annually</strong> between fitting, follow-up, and replacement. These patients actively search for practices with visible expertise — is your website telling that story?`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('vision therapy'))) {
+            const annualPerPatient = INDUSTRY.specialty.visionTherapy.perSession[0] * INDUSTRY.specialty.visionTherapy.sessionsPerYear;
+            items.push({
+                title: 'What Would Vision Therapy Look Like for You?',
+                text: `At $${INDUSTRY.specialty.visionTherapy.perSession[0]}–$${INDUSTRY.specialty.visionTherapy.perSession[1]} per session over ~${INDUSTRY.specialty.visionTherapy.sessionsPerYear} sessions, VT patients represent <strong>$${annualPerPatient.toLocaleString()}+ per patient</strong>. Pediatricians and schools are often looking for providers to refer to — is that a referral network you've tapped into?`,
+            });
+        }
     }
 
-    if (missingHV.some(s => s.toLowerCase().includes('myopia'))) {
-        items.push({
-            title: 'Myopia Management Program Revenue',
-            text: `Myopia management generates <strong>$${INDUSTRY.specialty.myopia.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.myopia.perPatientYear[1].toLocaleString()} per child per year</strong> through ortho-k, atropine, and specialty lenses. These families stay for years — parents who find a myopia specialist rarely switch. An enrolled base of just 20 children represents $30K–$80K in annual recurring revenue.`,
-        });
-    }
-
-    if (missingHV.some(s => s.toLowerCase().includes('premium')) && (type === 'ophthalmology' || type === 'multi_specialty')) {
-        items.push({
-            title: 'Premium Cataract IOL Conversions',
-            text: `Premium IOLs average <strong>$${INDUSTRY.surgical.premiumCataract.perEye[0].toLocaleString()}–$${INDUSTRY.surgical.premiumCataract.perEye[1].toLocaleString()} per eye</strong> out-of-pocket. If your practice performs 200 cataract procedures annually and converts just 15% to premium, that's an additional $150K–$300K per year. The conversion starts with patient education — and that starts on your website.`,
-        });
-    }
-
-    if (missingHV.some(s => s.toLowerCase().includes('scleral'))) {
-        items.push({
-            title: 'Scleral Lens Fitting Revenue',
-            text: `Scleral lens patients generate <strong>$${INDUSTRY.specialty.scleralLens.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.scleralLens.perPatientYear[1].toLocaleString()} per patient annually</strong> between fitting, follow-up, and replacement. These are high-value, high-loyalty patients who are actively seeking practices with specialty expertise.`,
-        });
-    }
-
-    if (missingHV.some(s => s.toLowerCase().includes('vision therapy'))) {
-        const annualPerPatient = INDUSTRY.specialty.visionTherapy.perSession[0] * INDUSTRY.specialty.visionTherapy.sessionsPerYear;
-        items.push({
-            title: 'Vision Therapy Program',
-            text: `At $${INDUSTRY.specialty.visionTherapy.perSession[0]}–$${INDUSTRY.specialty.visionTherapy.perSession[1]} per session over ~${INDUSTRY.specialty.visionTherapy.sessionsPerYear} sessions, vision therapy patients represent <strong>$${annualPerPatient.toLocaleString()}+ per patient</strong>. This is a high-engagement service line with strong referral potential from pediatricians and schools.`,
-        });
-    }
-
-    // ── Digital infrastructure revenue impact ──
-
-    if (!d.digital?.scheduling?.hasOnlineScheduling) {
-        items.push({
-            title: 'Online Scheduling: Converting After-Hours Demand',
-            text: `Practices with real-time online booking see <strong>${Math.round(INDUSTRY.benchmarks.onlineBookingLift[0] * 100)}–${Math.round(INDUSTRY.benchmarks.onlineBookingLift[1] * 100)}% more new patient appointments</strong>. At an average new patient value of $${INDUSTRY.exams.newPatient[0]}–$${INDUSTRY.exams.newPatient[1]} for the first visit alone — not counting follow-up, optical, and specialty services — each missed online booking has a cascading revenue impact.`,
-        });
-    }
-
-    if (!d.content?.blogExists) {
-        items.push({
-            title: 'Content Marketing: Compounding Organic Traffic',
-            text: `Practices with active content strategies see up to <strong>${Math.round(INDUSTRY.benchmarks.blogTrafficLift * 100)}% more organic search traffic</strong>. Each article targeting a local keyword ("${d.practice?.name ? d.practice.name.split(' ')[0] : 'your city'} dry eye treatment," "${d.practice?.name ? d.practice.name.split(' ')[0] : 'your city'} eye doctor") becomes a permanent patient-acquisition asset.`,
-        });
-    }
-
-    if (d.social?.platformCount < 2 && !isECP) {
-        items.push({
-            title: 'Social Media: Community Visibility',
-            text: `Practices with consistent social media engagement report <strong>15–25% of new patients</strong> citing social as their initial discovery channel. For optical-driven practices, Instagram alone can drive meaningful frame awareness and foot traffic.`,
-        });
-    }
-
-    // ── Optical / Contact Lens (if applicable) ──
+    // ── Optical / Contact Lens (if applicable — for both practice types) ──
     if ((type === 'optical' || d.optical?.hasOptical) && d.content?.totalWordCount < 1500) {
         items.push({
-            title: 'Optical Revenue: Your Website Isn\'t Selling Your Frames',
-            text: `The average complete pair in private practice is <strong>$${INDUSTRY.optical.avgCompletePair[0]}–$${INDUSTRY.optical.avgCompletePair[1]}</strong>. If your website doesn't showcase your frame selection and brands, patients are making buying decisions on Warby Parker and Zenni before they ever walk into your dispensary.`,
+            title: 'Is Your Website Showcasing Your Optical?',
+            text: `The average complete pair in private practice is <strong>$${INDUSTRY.optical.avgCompletePair[0]}–$${INDUSTRY.optical.avgCompletePair[1]}</strong>. If patients can't see your frame selection online, they may be making buying decisions on Warby Parker or Zenni before they ever walk through your door. How prominent is your optical on the site?`,
         });
     }
 
