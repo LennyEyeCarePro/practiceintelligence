@@ -2488,6 +2488,7 @@ function generateInsights(d) {
     const locCount = d.locations?.count || 1;
     const providerCount = d.doctors?.length || 0;
     const missingHV = d.services?.missingHighValue || [];
+    const hasScheduling = d.digital?.scheduling?.hasOnlineScheduling;
 
     // ── Specialty Revenue Opportunities (highest-value first) ──
 
