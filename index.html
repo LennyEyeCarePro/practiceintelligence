@@ -1020,6 +1020,141 @@ body {
     .step-pip { width: 32px; height: 32px; font-size: 12px; }
     .step-card { padding: 18px; }
 }
+
+/* ═══ SEO INTELLIGENCE STYLES ═══ */
+.seo-section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #888; margin: 20px 0 8px 0;
+}
+.seo-card {
+    background: #fff; border: 1px solid #e8e8e8; border-radius: 12px;
+    padding: 16px; margin-bottom: 0;
+}
+.seo-hero-row {
+    display: flex; align-items: flex-start; gap: 20px;
+}
+.seo-hero-score {
+    font-size: 48px; font-weight: 600; color: #1a1a1a; line-height: 1;
+    font-family: var(--mono, 'SF Mono', 'Fira Code', monospace);
+}
+.seo-hero-right { flex: 1; padding-top: 4px; }
+.seo-hero-headline {
+    font-size: 14px; color: #666; line-height: 1.5; margin-top: 6px;
+}
+.seo-badge {
+    display: inline-block; border-radius: 20px; padding: 4px 14px;
+    font-size: 12px; font-weight: 600;
+}
+.seo-badge-good { background: #E8F5E9; color: #2E7D32; }
+.seo-badge-warning { background: #FFF3E0; color: #E65100; }
+.seo-badge-critical { background: #FFEBEE; color: #C62828; }
+
+/* Score breakdown bars */
+.seo-bar-row {
+    display: flex; align-items: center; padding: 10px 0;
+    border-bottom: 1px solid #F0F0F0;
+}
+.seo-bar-row:last-child { border-bottom: none; }
+.seo-bar-label { width: 130px; font-size: 14px; color: #666; flex-shrink: 0; }
+.seo-bar-track { height: 6px; background: #F0F0F0; border-radius: 3px; flex: 1; margin: 0 12px; position: relative; }
+.seo-bar-fill { height: 6px; border-radius: 3px; transition: width 0.6s ease; }
+.seo-bar-value { font-size: 14px; font-weight: 600; color: #1a1a1a; width: 36px; text-align: right; flex-shrink: 0; }
+
+/* Mobile vs Desktop */
+.seo-dual-scores {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.seo-dual-card {
+    background: #F8F8F8; border-radius: 8px; padding: 14px; text-align: center;
+}
+.seo-dual-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.seo-dual-score { font-size: 28px; font-weight: 700; }
+.seo-dual-sub { font-size: 12px; color: #888; margin-top: 4px; }
+
+/* GBP card table */
+.seo-table-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid #F0F0F0;
+}
+.seo-table-row:last-child { border-bottom: none; }
+.seo-table-label { font-size: 14px; color: #666; }
+.seo-table-value { font-size: 14px; font-weight: 500; color: #1a1a1a; text-align: right; }
+.seo-table-value.good { color: #2E7D32; }
+.seo-table-value.warning { color: #1a1a1a; }
+.seo-table-value.critical { color: #C62828; }
+
+.seo-inline-badge {
+    display: inline-block; border-radius: 4px; padding: 2px 8px;
+    font-size: 11px; font-weight: 600; margin-left: 6px;
+}
+.seo-inline-badge.critical { background: #FFEBEE; color: #C62828; }
+.seo-inline-badge.warning { background: #FFF3E0; color: #E65100; }
+.seo-inline-badge.good { background: #E8F5E9; color: #2E7D32; }
+
+/* Checklist */
+.seo-check-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid #F5F5F5;
+}
+.seo-check-row:last-child { border-bottom: none; }
+.seo-check-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
+.seo-check-text { font-size: 14px; color: #1a1a1a; flex: 1; }
+.seo-check-status { font-size: 13px; font-weight: 500; flex-shrink: 0; }
+
+/* Competitor bars */
+.seo-comp-row {
+    display: flex; align-items: center; padding: 10px 0;
+    border-bottom: 1px solid #F5F5F5;
+}
+.seo-comp-row:last-child { border-bottom: none; }
+.seo-comp-name { width: 160px; font-size: 14px; color: #1a1a1a; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seo-comp-name.highlight { font-weight: 700; }
+.seo-comp-bar { flex: 1; height: 6px; background: #F0F0F0; border-radius: 3px; margin: 0 12px; }
+.seo-comp-fill { height: 6px; border-radius: 3px; }
+.seo-comp-score { font-size: 14px; font-weight: 600; width: 36px; text-align: right; flex-shrink: 0; }
+
+/* Findings */
+.seo-finding-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 0; border-bottom: 1px solid #F5F5F5;
+}
+.seo-finding-row:last-child { border-bottom: none; }
+.seo-finding-dot {
+    width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0;
+}
+.seo-finding-dot.critical { background: #F44336; }
+.seo-finding-dot.warning { background: #FF9800; }
+.seo-finding-dot.good { background: #4CAF50; }
+.seo-finding-text { font-size: 13px; line-height: 1.6; color: #1a1a1a; flex: 1; }
+.seo-finding-badge {
+    display: inline-block; border-radius: 20px; padding: 3px 10px;
+    font-size: 11px; font-weight: 600; flex-shrink: 0; margin-top: 2px;
+}
+.seo-finding-badge.critical { background: #FFEBEE; color: #C62828; }
+.seo-finding-badge.warning { background: #FFF3E0; color: #E65100; }
+.seo-finding-badge.good { background: #E8F5E9; color: #2E7D32; }
+
+/* Opportunity box */
+.seo-opportunity-box {
+    background: #E8F5E9; border-radius: 12px; padding: 16px; margin-top: 12px;
+}
+.seo-opportunity-box p {
+    font-size: 13px; color: #1B5E20; line-height: 1.6; margin: 0;
+}
+
+/* SEO loading state */
+.seo-loading {
+    display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+    background: #F8F8F8; border-radius: 8px; margin-bottom: 8px;
+    font-size: 13px; color: #666;
+}
+.seo-loading .seo-loading-spinner {
+    width: 14px; height: 14px; border: 2px solid #ddd; border-top-color: var(--brand-blue, #0f4c81);
+    border-radius: 50%; animation: seo-spin 0.8s linear infinite;
+}
+.seo-loading.done { color: #2E7D32; }
+.seo-loading.done .seo-loading-spinner { display: none; }
+@keyframes seo-spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -1254,6 +1389,50 @@ body {
         <div class="results-section" id="resultsReflection" style="display:none;">
         </div>
 
+        <!-- ═══ SEO INTELLIGENCE SECTION ═══ -->
+        <div class="results-section" id="seoIntelligenceSection" style="display:none;">
+            <div class="results-section-title">SEO Intelligence</div>
+
+            <!-- SEO Score Hero -->
+            <div class="seo-card" id="seoScoreHero">
+                <div class="seo-hero-row">
+                    <div class="seo-hero-score" id="seoOverallScore">--</div>
+                    <div class="seo-hero-right">
+                        <div class="seo-badge" id="seoGradeBadge">—</div>
+                        <div class="seo-hero-headline" id="seoHeadline">Loading SEO data...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Score Breakdown Bars -->
+            <div class="seo-section-label">SCORE BREAKDOWN</div>
+            <div class="seo-card" id="seoBreakdownBars"></div>
+
+            <!-- Mobile vs Desktop -->
+            <div class="seo-section-label">MOBILE VS DESKTOP</div>
+            <div class="seo-card" id="seoMobileDesktop"></div>
+
+            <!-- Google Business Profile -->
+            <div class="seo-section-label">GOOGLE BUSINESS PROFILE</div>
+            <div class="seo-card" id="seoGbpCard"></div>
+
+            <!-- On-Page SEO Checklist -->
+            <div class="seo-section-label">ON-PAGE SEO CHECKLIST</div>
+            <div class="seo-card" id="seoChecklist"></div>
+
+            <!-- Local Competitors -->
+            <div class="seo-section-label">LOCAL COMPETITORS</div>
+            <div class="seo-card" id="seoCompetitors"></div>
+
+            <!-- Key Findings -->
+            <div class="seo-section-label">KEY FINDINGS</div>
+            <div class="seo-card" id="seoFindings"></div>
+
+            <!-- Biggest Opportunity -->
+            <div id="seoOpportunityBox"></div>
+        </div>
+        <!-- ═══ END SEO INTELLIGENCE ═══ -->
+
         <div class="results-cta">
             <div class="results-cta-text" id="ctaTitle">Ready to close these gaps?</div>
             <div class="results-cta-sub" id="ctaSub">Book a free 30-minute strategy session and we'll walk through your results together.</div>
@@ -1284,6 +1463,8 @@ const CONFIG = {
 // ─── STATE ──────────────────────────────────────────────────
 let dossier = null;
 let lighthouseData = null;
+let lighthouseFullData = null; // { mobile: {...}, desktop: {...} } for SEO section
+let seoReportData = null; // Full SEO intelligence report
 let userAnswers = {};
 let confirmedSteps = { step1: false, step2: false, step3: false };
 let apifyDone = false;
@@ -1613,6 +1794,8 @@ function resetToStart() {
     // Reset state and go back to screen 1
     dossier = null;
     lighthouseData = null;
+    lighthouseFullData = null;
+    seoReportData = null;
     apifyDone = false;
     lighthouseDone = false;
     userAnswers = {};
@@ -2369,6 +2552,15 @@ async function runLighthouse(url) {
         if (!resp.ok) throw new Error(`Lighthouse proxy ${resp.status}`);
         const data = await resp.json();
         if (data.error) throw new Error(data.error);
+
+        // New format: { mobile: {...}, desktop: {...} }
+        // Store full data for SEO section, return mobile-compat flat format for existing code
+        if (data.mobile) {
+            lighthouseFullData = data; // store both strategies for SEO section
+            return data.mobile; // existing code expects flat mobile data
+        }
+        // Legacy flat format fallback
+        lighthouseFullData = { mobile: data, desktop: null };
         return data;
     } catch (err) {
         console.error('Lighthouse error:', err);
@@ -2516,6 +2708,12 @@ function showResults() {
 
     showScreen(5);
     submitToSheets();
+
+    // Kick off SEO Intelligence in the background (non-blocking)
+    const seoUrl = userAnswers.url || dossier?.meta?.url || '';
+    if (seoUrl && !dossier?.digital?.isEyeCarePro) {
+        runSeoIntelligence(seoUrl);
+    }
 }
 
 function generateReflection(d) {
@@ -2935,6 +3133,294 @@ function submitToSheets() {
     } catch (e) {
         console.warn('Sheets submission error:', e);
     }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SEO INTELLIGENCE MODULE
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Kick off SEO data collection in the background.
+ * Called after the user confirms Step 3 (Digital Presence) or when results load.
+ */
+async function runSeoIntelligence(url) {
+    const domain = url.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    const businessName = dossier?.practice?.name || '';
+    const city = extractCityFromDossier();
+
+    const results = { siteAudit: null, lighthouse: null, pageRank: null, places: null, report: null };
+
+    try {
+        // Phase 1: Parallel fetch of site-audit, pagerank, places
+        const [auditResp, rankResp, placesResp] = await Promise.all([
+            fetch(`/api/site-audit?url=${encodeURIComponent(domain)}`).then(r => r.json()).catch(() => null),
+            fetch(`/api/pagerank?domain=${encodeURIComponent(domain)}`).then(r => r.json()).catch(() => null),
+            businessName
+                ? fetch(`/api/places?businessName=${encodeURIComponent(businessName)}&city=${encodeURIComponent(city)}`).then(r => r.json()).catch(() => null)
+                : Promise.resolve(null),
+        ]);
+
+        results.siteAudit = auditResp;
+        results.pageRank = rankResp;
+        results.places = placesResp;
+        results.lighthouse = lighthouseFullData;
+
+        // Phase 2: Send everything to the AI interpretation layer
+        const reportResp = await fetch('/api/seo-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: domain,
+                businessName,
+                city,
+                siteAudit: results.siteAudit,
+                lighthouse: results.lighthouse,
+                pageRank: results.pageRank,
+                places: results.places,
+            }),
+        }).then(r => r.json()).catch(() => null);
+
+        results.report = reportResp;
+
+    } catch (err) {
+        console.error('SEO intelligence error:', err);
+    }
+
+    seoReportData = results;
+    renderSeoSection(results);
+}
+
+function extractCityFromDossier() {
+    // Try to get city from addresses
+    const addr = dossier?.locations?.addresses?.[0] || '';
+    const match = addr.match(/,\s*([A-Za-z\s]+),?\s*[A-Z]{2}/);
+    if (match) return match[1].trim();
+    // Fallback: try tagline or empty
+    return '';
+}
+
+/**
+ * Render the full SEO Intelligence section
+ */
+function renderSeoSection(data) {
+    const section = document.getElementById('seoIntelligenceSection');
+    if (!section) return;
+
+    const report = data.report || {};
+    const audit = data.siteAudit || {};
+    const mobile = data.lighthouse?.mobile || lighthouseData || {};
+    const desktop = data.lighthouse?.desktop || {};
+    const pr = data.pageRank || {};
+    const biz = data.places?.business || {};
+    const competitors = data.places?.competitors || [];
+
+    section.style.display = '';
+
+    // ── Score Hero ──
+    const score = report.overallScore ?? '--';
+    const grade = report.grade || '--';
+    const headline = report.headline || 'SEO analysis complete';
+
+    let badgeClass = 'seo-badge-warning';
+    if (score >= 70) badgeClass = 'seo-badge-good';
+    else if (score < 50) badgeClass = 'seo-badge-critical';
+
+    let gradeLabel = grade;
+    if (score >= 70) gradeLabel = grade + ' — Good';
+    else if (score >= 50) gradeLabel = grade + ' — Needs attention';
+    else if (score !== '--') gradeLabel = grade + ' — Critical';
+
+    document.getElementById('seoOverallScore').textContent = score;
+    const badge = document.getElementById('seoGradeBadge');
+    badge.textContent = gradeLabel;
+    badge.className = `seo-badge ${badgeClass}`;
+    document.getElementById('seoHeadline').textContent = headline;
+
+    // ── Score Breakdown Bars ──
+    const pillars = report.pillarScores || {};
+    const barData = [
+        { label: 'Page Speed', value: pillars.pageSpeed ?? mobile.performance ?? 0 },
+        { label: 'On-Page SEO', value: pillars.onPageSeo ?? mobile.seo ?? 0 },
+        { label: 'Local / GBP', value: pillars.localGbp ?? 0 },
+        { label: 'Backlinks', value: pillars.backlinks ?? 0 },
+        { label: 'Technical', value: pillars.technical ?? 0 },
+    ];
+
+    document.getElementById('seoBreakdownBars').innerHTML = barData.map(b => {
+        const color = b.value >= 75 ? '#4CAF50' : b.value >= 50 ? '#FF9800' : '#F44336';
+        return `<div class="seo-bar-row">
+            <div class="seo-bar-label">${b.label}</div>
+            <div class="seo-bar-track"><div class="seo-bar-fill" style="width:${b.value}%;background:${color}"></div></div>
+            <div class="seo-bar-value">${b.value}</div>
+        </div>`;
+    }).join('');
+
+    // ── Mobile vs Desktop ──
+    const mPerf = mobile.performance ?? '--';
+    const dPerf = desktop.performance ?? '--';
+    const mColor = typeof mPerf === 'number' ? (mPerf >= 75 ? '#4CAF50' : mPerf >= 50 ? '#FF9800' : '#F44336') : '#888';
+    const dColor = typeof dPerf === 'number' ? (dPerf >= 75 ? '#4CAF50' : dPerf >= 50 ? '#FF9800' : '#F44336') : '#888';
+
+    document.getElementById('seoMobileDesktop').innerHTML = `
+        <div class="seo-dual-scores">
+            <div class="seo-dual-card">
+                <div class="seo-dual-label">📱 Mobile</div>
+                <div class="seo-dual-score" style="color:${mColor}">${mPerf}</div>
+                <div class="seo-dual-sub">${mobile.lcp ? 'LCP: ' + mobile.lcp : ''}</div>
+            </div>
+            <div class="seo-dual-card">
+                <div class="seo-dual-label">🖥️ Desktop</div>
+                <div class="seo-dual-score" style="color:${dColor}">${dPerf}</div>
+                <div class="seo-dual-sub">${desktop.lcp ? 'LCP: ' + desktop.lcp : ''}</div>
+            </div>
+        </div>
+        ${mobile.fieldLcp ? `<div style="margin-top:10px;font-size:12px;color:#888;text-align:center">
+            Field data: LCP ${(mobile.fieldLcp / 1000).toFixed(1)}s · CLS ${mobile.fieldCls ? (mobile.fieldCls / 100).toFixed(2) : 'N/A'} · Overall: ${mobile.overallCategory || 'N/A'}
+        </div>` : ''}
+    `;
+
+    // ── Google Business Profile ──
+    const gbpEl = document.getElementById('seoGbpCard');
+    if (biz.name) {
+        const rows = [];
+        rows.push(gbpRow('Business Name', biz.name));
+        rows.push(gbpRow('Rating', biz.rating ? `${biz.rating}★` : 'Not found', biz.rating >= 4.5 ? 'good' : biz.rating >= 4.0 ? 'warning' : 'critical'));
+        rows.push(gbpRow('Reviews', biz.reviewCount !== undefined ? `${biz.reviewCount} reviews` : 'N/A',
+            biz.reviewCount >= 50 ? '' : biz.reviewCount > 0 ? 'warning' : 'critical',
+            biz.reviewCount < 50 ? 'low' : ''));
+        rows.push(gbpRow('Photos', biz.photoCount !== undefined ? `${biz.photoCount} photos` : 'N/A',
+            biz.photoCount >= 10 ? '' : biz.photoCount > 0 ? '' : 'critical',
+            biz.photoCount < 5 ? 'low' : ''));
+        rows.push(gbpRow('Hours Set', biz.hasHours ? 'Yes' : 'Missing', biz.hasHours ? 'good' : 'critical'));
+        rows.push(gbpRow('Category', biz.primaryCategory || 'Unknown',
+            (biz.primaryCategory === 'Optometrist' || biz.primaryCategory === 'Ophthalmologist') ? 'good' : 'warning'));
+        rows.push(gbpRow('Status', biz.businessStatus === 'OPERATIONAL' ? 'Active' : biz.businessStatus || 'Unknown',
+            biz.businessStatus === 'OPERATIONAL' ? 'good' : 'warning'));
+
+        gbpEl.innerHTML = rows.join('');
+    } else {
+        gbpEl.innerHTML = `<div style="padding:12px 0;color:#888;font-size:14px;text-align:center">
+            ${data.places?.error === 'GOOGLE_PLACES_KEY not configured' ? 'Google Places API key not configured — add GOOGLE_PLACES_KEY to Vercel env vars' : 'Google Business Profile not found'}
+        </div>`;
+    }
+
+    // ── On-Page Checklist ──
+    const checks = [];
+    checks.push(checkRow('SSL Certificate', audit.ssl, audit.ssl ? 'HTTPS active' : 'Not secure'));
+    checks.push(checkRow('Title Tag', audit.titleTag && audit.titleLength >= 30 && audit.titleLength <= 70,
+        audit.titleTag ? `${audit.titleLength} chars` : 'Missing', audit.titleTag && (audit.titleLength < 30 || audit.titleLength > 70) ? 'warn' : ''));
+    checks.push(checkRow('Meta Description', audit.metaDescription && audit.metaDescriptionLength >= 120,
+        audit.metaDescription ? `${audit.metaDescriptionLength} chars` : 'Missing', audit.metaDescription && audit.metaDescriptionLength < 120 ? 'warn' : ''));
+    checks.push(checkRow('H1 Tag', audit.h1 && audit.h1Count === 1,
+        audit.h1 ? `${audit.h1Count} found` : 'Missing', audit.h1Count > 1 ? 'warn' : ''));
+    checks.push(checkRow('Schema Markup', audit.hasLocalBusinessSchema,
+        audit.hasLocalBusinessSchema ? 'LocalBusiness' : audit.hasSchemaMarkup ? 'Generic only' : 'Missing',
+        audit.hasSchemaMarkup && !audit.hasLocalBusinessSchema ? 'warn' : ''));
+    checks.push(checkRow('Canonical Tag', audit.hasCanonical, audit.hasCanonical ? 'Present' : 'Missing'));
+    checks.push(checkRow('Viewport Meta', audit.hasViewport, audit.hasViewport ? 'Present' : 'Missing'));
+    checks.push(checkRow('Sitemap', audit.hasSitemap,
+        audit.hasSitemap ? `${audit.sitemapUrlCount} URLs` : 'Missing'));
+    checks.push(checkRow('Robots.txt', audit.hasRobots && !audit.blocksGooglebot,
+        audit.hasRobots ? (audit.blocksGooglebot ? 'Blocks Googlebot!' : 'OK') : 'Missing',
+        audit.blocksGooglebot ? 'fail' : ''));
+    checks.push(checkRow('Image Alt Text', audit.altTextCoverage >= 80,
+        `${audit.altTextCoverage || 0}% coverage`, audit.altTextCoverage >= 50 && audit.altTextCoverage < 80 ? 'warn' : ''));
+    checks.push(checkRow('Open Graph', audit.hasOgTitle && audit.hasOgImage,
+        [audit.hasOgTitle && 'Title', audit.hasOgDescription && 'Desc', audit.hasOgImage && 'Image'].filter(Boolean).join(', ') || 'Missing'));
+    checks.push(checkRow('Booking CTA', audit.hasOnlineBooking || audit.hasBookingCTA,
+        audit.hasOnlineBooking ? 'Online booking' : audit.hasBookingCTA ? 'Basic link' : 'Not found'));
+
+    const checklistEl = document.getElementById('seoChecklist');
+    if (audit.domain) {
+        checklistEl.innerHTML = checks.join('');
+    } else {
+        checklistEl.innerHTML = `<div style="padding:12px 0;color:#888;font-size:14px;text-align:center">Site audit data unavailable</div>`;
+    }
+
+    // ── Domain Authority ──
+    if (pr.pageRank !== null && pr.pageRank !== undefined) {
+        const daRow = `<div class="seo-bar-row" style="border:none">
+            <div class="seo-bar-label">Domain Authority</div>
+            <div class="seo-bar-track"><div class="seo-bar-fill" style="width:${pr.pageRank * 10}%;background:${pr.pageRank >= 5 ? '#4CAF50' : pr.pageRank >= 3 ? '#FF9800' : '#F44336'}"></div></div>
+            <div class="seo-bar-value">${pr.pageRank}/10</div>
+        </div>
+        <div style="font-size:12px;color:#aaa;margin-top:4px">${pr.label || ''} · ${pr.benchmark || ''}</div>`;
+        // Append to breakdown bars
+        document.getElementById('seoBreakdownBars').innerHTML += `<div style="border-top:1px solid #F0F0F0;margin-top:4px;padding-top:4px">${daRow}</div>`;
+    }
+
+    // ── Competitors ──
+    const compEl = document.getElementById('seoCompetitors');
+    if (competitors.length > 0 && biz.name) {
+        const allEntries = [
+            { name: biz.name, rating: biz.rating || 0, reviewCount: biz.reviewCount || 0, isThis: true },
+            ...competitors,
+        ].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+        compEl.innerHTML = allEntries.map(c => {
+            const pct = c.rating ? (c.rating / 5) * 100 : 0;
+            const barColor = c.isThis ? '#4CAF50' : '#378ADD';
+            return `<div class="seo-comp-row">
+                <div class="seo-comp-name ${c.isThis ? 'highlight' : ''}">${c.isThis ? '★ ' : ''}${c.name}</div>
+                <div class="seo-comp-bar"><div class="seo-comp-fill" style="width:${pct}%;background:${barColor}"></div></div>
+                <div class="seo-comp-score">${c.rating ? c.rating + '★' : 'N/A'}</div>
+            </div>`;
+        }).join('') + `<div style="font-size:11px;color:#aaa;margin-top:8px">Based on Google Maps results within 5 miles</div>`;
+    } else {
+        compEl.innerHTML = `<div style="padding:12px 0;color:#888;font-size:14px;text-align:center">
+            ${data.places?.error === 'GOOGLE_PLACES_KEY not configured' ? 'Add GOOGLE_PLACES_KEY to enable competitor analysis' : 'No competitor data available'}
+        </div>`;
+    }
+
+    // ── Key Findings ──
+    const findings = report.findings || [];
+    const findingsEl = document.getElementById('seoFindings');
+    if (findings.length > 0) {
+        findingsEl.innerHTML = findings.map(f => `
+            <div class="seo-finding-row">
+                <div class="seo-finding-dot ${f.severity}"></div>
+                <div class="seo-finding-text">${f.detail}</div>
+                <div class="seo-finding-badge ${f.severity}">${f.severity === 'critical' ? 'Critical' : f.severity === 'warning' ? 'Opportunity' : 'Good'}</div>
+            </div>
+        `).join('');
+    } else {
+        findingsEl.innerHTML = `<div style="padding:12px 0;color:#888;font-size:14px;text-align:center">No findings generated</div>`;
+    }
+
+    // ── Biggest Opportunity ──
+    const oppEl = document.getElementById('seoOpportunityBox');
+    if (report.topOpportunity) {
+        oppEl.innerHTML = `<div class="seo-opportunity-box"><p><strong>Biggest opportunity:</strong> ${report.topOpportunity}</p></div>`;
+    } else {
+        oppEl.innerHTML = '';
+    }
+}
+
+// Helpers for SEO section
+function gbpRow(label, value, status, badgeText) {
+    let cls = '';
+    if (status === 'good') cls = 'good';
+    else if (status === 'critical') cls = 'critical';
+    else if (status === 'warning') cls = 'warning';
+
+    let badge = '';
+    if (badgeText === 'low') badge = `<span class="seo-inline-badge warning">low</span>`;
+    else if (badgeText === 'critical') badge = `<span class="seo-inline-badge critical">missing</span>`;
+
+    return `<div class="seo-table-row">
+        <div class="seo-table-label">${label}</div>
+        <div class="seo-table-value ${cls}">${value}${badge}</div>
+    </div>`;
+}
+
+function checkRow(label, pass, detail, warnType) {
+    const icon = pass ? '✅' : (warnType === 'warn' ? '⚠️' : '❌');
+    const color = pass ? '#2E7D32' : (warnType === 'warn' ? '#E65100' : '#C62828');
+    return `<div class="seo-check-row">
+        <div class="seo-check-icon">${icon}</div>
+        <div class="seo-check-text">${label}</div>
+        <div class="seo-check-status" style="color:${color}">${detail}</div>
+    </div>`;
 }
 
 </script>
