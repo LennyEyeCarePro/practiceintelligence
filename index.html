@@ -1393,8 +1393,24 @@ const ECP_PACKAGES = {
 
 // ─── OPHTHALMOLOGY-SPECIFIC DATA ──────────────────────────
 const EYEMDPRO_PACKAGES = {
-    silver: { name: 'EyeMDPRO Silver', description: 'Single surgeon / small practice' },
-    gold:   { name: 'EyeMDPRO Gold',   description: 'Multi-surgeon or multi-location ophthalmology' },
+    silver: {
+        name: 'EyeMDPRO Silver',
+        price: 499,
+        description: 'Referral-Only / Retina — practices focused on medical referrals, not LASIK or Aesthetics',
+        includes: 'Ophthalmology branded website, optimized medical content, GBP overhaul, automated review responses',
+    },
+    gold: {
+        name: 'EyeMDPRO Gold',
+        price: 1499,
+        description: 'The Surgical Driver — practices doing LASIK, Cataract, and Refractive with high self-pay volume goals',
+        includes: 'On-location photoshoot, video editing, monthly MD strategy calls, medical blogs, email marketing',
+    },
+    platinum: {
+        name: 'EyeMDPRO Platinum',
+        price: 2499,
+        description: 'The Market Leader — multi-location groups or practices doing Oculoplastics and Aesthetics',
+        includes: 'Custom branding & design, Aesthetics/Oculoplasty expert strategy, specialized high-end refractive/plastic surgery SEO',
+    },
 };
 
 const OPHTHALMOLOGY_SERVICES = {
@@ -2482,8 +2498,17 @@ function showResults() {
         ctaTitle.textContent = 'Ready to see what a strategic partner looks like?';
         ctaSub.textContent = 'Book a free 30-minute consultation. We\'ll walk through your results and show you what\'s possible.';
     } else if (isOphthalmologyPractice(d)) {
-        ctaTitle.textContent = 'Let\'s talk about your digital strategy';
-        ctaSub.textContent = 'Book a complimentary consultation. We\'ll discuss what we found and how EyeMDPRO helps ophthalmology practices grow.';
+        const tier = d.recommendedTier || '';
+        if (tier.includes('Platinum')) {
+            ctaTitle.textContent = 'Ready to own your market?';
+            ctaSub.textContent = 'Book a complimentary consultation. We\'ll discuss how EyeMDPRO Platinum builds the brand presence that multi-location and aesthetics-driven practices need.';
+        } else if (tier.includes('Gold')) {
+            ctaTitle.textContent = 'Let\'s talk about driving surgical volume';
+            ctaSub.textContent = 'Book a complimentary consultation. We\'ll show you how EyeMDPRO Gold helps LASIK and refractive practices turn online visibility into self-pay consultations.';
+        } else {
+            ctaTitle.textContent = 'Let\'s strengthen your referral presence';
+            ctaSub.textContent = 'Book a complimentary consultation. We\'ll discuss how EyeMDPRO Silver builds the medical-grade online presence that earns referring doctor confidence.';
+        }
     } else {
         ctaTitle.textContent = 'Let\'s discuss what we found';
         ctaSub.textContent = 'Book a free 30-minute strategy session and we\'ll walk through your results together.';
