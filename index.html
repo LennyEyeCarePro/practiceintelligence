@@ -1778,11 +1778,24 @@ function onApifyComplete() {
             dossier = fb;
             if (isNonEyeCare(dossier)) { renderNonEyeCareRedirect(); return; }
             renderStep1();
+            // Also fire SEO early in fallback path
+            const seoUrl = userAnswers.url || dossier?.meta?.url || '';
+            if (seoUrl && !dossier?.digital?.isEyeCarePro) {
+                runSeoIntelligence(seoUrl);
+            }
         });
         return;
     }
     if (isNonEyeCare(dossier)) { renderNonEyeCareRedirect(); return; }
     renderStep1();
+
+    // Kick off SEO Intelligence early — while user clicks through confirmation steps.
+    // This saves 30-60s because Places, Site Audit, PageRank, and SEO Report
+    // all run in the background during Steps 1-3 + strategic questions.
+    const seoUrl = userAnswers.url || dossier?.meta?.url || '';
+    if (seoUrl && !dossier?.digital?.isEyeCarePro) {
+        runSeoIntelligence(seoUrl);
+    }
 }
 
 // ─── NON-EYE-CARE DETECTION ─────────────────────────────────
@@ -2746,10 +2759,14 @@ function showResults() {
     showScreen(5);
     submitToSheets();
 
-    // Kick off SEO Intelligence in the background (non-blocking)
-    const seoUrl = userAnswers.url || dossier?.meta?.url || '';
-    if (seoUrl && !dossier?.digital?.isEyeCarePro) {
-        runSeoIntelligence(seoUrl);
+    // SEO Intelligence now fires early (in onApifyComplete), so by the time
+    // the user reaches this screen, data is usually already loaded.
+    // Only fire here as a safety fallback if it hasn't started yet.
+    if (!seoReportData) {
+        const seoUrl = userAnswers.url || dossier?.meta?.url || '';
+        if (seoUrl && !dossier?.digital?.isEyeCarePro) {
+            runSeoIntelligence(seoUrl);
+        }
     }
 }
 
