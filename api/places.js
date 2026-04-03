@@ -24,13 +24,15 @@ export default async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const { businessName, city, website, phone, address, addresses } = req.query;
+    const { businessName, city, website, phone, address, addresses, debug } = req.query;
     if (!businessName && !website) return res.status(400).json({ error: 'Missing businessName or website' });
 
     const API_KEY = process.env.GOOGLE_PLACES_KEY;
     if (!API_KEY) {
         return res.json({ error: 'GOOGLE_PLACES_KEY not configured', business: null, locations: [], competitors: [] });
     }
+
+    const debugLog = [];
 
     try {
         // ── Step 1: Discover ALL GBP listings via Text Search ──
@@ -40,13 +42,14 @@ export default async function handler(req, res) {
         if (businessName) {
             const query = city ? `${businessName} ${city}` : businessName;
             const textResults = await textSearch(query, API_KEY);
+            debugLog.push({ step: 'textSearch1', query, resultCount: textResults.length, status: textSearch._lastStatus, error: textSearch._lastError, names: textResults.slice(0,3).map(r => r.name) });
             allPlaces.push(...textResults);
         }
 
         // Secondary search: business name alone (might catch locations in other cities)
-        if (businessName && city) {
+        if (businessName && city && allPlaces.length === 0) {
             const broadResults = await textSearch(businessName, API_KEY);
-            // Add any that aren't already found
+            debugLog.push({ step: 'textSearch2', query: businessName, resultCount: broadResults.length, names: broadResults.slice(0,3).map(r => r.name) });
             const existingIds = new Set(allPlaces.map(p => p.place_id));
             for (const r of broadResults) {
                 if (!existingIds.has(r.place_id)) {
@@ -59,6 +62,7 @@ export default async function handler(req, res) {
         if (website && allPlaces.length === 0) {
             const domain = website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
             const domainResults = await textSearch(domain, API_KEY);
+            debugLog.push({ step: 'textSearch3_domain', query: domain, resultCount: domainResults.length });
             const existingIds = new Set(allPlaces.map(p => p.place_id));
             for (const r of domainResults) {
                 if (!existingIds.has(r.place_id)) {
@@ -80,6 +84,7 @@ export default async function handler(req, res) {
             }
             for (const q of queries) {
                 const result = await findPlace(q, API_KEY);
+                debugLog.push({ step: 'findPlace_fallback', query: q, found: !!result, name: result?.name });
                 if (result) {
                     allPlaces.push(result);
                     break;
@@ -107,11 +112,14 @@ export default async function handler(req, res) {
         }
 
         if (allPlaces.length === 0) {
-            return res.json({ error: 'Business not found on Google', business: null, locations: [], competitors: [] });
+            return res.json({ error: 'Business not found on Google', business: null, locations: [], competitors: [], ...(debug ? { debug: debugLog } : {}) });
         }
+
+        debugLog.push({ step: 'pre_filter', totalFound: allPlaces.length, names: allPlaces.slice(0,5).map(p => p.name) });
 
         // ── Step 2: Filter to only places that belong to this practice ──
         const matchedPlaces = filterToMatchingBusiness(allPlaces, businessName, website);
+        debugLog.push({ step: 'post_filter', matchedCount: matchedPlaces.length });
 
         // If filter removed everything, use all results (filter may be too strict)
         const finalPlaces = matchedPlaces.length > 0 ? matchedPlaces : allPlaces.slice(0, 5);
@@ -149,10 +157,11 @@ export default async function handler(req, res) {
             business: cleanLocations[0],
             locations: cleanLocations,
             competitors,
+            ...(debug ? { debug: debugLog } : {}),
         });
 
     } catch (err) {
-        return res.json({ error: err.message, business: null, locations: [], competitors: [] });
+        return res.json({ error: err.message, business: null, locations: [], competitors: [], ...(debug ? { debug: debugLog } : {}) });
     }
 }
 
@@ -162,14 +171,16 @@ export default async function handler(req, res) {
  */
 async function textSearch(query, apiKey) {
     try {
-        // No type filter — "health" is not a valid Google place type and blocks results
-        const resp = await fetch(
-            `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${apiKey}`,
-            { signal: AbortSignal.timeout(10000) }
-        );
+        const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${apiKey}`;
+        const resp = await fetch(url, { signal: AbortSignal.timeout(10000) });
         const data = await resp.json();
+        // Store status for debugging
+        textSearch._lastStatus = data.status;
+        textSearch._lastError = data.error_message;
         return data.results || [];
-    } catch (_) {
+    } catch (e) {
+        textSearch._lastStatus = 'FETCH_ERROR';
+        textSearch._lastError = e.message;
         return [];
     }
 }
