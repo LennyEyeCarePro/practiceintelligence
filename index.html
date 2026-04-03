@@ -3239,11 +3239,26 @@ async function runSeoIntelligence(url) {
 }
 
 function extractCityFromDossier() {
-    // Try to get city from addresses
+    // Try to get city from scraped addresses
     const addr = dossier?.locations?.addresses?.[0] || '';
     const match = addr.match(/,\s*([A-Za-z\s]+),?\s*[A-Z]{2}/);
     if (match) return match[1].trim();
-    // Fallback: try tagline or empty
+
+    // Fallback: try GBP address from Places API (available after SEO intelligence runs)
+    const gbpAddr = seoReportData?.places?.locations?.[0]?.address
+        || seoReportData?.places?.business?.address || '';
+    if (gbpAddr) {
+        // Try US format: "City, ST 12345"
+        const usMatch = gbpAddr.match(/,\s*([A-Za-z\s]+),?\s*[A-Z]{2}\s/);
+        if (usMatch) return usMatch[1].trim();
+        // Try Canadian format: "City, ON M1H 1B3" or "Scarborough, ON"
+        const caMatch = gbpAddr.match(/,\s*([A-Za-z\s]+),?\s*[A-Z]{2}\s*[A-Z]\d[A-Z]/);
+        if (caMatch) return caMatch[1].trim();
+        // Generic: grab the second-to-last comma-separated part (usually city)
+        const parts = gbpAddr.split(',').map(p => p.trim());
+        if (parts.length >= 3) return parts[parts.length - 3];
+        if (parts.length >= 2) return parts[parts.length - 2];
+    }
     return '';
 }
 
@@ -3516,8 +3531,10 @@ async function runSearchRankings() {
         return;
     }
 
-    // Extract state from first address
-    const addr = dossier?.locations?.addresses?.[0] || '';
+    // Extract state/province from first address, or fallback to GBP address
+    const addr = dossier?.locations?.addresses?.[0]
+        || seoReportData?.places?.locations?.[0]?.address
+        || seoReportData?.places?.business?.address || '';
     const stateMatch = addr.match(/,\s*[A-Za-z\s]+,?\s*([A-Z]{2})/);
     const state = stateMatch ? stateMatch[1] : '';
 
