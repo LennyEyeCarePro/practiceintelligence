@@ -40,9 +40,9 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'Failed to start Apify run', details: runData });
         }
 
-        // Poll for completion (max 90 seconds)
+        // Poll for completion (max 120 seconds)
         const startTime = Date.now();
-        const MAX_WAIT = 90000;
+        const MAX_WAIT = 120000;
         const POLL_INTERVAL = 3000;
 
         while (Date.now() - startTime < MAX_WAIT) {
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
             }
         }
 
-        return res.status(504).json({ error: 'Apify run timed out after 90s' });
+        return res.status(504).json({ error: 'Apify run timed out after 120s' });
 
     } catch (err) {
         return res.status(500).json({ error: err.message });
