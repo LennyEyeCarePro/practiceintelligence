@@ -46,8 +46,10 @@ export default async function handler(req, res) {
             allPlaces.push(...textResults);
         }
 
-        // Secondary search: business name alone (might catch locations in other cities)
-        if (businessName && city && allPlaces.length === 0) {
+        // Secondary search: business name alone — ALWAYS run when city was used,
+        // because a practice may have locations in OTHER cities not mentioned on their website.
+        // e.g. "Access Eye King George VA" finds 1 location, but "Access Eye" finds all 3-6.
+        if (businessName && city) {
             const broadResults = await textSearch(businessName, API_KEY);
             debugLog.push({ step: 'textSearch2', query: businessName, resultCount: broadResults.length, names: broadResults.slice(0,3).map(r => r.name) });
             const existingIds = new Set(allPlaces.map(p => p.place_id));

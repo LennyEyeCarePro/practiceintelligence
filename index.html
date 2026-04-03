@@ -3506,7 +3506,7 @@ async function runSearchRankings() {
     const contentEl = document.getElementById('rankingsContent');
     if (!loadingEl || !contentEl) return;
 
-    const domain = (dossier?.practice?.url || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    const domain = (dossier?.practice?.url || dossier?.meta?.url || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '');
     const city = extractCityFromDossier();
     const practiceType = dossier?.practice?.type || 'unknown';
     const serviceIds = (dossier?.services?.detected || []).map(s => s.id);
