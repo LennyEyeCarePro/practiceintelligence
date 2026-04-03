@@ -1806,7 +1806,14 @@ function isNonEyeCare(d) {
     const hasServices = d.services?.totalCount > 0 || d.services?.detected?.length > 0;
     const hasEyeCareVendor = !!d.digital?.marketingVendor;
     const hasEyeCareEhr = !!d.digital?.ehr;
-    return !hasKnownType && !hasDoctors && !hasServices && !hasEyeCareVendor && !hasEyeCareEhr;
+
+    // Check URL and practice name for obvious eye care signals
+    // (handles cases where scraper can't parse content, e.g. bilingual sites)
+    const urlAndName = ((d.meta?.url || '') + ' ' + (d.practice?.name || '') + ' ' + (d.practice?.tagline || '')).toLowerCase();
+    const eyeCareKeywords = /eye|optic|vision|optom|ophthalm|lasik|retina|cataract|lenses|glasses|spectacle/;
+    const hasEyeCareInUrl = eyeCareKeywords.test(urlAndName);
+
+    return !hasKnownType && !hasDoctors && !hasServices && !hasEyeCareVendor && !hasEyeCareEhr && !hasEyeCareInUrl;
 }
 
 function renderNonEyeCareRedirect() {
