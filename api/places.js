@@ -67,6 +67,26 @@ export default async function handler(req, res) {
             }
         }
 
+        // ── Find Place fallback (single-result, but more reliable) ──
+        // Text Search may fail if the API billing plan doesn't include it,
+        // so fall back to Find Place which uses a different endpoint
+        if (allPlaces.length === 0 && businessName) {
+            const queries = [];
+            if (city) queries.push(`${businessName} ${city}`);
+            queries.push(businessName);
+            if (website) {
+                const domain = website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+                queries.push(domain);
+            }
+            for (const q of queries) {
+                const result = await findPlace(q, API_KEY);
+                if (result) {
+                    allPlaces.push(result);
+                    break;
+                }
+            }
+        }
+
         // Phone fallback if nothing found yet
         if (allPlaces.length === 0 && phone) {
             const cleanPhone = phone.replace(/[^\d+]/g, '');
@@ -93,12 +113,11 @@ export default async function handler(req, res) {
         // ── Step 2: Filter to only places that belong to this practice ──
         const matchedPlaces = filterToMatchingBusiness(allPlaces, businessName, website);
 
-        if (matchedPlaces.length === 0) {
-            return res.json({ error: 'Business not found on Google', business: null, locations: [], competitors: [] });
-        }
+        // If filter removed everything, use all results (filter may be too strict)
+        const finalPlaces = matchedPlaces.length > 0 ? matchedPlaces : allPlaces.slice(0, 5);
 
         // ── Step 3: Get Place Details for each matched location (parallel, max 10) ──
-        const detailPromises = matchedPlaces.slice(0, 10).map(p => getPlaceDetails(p.place_id, API_KEY));
+        const detailPromises = finalPlaces.slice(0, 10).map(p => getPlaceDetails(p.place_id, API_KEY));
         const detailResults = await Promise.all(detailPromises);
         const locations = detailResults.filter(Boolean);
 
@@ -152,6 +171,23 @@ async function textSearch(query, apiKey) {
         return data.results || [];
     } catch (_) {
         return [];
+    }
+}
+
+/**
+ * Find Place — returns SINGLE best candidate (more reliable than Text Search,
+ * works even if Text Search API isn't enabled on the billing plan).
+ */
+async function findPlace(query, apiKey) {
+    try {
+        const resp = await fetch(
+            `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id,name,formatted_address&key=${apiKey}`,
+            { signal: AbortSignal.timeout(8000) }
+        );
+        const data = await resp.json();
+        return data.candidates?.[0] || null;
+    } catch (_) {
+        return null;
     }
 }
 
