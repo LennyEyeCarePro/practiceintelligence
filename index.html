@@ -3147,16 +3147,26 @@ async function runSeoIntelligence(url) {
     const domain = url.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
     const businessName = dossier?.practice?.name || '';
     const city = extractCityFromDossier();
+    const practicePhone = dossier?.practice?.phone || '';
+    const practiceAddress = dossier?.locations?.addresses?.[0] || '';
 
     const results = { siteAudit: null, lighthouse: null, pageRank: null, places: null, report: null };
 
     try {
         // Phase 1: Parallel fetch of site-audit, pagerank, places
+        // Places API now accepts multiple params for reliable matching
+        const placesParams = new URLSearchParams();
+        if (businessName) placesParams.set('businessName', businessName);
+        if (city) placesParams.set('city', city);
+        if (domain) placesParams.set('website', domain);
+        if (practicePhone) placesParams.set('phone', practicePhone);
+        if (practiceAddress) placesParams.set('address', practiceAddress);
+
         const [auditResp, rankResp, placesResp] = await Promise.all([
             fetch(`/api/site-audit?url=${encodeURIComponent(domain)}`).then(r => r.json()).catch(() => null),
             fetch(`/api/pagerank?domain=${encodeURIComponent(domain)}`).then(r => r.json()).catch(() => null),
-            businessName
-                ? fetch(`/api/places?businessName=${encodeURIComponent(businessName)}&city=${encodeURIComponent(city)}`).then(r => r.json()).catch(() => null)
+            (businessName || domain)
+                ? fetch(`/api/places?${placesParams.toString()}`).then(r => r.json()).catch(() => null)
                 : Promise.resolve(null),
         ]);
 
