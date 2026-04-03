@@ -1021,6 +1021,145 @@ body {
     .step-card { padding: 18px; }
 }
 
+/* ═══ CORE AUDIT PANELS ═══ */
+.audit-panel {
+    background: var(--surface-alt);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+.audit-panel:last-child { margin-bottom: 0; }
+.audit-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    cursor: default;
+}
+.audit-panel-icon {
+    font-size: 16px;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.audit-panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+}
+.audit-panel-badge {
+    display: inline-block;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.audit-badge-critical { background: #FFEBEE; color: #C62828; }
+.audit-badge-warning { background: #FFF3E0; color: #E65100; }
+.audit-badge-good { background: #E8F5E9; color: #2E7D32; }
+
+.audit-panel-body {
+    padding: 0 16px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+.audit-panel-body .audit-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+}
+.audit-panel-body .audit-metric:last-child { border-bottom: none; }
+.audit-metric-label { color: var(--text-secondary); font-size: 13px; }
+.audit-metric-value { font-weight: 600; font-size: 13px; color: var(--text); }
+.audit-metric-value.good { color: #2E7D32; }
+.audit-metric-value.warning { color: #E65100; }
+.audit-metric-value.critical { color: #C62828; }
+
+.audit-insight {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    border-left: 3px solid var(--brand);
+}
+
+.revenue-gap-big {
+    text-align: center;
+    padding: 16px 0;
+}
+.revenue-gap-amount {
+    font-family: var(--mono);
+    font-size: 36px;
+    font-weight: 700;
+    color: #C62828;
+    line-height: 1;
+}
+.revenue-gap-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+}
+.revenue-gap-formula {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.revenue-gap-formula .formula-part {
+    padding: 4px 10px;
+    background: var(--surface-alt);
+    border-radius: 6px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+.revenue-gap-items {
+    margin-top: 16px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+}
+.revenue-gap-item {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--surface-alt);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.revenue-gap-item:last-child { border-bottom: none; }
+
+/* Competitor mini-chart in audit panel */
+.audit-comp-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 0;
+    gap: 8px;
+}
+.audit-comp-name {
+    width: 120px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.audit-comp-name.highlight { font-weight: 700; color: var(--text); }
+.audit-comp-bar { flex: 1; height: 5px; background: #F0F0F0; border-radius: 3px; }
+.audit-comp-fill { height: 5px; border-radius: 3px; }
+.audit-comp-score { font-size: 12px; font-weight: 600; width: 60px; text-align: right; flex-shrink: 0; color: var(--text); }
+
 /* ═══ SEO INTELLIGENCE STYLES ═══ */
 .seo-section-label {
     font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
@@ -1394,60 +1533,87 @@ body {
          SCREEN 5 — PERSONALIZED RESULTS
          ══════════════════════════════════════════════════════ -->
     <div id="screen5" class="screen">
+
+        <!-- ═══ SECTION 1: THE GROWTH SCORE ═══ -->
         <div class="results-hero" id="resultsHero">
             <div class="results-score-big" id="resultsScoreBig">--</div>
             <div class="results-score-label">Practice Growth Score</div>
             <div class="results-tier-badge" id="resultsTierBadge"></div>
         </div>
 
-        <div class="results-section" id="resultsNarrative">
+        <!-- ═══ SECTION 2: THE REVENUE GAP ═══ -->
+        <div class="results-section" id="resultsRevenueGap">
+            <div class="results-section-title" style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:18px;">💰</span> Estimated Monthly Revenue Gap
+            </div>
+            <div id="revenueGapContent">
+                <!-- Filled by JS -->
+            </div>
         </div>
 
-        <div class="results-section" id="resultsInsights">
-            <div class="results-section-title">Growth Opportunities</div>
+        <!-- ═══ SECTION 3: CORE AUDIT — THE MALIGNANCIES ═══ -->
+        <div class="results-section" id="resultsCoreAudit">
+            <div class="results-section-title" style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:18px;">🔍</span> What We Found
+            </div>
+
+            <!-- 3A: Local Visibility (GBP + Map Pack + Competitors) -->
+            <div class="audit-panel" id="auditLocalVisibility">
+                <div class="audit-panel-header">
+                    <span class="audit-panel-icon">📍</span>
+                    <span class="audit-panel-title">Local Visibility</span>
+                    <span class="audit-panel-badge" id="localVisibilityBadge"></span>
+                </div>
+                <div class="audit-panel-body" id="localVisibilityBody">
+                    <!-- GBP summary, competitor chart, map pack status -->
+                </div>
+            </div>
+
+            <!-- 3B: SEO Health (Mobile speed, core web vitals) -->
+            <div class="audit-panel" id="auditSeoHealth">
+                <div class="audit-panel-header">
+                    <span class="audit-panel-icon">⚡</span>
+                    <span class="audit-panel-title">Website & SEO Health</span>
+                    <span class="audit-panel-badge" id="seoHealthBadge"></span>
+                </div>
+                <div class="audit-panel-body" id="seoHealthBody">
+                    <!-- Mobile speed, search rankings -->
+                </div>
+            </div>
+
+            <!-- 3C: Patient Conversion / UX -->
+            <div class="audit-panel" id="auditPatientConversion">
+                <div class="audit-panel-header">
+                    <span class="audit-panel-icon">🎯</span>
+                    <span class="audit-panel-title">Patient Conversion</span>
+                    <span class="audit-panel-badge" id="patientConversionBadge"></span>
+                </div>
+                <div class="audit-panel-body" id="patientConversionBody">
+                    <!-- Scheduling, missing services, site experience -->
+                </div>
+            </div>
         </div>
 
-        <div class="results-section" id="resultsMissing">
-            <div class="results-section-title">Revenue You're Leaving on the Table</div>
-        </div>
-
+        <!-- ═══ SECTION 3.5: STRATEGIC REFLECTION ═══ -->
         <div class="results-section" id="resultsReflection" style="display:none;">
         </div>
 
-        <!-- ═══ SEO INTELLIGENCE SECTION ═══ -->
-        <div class="results-section" id="seoIntelligenceSection" style="display:none;">
-            <div class="results-section-title">SEO Intelligence</div>
-
-            <!-- SEO Score Hero -->
-            <div class="seo-card" id="seoScoreHero">
+        <!-- Hidden SEO data containers (for internal data capture / Sheets — not shown to client) -->
+        <div id="seoIntelligenceSection" style="display:none;">
+            <div class="seo-card" id="seoScoreHero" style="display:none;">
                 <div class="seo-hero-row">
                     <div class="seo-hero-score" id="seoOverallScore">--</div>
                     <div class="seo-hero-right">
                         <div class="seo-badge" id="seoGradeBadge">—</div>
-                        <div class="seo-hero-headline" id="seoHeadline">Loading SEO data...</div>
+                        <div class="seo-hero-headline" id="seoHeadline"></div>
                     </div>
                 </div>
             </div>
-
-            <!-- Score Breakdown Bars -->
-            <div class="seo-section-label">SCORE BREAKDOWN</div>
-            <div class="seo-card" id="seoBreakdownBars"></div>
-
-            <!-- Mobile vs Desktop -->
-            <div class="seo-section-label">MOBILE VS DESKTOP</div>
-            <div class="seo-card" id="seoMobileDesktop"></div>
-
-            <!-- Google Business Profile -->
-            <div class="seo-section-label">GOOGLE BUSINESS PROFILE</div>
-            <div class="seo-card" id="seoGbpCard"></div>
-
-            <!-- On-Page SEO Checklist -->
-            <div class="seo-section-label">ON-PAGE SEO CHECKLIST</div>
-            <div class="seo-card" id="seoChecklist"></div>
-
-            <!-- Search Rankings -->
-            <div class="seo-section-label">SEARCH RANKINGS</div>
-            <div class="seo-card" id="seoSearchRankings">
+            <div class="seo-card" id="seoBreakdownBars" style="display:none;"></div>
+            <div class="seo-card" id="seoMobileDesktop" style="display:none;"></div>
+            <div class="seo-card" id="seoGbpCard" style="display:none;"></div>
+            <div class="seo-card" id="seoChecklist" style="display:none;"></div>
+            <div class="seo-card" id="seoSearchRankings" style="display:none;">
                 <div style="padding:12px 0;color:#888;font-size:14px;text-align:center">
                     <div class="seo-rankings-loading" style="display:none" id="rankingsLoading">
                         <div style="font-size:13px;color:#378ADD;font-weight:500">Checking Google rankings...</div>
@@ -1456,20 +1622,12 @@ body {
                     <div id="rankingsContent">Search ranking data will appear here</div>
                 </div>
             </div>
-
-            <!-- Local Competitors -->
-            <div class="seo-section-label">LOCAL COMPETITORS</div>
-            <div class="seo-card" id="seoCompetitors"></div>
-
-            <!-- Key Findings -->
-            <div class="seo-section-label">KEY FINDINGS</div>
-            <div class="seo-card" id="seoFindings"></div>
-
-            <!-- Biggest Opportunity -->
-            <div id="seoOpportunityBox"></div>
+            <div class="seo-card" id="seoCompetitors" style="display:none;"></div>
+            <div class="seo-card" id="seoFindings" style="display:none;"></div>
+            <div id="seoOpportunityBox" style="display:none;"></div>
         </div>
-        <!-- ═══ END SEO INTELLIGENCE ═══ -->
 
+        <!-- ═══ SECTION 4: THE PATH FORWARD ═══ -->
         <div class="results-cta">
             <div class="results-cta-text" id="ctaTitle">Ready to close these gaps?</div>
             <div class="results-cta-sub" id="ctaSub">Book a free 30-minute strategy session and we'll walk through your results together.</div>
@@ -1864,9 +2022,21 @@ function resetToStart() {
     btn.textContent = 'Analyze My Practice';
     // Clear old step content so it doesn't flash when re-entering screen 2
     document.getElementById('stepContainer').innerHTML = '';
-    // Reset SEO Intelligence section
+    // Reset SEO Intelligence section and audit panels
     const seoSection = document.getElementById('seoIntelligenceSection');
     if (seoSection) seoSection.style.display = 'none';
+    // Reset audit panel bodies
+    ['localVisibilityBody', 'seoHealthBody', 'patientConversionBody'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
+    ['localVisibilityBadge', 'seoHealthBadge', 'patientConversionBadge'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = ''; el.className = 'audit-panel-badge'; }
+    });
+    // Reset revenue gap
+    const rgContent = document.getElementById('revenueGapContent');
+    if (rgContent) rgContent.innerHTML = '';
     // Restore step progress bar and analysis bar to original state
     document.querySelector('.step-progress').style.display = '';
     const bgBar = document.getElementById('bgAnalysisBar');
@@ -2666,7 +2836,7 @@ function showResults() {
     const score = d.scores?.overall || 0;
     const name = d.practice?.name || 'Your practice';
 
-    // ── Hero: Score & tier (hide score for ECP clients) ──
+    // ═══ SECTION 1: THE GROWTH SCORE ═══
     const heroEl = document.getElementById('resultsHero');
     if (isECP) {
         heroEl.innerHTML = `
@@ -2678,71 +2848,33 @@ function showResults() {
         document.getElementById('resultsTierBadge').textContent = d.recommendedTier || 'Schedule a call';
     }
 
-    // ── Narrative (Executive Summary) ──
-    const narrativeHtml = generateNarrative(d);
-    const narrativeContainer = document.getElementById('resultsNarrative');
-    narrativeContainer.innerHTML = `<div class="results-section-title">${isECP ? 'Account Overview' : 'Executive Summary'}</div><div class="narrative-body">${narrativeHtml}</div>`;
+    // ═══ SECTION 2: THE REVENUE GAP ═══
+    renderRevenueGap(d);
 
-    // ── Insights (Growth Opportunities) ──
-    const insights = generateInsights(d);
-    const insightsContainer = document.getElementById('resultsInsights');
-    if (insights.length > 0) {
-        insightsContainer.style.display = '';
-        insightsContainer.innerHTML = `<div class="results-section-title">${isECP ? 'Where Your Program Can Do More' : 'What We Noticed'}</div>` +
-            insights.map(ins => `
-                <div class="results-insight">
-                    <div class="insight-icon ${ins.iconClass}">${ins.icon}</div>
-                    <div class="insight-text"><strong>${ins.title}</strong><br>${ins.text}</div>
-                </div>
-            `).join('');
-    } else if (isECP) {
-        // Well-equipped ECP client — acknowledge strength, suggest optimization
-        insightsContainer.style.display = '';
-        insightsContainer.innerHTML = `<div class="results-section-title">Your Digital Program Is Well-Positioned</div>
-            <div class="results-insight">
-                <div class="insight-icon insight-icon-green">✅</div>
-                <div class="insight-text"><strong>Strong foundation across the board</strong><br>Your website covers your services, you have online scheduling, active social media, and content in place. The next level of growth comes from <strong>optimization</strong> — conversion rate improvements, advanced SEO, patient recall automation, and ensuring every page is working as hard as your clinical team.</div>
-            </div>
-            <div class="results-insight">
-                <div class="insight-icon insight-icon-blue">📊</div>
-                <div class="insight-text"><strong>Data-driven next steps</strong><br>With the foundation handled, the highest-ROI investments are in analytics-driven optimization: which pages convert, which services are searched most in your market, and where patients drop off before booking. A strategy review can identify exactly where to push next.</div>
-            </div>`;
-    } else {
-        insightsContainer.style.display = 'none';
+    // ═══ SECTION 3: CORE AUDIT (pre-fill from dossier data, SEO data fills in when ready) ═══
+    renderCoreAuditFromDossier(d);
+
+    // If SEO data is already loaded (fired early), render the audit panels now
+    if (seoReportData) {
+        renderClientAuditPanels(seoReportData);
     }
 
-    // ── Missing Revenue ──
-    const missing = generateMissingRevenue(d);
-    const missingContainer = document.getElementById('resultsMissing');
-    if (missing.length > 0) {
-        missingContainer.style.display = '';
-        missingContainer.innerHTML = `<div class="results-section-title">${isECP ? 'Untapped Revenue in Your Current Program' : 'Revenue Potential — If These Services Are in Play'}</div>` +
-            missing.map(m => `
-                <div class="results-insight">
-                    <div class="insight-icon insight-icon-amber">💰</div>
-                    <div class="insight-text"><strong>${m.title}</strong><br>${m.text}</div>
-                </div>
-            `).join('');
-    } else {
-        missingContainer.style.display = 'none';
-    }
-
-    // ── Strategic Reflection (Access Eye style closing question) ──
+    // ═══ SECTION 3.5: STRATEGIC REFLECTION ═══
     const reflectionEl = document.getElementById('resultsReflection');
     const reflectionQ = generateReflection(d);
     if (reflectionQ) {
         reflectionEl.style.display = '';
         reflectionEl.innerHTML = `
-            <div style="background:var(--surface-alt);border-radius:12px;padding:20px 24px;border-left:4px solid var(--brand-blue);">
-                <div style="font-size:13px;font-weight:600;color:var(--brand-blue);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">A Question Worth Considering</div>
-                <div style="font-size:15px;color:var(--text-primary);line-height:1.6;font-style:italic">${reflectionQ}</div>
+            <div style="background:var(--surface-alt);border-radius:12px;padding:20px 24px;border-left:4px solid var(--brand);">
+                <div style="font-size:13px;font-weight:600;color:var(--brand);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">A Question Worth Considering</div>
+                <div style="font-size:15px;color:var(--text);line-height:1.6;font-style:italic">${reflectionQ}</div>
             </div>
         `;
     } else {
         reflectionEl.style.display = 'none';
     }
 
-    // ── CTA (practice-type and relationship-aware) ──
+    // ═══ SECTION 4: THE PATH FORWARD (CTA) ═══
     const ctaTitle = document.getElementById('ctaTitle');
     const ctaSub = document.getElementById('ctaSub');
     if (isECP) {
@@ -2780,6 +2912,297 @@ function showResults() {
             runSeoIntelligence(seoUrl);
         }
     }
+}
+
+// ─── SECTION 2: Revenue Gap ─────────────────────────────────
+function renderRevenueGap(d) {
+    const container = document.getElementById('revenueGapContent');
+    const isECP = d.digital?.isEyeCarePro;
+    const missing = generateMissingRevenue(d);
+    const providerCount = d.doctors?.length || 1;
+    const locCount = d.locations?.count || 1;
+
+    // Estimate monthly revenue gap based on missing services + infrastructure gaps
+    let monthlyLow = 0;
+    let monthlyHigh = 0;
+    const missingHV = d.services?.missingHighValue || [];
+
+    // Service-based estimates (monthly)
+    if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) { monthlyLow += 1500; monthlyHigh += 5000; }
+    if (missingHV.some(s => s.toLowerCase().includes('myopia'))) { monthlyLow += 1200; monthlyHigh += 4000; }
+    if (missingHV.some(s => s.toLowerCase().includes('scleral'))) { monthlyLow += 800; monthlyHigh += 3000; }
+    if (missingHV.some(s => /premium|iol/i.test(s))) { monthlyLow += 5000; monthlyHigh += 25000; }
+    if (missingHV.some(s => /lasik|refractive/i.test(s))) { monthlyLow += 4000; monthlyHigh += 15000; }
+
+    // Infrastructure gaps
+    if (!d.digital?.scheduling?.hasOnlineScheduling) { monthlyLow += 2000; monthlyHigh += 6000; }
+
+    // Scale by providers
+    const scale = Math.min(providerCount, 4);
+    monthlyLow = Math.round(monthlyLow * (0.5 + scale * 0.25));
+    monthlyHigh = Math.round(monthlyHigh * (0.5 + scale * 0.25));
+
+    if (monthlyLow === 0 && monthlyHigh === 0) {
+        // No quantifiable gaps — still show section with qualitative message
+        container.innerHTML = `
+            <div style="text-align:center;padding:12px 0;font-size:14px;color:var(--text-secondary);">
+                ${isECP
+                    ? 'Your program covers the fundamentals well. The next level of growth comes from <strong>optimization</strong> — conversion rates, advanced SEO, and ensuring every page works as hard as your clinical team.'
+                    : 'Your digital presence covers many bases. A deeper analysis during a strategy call can identify specific revenue opportunities in your market.'}
+            </div>
+        `;
+        return;
+    }
+
+    let html = `
+        <div class="revenue-gap-big">
+            <div class="revenue-gap-amount">$${monthlyLow.toLocaleString()} – $${monthlyHigh.toLocaleString()}</div>
+            <div class="revenue-gap-label">Estimated monthly revenue left on the table</div>
+            <div class="revenue-gap-formula">
+                <span class="formula-part">Avg Patient Value</span>
+                <span>×</span>
+                <span class="formula-part">Uncaptured Local Demand</span>
+            </div>
+        </div>
+    `;
+
+    if (missing.length > 0) {
+        html += `<div class="revenue-gap-items">`;
+        html += missing.slice(0, 4).map(m => `
+            <div class="revenue-gap-item">
+                <div style="font-size:16px;margin-top:1px;">💰</div>
+                <div><strong style="color:var(--text);">${m.title}</strong><br><span style="color:var(--text-secondary);">${m.text}</span></div>
+            </div>
+        `).join('');
+        html += `</div>`;
+    }
+
+    container.innerHTML = html;
+}
+
+// ─── SECTION 3: Core Audit pre-fill from dossier (before SEO data) ───
+function renderCoreAuditFromDossier(d) {
+    const lh = lighthouseData || {};
+    const isECP = d.digital?.isEyeCarePro;
+    const hasScheduling = d.digital?.scheduling?.hasOnlineScheduling;
+    const missingHV = d.services?.missingHighValue || [];
+
+    // 3A: Local Visibility — show placeholder until SEO data arrives
+    const localBody = document.getElementById('localVisibilityBody');
+    const localBadge = document.getElementById('localVisibilityBadge');
+    localBody.innerHTML = `<div style="color:#888;font-size:13px;padding:8px 0;">
+        <div class="spinner" style="display:inline-block;width:14px;height:14px;border-width:2px;margin-right:6px;vertical-align:middle;"></div>
+        Loading Google Business Profile data...
+    </div>`;
+    localBadge.textContent = '';
+
+    // 3B: SEO Health — show Lighthouse data immediately if available
+    const seoBody = document.getElementById('seoHealthBody');
+    const seoBadge = document.getElementById('seoHealthBadge');
+    let seoHtml = '';
+
+    if (lh.performance !== undefined) {
+        const perfColor = lh.performance >= 75 ? 'good' : lh.performance >= 50 ? 'warning' : 'critical';
+        seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Mobile Speed</span><span class="audit-metric-value ${perfColor}">${lh.performance}/100</span></div>`;
+        if (lh.lcp) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Content Load Time</span><span class="audit-metric-value">${lh.lcp}</span></div>`;
+        if (lh.seo !== undefined) {
+            const seoScoreColor = lh.seo >= 80 ? 'good' : lh.seo >= 60 ? 'warning' : 'critical';
+            seoHtml += `<div class="audit-metric"><span class="audit-metric-label">SEO Score</span><span class="audit-metric-value ${seoScoreColor}">${lh.seo}/100</span></div>`;
+        }
+
+        // Badge
+        const avgScore = Math.round(((lh.performance || 0) + (lh.seo || 0)) / 2);
+        seoBadge.textContent = avgScore >= 75 ? 'Healthy' : avgScore >= 50 ? 'Needs Work' : 'Critical';
+        seoBadge.className = `audit-panel-badge ${avgScore >= 75 ? 'audit-badge-good' : avgScore >= 50 ? 'audit-badge-warning' : 'audit-badge-critical'}`;
+    } else {
+        seoHtml = `<div style="color:#888;font-size:13px;padding:8px 0;">
+            <div class="spinner" style="display:inline-block;width:14px;height:14px;border-width:2px;margin-right:6px;vertical-align:middle;"></div>
+            Analyzing website performance...
+        </div>`;
+        seoBadge.textContent = '';
+    }
+
+    // Search rankings placeholder
+    seoHtml += `<div id="clientSearchRankings" style="margin-top:10px;display:none;"></div>`;
+    seoBody.innerHTML = seoHtml;
+
+    // 3C: Patient Conversion
+    const convBody = document.getElementById('patientConversionBody');
+    const convBadge = document.getElementById('patientConversionBadge');
+    let convHtml = '';
+    let convIssues = 0;
+
+    // Online scheduling
+    convHtml += `<div class="audit-metric">
+        <span class="audit-metric-label">Online Scheduling</span>
+        <span class="audit-metric-value ${hasScheduling ? 'good' : 'critical'}">${hasScheduling ? (d.digital?.scheduling?.platform?.name || 'Available') : 'Not Found'}</span>
+    </div>`;
+    if (!hasScheduling) convIssues++;
+
+    // Services visibility
+    if (missingHV.length > 0) {
+        convHtml += `<div class="audit-metric">
+            <span class="audit-metric-label">Services Not on Website</span>
+            <span class="audit-metric-value warning">${missingHV.length} potential services</span>
+        </div>`;
+        convIssues++;
+    }
+
+    // Social presence
+    const socialCount = d.social?.platformCount || 0;
+    convHtml += `<div class="audit-metric">
+        <span class="audit-metric-label">Social Media Presence</span>
+        <span class="audit-metric-value ${socialCount >= 2 ? 'good' : socialCount > 0 ? 'warning' : 'critical'}">${socialCount > 0 ? socialCount + ' platforms' : 'Not Found'}</span>
+    </div>`;
+    if (socialCount === 0) convIssues++;
+
+    // Content / blog
+    convHtml += `<div class="audit-metric">
+        <span class="audit-metric-label">Content Strategy</span>
+        <span class="audit-metric-value ${d.content?.blogExists ? 'good' : 'warning'}">${d.content?.blogExists ? 'Blog Active' : 'No Blog Found'}</span>
+    </div>`;
+    if (!d.content?.blogExists) convIssues++;
+
+    // Insight text
+    if (convIssues >= 2) {
+        convHtml += `<div class="audit-insight">Patients today expect to book online, research services, and find you on social media. Closing these gaps could significantly increase new patient volume.</div>`;
+    }
+
+    convBadge.textContent = convIssues === 0 ? 'Strong' : convIssues <= 2 ? 'Opportunities' : 'Gaps Found';
+    convBadge.className = `audit-panel-badge ${convIssues === 0 ? 'audit-badge-good' : convIssues <= 2 ? 'audit-badge-warning' : 'audit-badge-critical'}`;
+    convBody.innerHTML = convHtml;
+}
+
+// ─── Render client-facing audit panels from SEO Intelligence data ───
+function renderClientAuditPanels(data) {
+    const biz = data.places?.locations?.[0] || data.places?.business || {};
+    const allLocs = data.places?.locations || (biz.name ? [biz] : []);
+    const competitors = data.places?.competitors || [];
+    const mobile = data.lighthouse?.mobile || lighthouseData || {};
+    const desktop = data.lighthouse?.desktop || {};
+    const audit = data.siteAudit || {};
+    const report = data.report || {};
+
+    // ═══ 3A: LOCAL VISIBILITY ═══
+    const localBody = document.getElementById('localVisibilityBody');
+    const localBadge = document.getElementById('localVisibilityBadge');
+    let localHtml = '';
+
+    if (allLocs.length > 0) {
+        // Multi-location summary
+        if (allLocs.length > 1) {
+            localHtml += `<div style="background:#E8F0FE;padding:6px 10px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#1A73E8;font-weight:500;">${allLocs.length} Google Business Profiles Found</div>`;
+        }
+
+        // Show key metrics for primary location (or all if multi)
+        allLocs.forEach((loc, idx) => {
+            if (allLocs.length > 1) {
+                localHtml += `<div style="font-weight:600;font-size:12px;color:var(--brand);padding:${idx > 0 ? '10px' : '0'} 0 6px 0;">${loc.address ? loc.address.split(',')[0] : 'Location ' + (idx+1)}</div>`;
+            }
+            const ratingColor = loc.rating >= 4.5 ? 'good' : loc.rating >= 4.0 ? 'warning' : 'critical';
+            const reviewColor = loc.reviewCount >= 50 ? 'good' : loc.reviewCount > 0 ? 'warning' : 'critical';
+            localHtml += `<div class="audit-metric"><span class="audit-metric-label">Rating</span><span class="audit-metric-value ${ratingColor}">${loc.rating ? loc.rating + '★' : 'Not found'}</span></div>`;
+            localHtml += `<div class="audit-metric"><span class="audit-metric-label">Reviews</span><span class="audit-metric-value ${reviewColor}">${loc.reviewCount !== undefined ? loc.reviewCount + ' reviews' : 'N/A'}</span></div>`;
+            if (!loc.hasHours) {
+                localHtml += `<div class="audit-metric"><span class="audit-metric-label">Business Hours</span><span class="audit-metric-value critical">Missing</span></div>`;
+            }
+        });
+
+        // Competitor comparison chart
+        if (competitors.length > 0) {
+            localHtml += `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+                <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">How You Compare</div>`;
+
+            const primaryLoc = allLocs[0];
+            const allEntries = [
+                { name: primaryLoc.name || 'Your Practice', rating: primaryLoc.rating || 0, reviewCount: primaryLoc.reviewCount || 0, isThis: true },
+                ...competitors,
+            ].sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+
+            const maxReviews = Math.max(...allEntries.map(c => c.reviewCount || 0), 1);
+
+            localHtml += allEntries.map(c => {
+                const pct = ((c.reviewCount || 0) / maxReviews) * 100;
+                const barColor = c.isThis ? '#4CAF50' : '#378ADD';
+                return `<div class="audit-comp-row">
+                    <div class="audit-comp-name ${c.isThis ? 'highlight' : ''}">${c.isThis ? '★ ' : ''}${c.name}</div>
+                    <div class="audit-comp-bar"><div class="audit-comp-fill" style="width:${pct}%;background:${barColor}"></div></div>
+                    <div class="audit-comp-score">${c.rating ? c.rating + '★' : 'N/A'} · ${c.reviewCount || 0}</div>
+                </div>`;
+            }).join('');
+            localHtml += `<div style="font-size:11px;color:#aaa;margin-top:6px;">Rating · Review count within 5 miles</div></div>`;
+        }
+
+        // Badge
+        const primaryRating = allLocs[0]?.rating || 0;
+        const primaryReviews = allLocs[0]?.reviewCount || 0;
+        const competitorAvgReviews = competitors.length > 0
+            ? Math.round(competitors.reduce((sum, c) => sum + (c.reviewCount || 0), 0) / competitors.length)
+            : 0;
+
+        let localStatus = 'good';
+        if (primaryRating < 4.0 || primaryReviews < 20) localStatus = 'critical';
+        else if (primaryRating < 4.5 || primaryReviews < competitorAvgReviews) localStatus = 'warning';
+
+        localBadge.textContent = localStatus === 'good' ? 'Strong' : localStatus === 'warning' ? 'Opportunities' : 'Needs Attention';
+        localBadge.className = `audit-panel-badge audit-badge-${localStatus}`;
+
+        // Insight
+        if (primaryReviews < competitorAvgReviews && competitorAvgReviews > 0) {
+            localHtml += `<div class="audit-insight">Your closest competitors average ${competitorAvgReviews} reviews. A consistent review strategy could significantly boost your local search visibility.</div>`;
+        } else if (primaryReviews > competitorAvgReviews && competitorAvgReviews > 0) {
+            localHtml += `<div class="audit-insight">You're outpacing local competitors on review volume — that's a competitive advantage. Maintaining this momentum keeps you at the top of local search results.</div>`;
+        }
+    } else {
+        localHtml = `<div style="color:#888;font-size:13px;padding:8px 0;">Google Business Profile not found. This is a critical gap — patients searching for eye care in your area won't find you in Google Maps.</div>`;
+        localBadge.textContent = 'Critical';
+        localBadge.className = 'audit-panel-badge audit-badge-critical';
+    }
+
+    localBody.innerHTML = localHtml;
+
+    // ═══ 3B: SEO HEALTH — update with full data ═══
+    const seoBody = document.getElementById('seoHealthBody');
+    const seoBadge = document.getElementById('seoHealthBadge');
+    let seoHtml = '';
+
+    const mPerf = mobile.performance ?? '--';
+    const dPerf = desktop.performance ?? '--';
+    const mPerfColor = typeof mPerf === 'number' ? (mPerf >= 75 ? 'good' : mPerf >= 50 ? 'warning' : 'critical') : '';
+    const dPerfColor = typeof dPerf === 'number' ? (dPerf >= 75 ? 'good' : dPerf >= 50 ? 'warning' : 'critical') : '';
+
+    seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Mobile Speed</span><span class="audit-metric-value ${mPerfColor}">${mPerf}${typeof mPerf === 'number' ? '/100' : ''}</span></div>`;
+    seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Desktop Speed</span><span class="audit-metric-value ${dPerfColor}">${dPerf}${typeof dPerf === 'number' ? '/100' : ''}</span></div>`;
+    if (mobile.lcp) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Content Load Time (Mobile)</span><span class="audit-metric-value">${mobile.lcp}</span></div>`;
+    if (mobile.seo !== undefined) {
+        const seoScoreColor = mobile.seo >= 80 ? 'good' : mobile.seo >= 60 ? 'warning' : 'critical';
+        seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Google SEO Score</span><span class="audit-metric-value ${seoScoreColor}">${mobile.seo}/100</span></div>`;
+    }
+
+    // Key site audit items (simplified — client doesn't need the full checklist)
+    if (audit.domain) {
+        if (!audit.ssl) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">SSL Security</span><span class="audit-metric-value critical">Not Secure</span></div>`;
+        if (!audit.hasLocalBusinessSchema) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Google Schema Markup</span><span class="audit-metric-value warning">Missing</span></div>`;
+        if (!audit.hasSitemap) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Sitemap</span><span class="audit-metric-value warning">Not Found</span></div>`;
+    }
+
+    // Badge
+    const avgPerf = typeof mPerf === 'number' ? mPerf : 0;
+    const avgSeo = mobile.seo || 0;
+    const combinedSeo = Math.round((avgPerf + avgSeo) / 2);
+    seoBadge.textContent = combinedSeo >= 75 ? 'Healthy' : combinedSeo >= 50 ? 'Needs Work' : 'Critical';
+    seoBadge.className = `audit-panel-badge ${combinedSeo >= 75 ? 'audit-badge-good' : combinedSeo >= 50 ? 'audit-badge-warning' : 'audit-badge-critical'}`;
+
+    // Insight
+    if (typeof mPerf === 'number' && mPerf < 50) {
+        seoHtml += `<div class="audit-insight">Mobile speed is critically low. With over 60% of patients searching from phones, slow load times mean lost appointments. Every second of delay costs roughly 7% of conversions.</div>`;
+    } else if (typeof mPerf === 'number' && mPerf < 75) {
+        seoHtml += `<div class="audit-insight">Your mobile speed is average. Optimizing it could improve both your Google ranking and patient conversion rate.</div>`;
+    }
+
+    // Placeholder for search rankings (filled async)
+    seoHtml += `<div id="clientSearchRankings" style="margin-top:10px;display:none;"></div>`;
+    seoBody.innerHTML = seoHtml;
 }
 
 function generateReflection(d) {
@@ -3263,6 +3686,12 @@ async function runSeoIntelligence(url) {
     seoReportData = results;
     renderSeoSection(results);
 
+    // Populate client-facing audit panels (Section 3) with SEO data
+    renderClientAuditPanels(results);
+
+    // Submit SEO data to Google Sheets (internal capture)
+    submitSeoToSheets(results);
+
     // Fire search rankings check async (doesn't block SEO section display)
     runSearchRankings().catch(err => console.error('Search rankings error:', err));
 }
@@ -3608,7 +4037,10 @@ function renderSearchRankings(data, el) {
     const mapPack = keywords.filter(k => k.inMapPack);
     const missing = keywords.filter(k => !k.found);
 
-    // Summary stats
+    // ── Also render client-facing search rankings summary in audit panel ──
+    renderClientSearchRankings(keywords, found, mapPack, missing, data.city);
+
+    // Summary stats (hidden internal section)
     let html = `<div class="seo-rank-summary">
         <div class="seo-rank-stat" style="flex:1">
             <div class="seo-rank-stat-value" style="color:#2E7D32">${found.length}</div>
@@ -3654,6 +4086,170 @@ function renderSearchRankings(data, el) {
     }
 
     el.innerHTML = html;
+}
+
+/**
+ * Render a simplified search rankings view inside the client-facing SEO Health audit panel.
+ */
+function renderClientSearchRankings(keywords, found, mapPack, missing, city) {
+    const el = document.getElementById('clientSearchRankings');
+    if (!el) return;
+
+    el.style.display = '';
+    el.style.borderTop = '1px solid var(--border)';
+    el.style.paddingTop = '10px';
+
+    let html = `<div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Search Rankings${city ? ' — ' + city : ''}</div>`;
+
+    // Summary metrics
+    html += `<div style="display:flex;gap:12px;margin-bottom:10px;">
+        <div style="flex:1;text-align:center;background:#F8F8F8;border-radius:6px;padding:8px;">
+            <div style="font-size:18px;font-weight:700;color:#2E7D32;">${found.length}</div>
+            <div style="font-size:11px;color:#888;">Ranking</div>
+        </div>
+        <div style="flex:1;text-align:center;background:#F8F8F8;border-radius:6px;padding:8px;">
+            <div style="font-size:18px;font-weight:700;color:#1565C0;">${mapPack.length}</div>
+            <div style="font-size:11px;color:#888;">Map Pack</div>
+        </div>
+        <div style="flex:1;text-align:center;background:#F8F8F8;border-radius:6px;padding:8px;">
+            <div style="font-size:18px;font-weight:700;color:#C62828;">${missing.length}</div>
+            <div style="font-size:11px;color:#888;">Not Found</div>
+        </div>
+    </div>`;
+
+    // Show top 5 keywords only (client version is concise)
+    const topKeywords = keywords.slice(0, 5);
+    html += topKeywords.map(k => {
+        let badge = '';
+        if (k.inMapPack) {
+            badge = `<span style="background:#E3F2FD;color:#1565C0;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;">📍 Map #${k.mapPackPosition}</span>`;
+        } else if (k.rank && k.rank <= 10) {
+            const color = k.rank <= 3 ? '#2E7D32' : '#E65100';
+            const bg = k.rank <= 3 ? '#E8F5E9' : '#FFF3E0';
+            badge = `<span style="background:${bg};color:${color};padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;">#${k.rank}</span>`;
+        } else {
+            badge = `<span style="background:#FFEBEE;color:#C62828;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;">Not found</span>`;
+        }
+        return `<div class="audit-metric"><span class="audit-metric-label">${k.keyword}</span>${badge}</div>`;
+    }).join('');
+
+    if (keywords.length > 5) {
+        html += `<div style="font-size:11px;color:#aaa;margin-top:4px;text-align:center;">+ ${keywords.length - 5} more keywords checked</div>`;
+    }
+
+    // Insight based on rankings
+    if (missing.length > found.length) {
+        html += `<div class="audit-insight">You're missing from Google results for most searched keywords in your area. This means potential patients are finding your competitors instead.</div>`;
+    } else if (mapPack.length === 0 && found.length > 0) {
+        html += `<div class="audit-insight">You're ranking organically but not appearing in the Google Map Pack — the 3-listing box that appears at the top of local searches. Optimizing your GBP could change that.</div>`;
+    }
+
+    el.innerHTML = html;
+}
+
+/**
+ * Submit SEO Intelligence data to Google Sheets (internal capture).
+ * Fires after SEO data loads — appends technical data to the same row.
+ */
+function submitSeoToSheets(data) {
+    if (!CONFIG.GOOGLE_SHEETS_URL || CONFIG.GOOGLE_SHEETS_URL.includes('PASTE_YOUR')) return;
+
+    const report = data.report || {};
+    const audit = data.siteAudit || {};
+    const mobile = data.lighthouse?.mobile || lighthouseData || {};
+    const desktop = data.lighthouse?.desktop || {};
+    const pr = data.pageRank || {};
+    const locations = data.places?.locations || [];
+    const biz = locations.length > 0 ? locations[0] : (data.places?.business || {});
+    const competitors = data.places?.competitors || [];
+
+    const payload = {
+        _type: 'seo_update',
+        timestamp: new Date().toISOString(),
+        url: userAnswers.url || dossier?.meta?.url || '',
+        email: userAnswers.email || '',
+
+        // SEO Report scores
+        seoOverallScore: report.overallScore ?? '',
+        seoGrade: report.grade || '',
+        seoHeadline: report.headline || '',
+        pillarPageSpeed: report.pillarScores?.pageSpeed ?? '',
+        pillarOnPageSeo: report.pillarScores?.onPageSeo ?? '',
+        pillarLocalGbp: report.pillarScores?.localGbp ?? '',
+        pillarBacklinks: report.pillarScores?.backlinks ?? '',
+        pillarTechnical: report.pillarScores?.technical ?? '',
+
+        // PageSpeed Insights
+        mobilePerformance: mobile.performance ?? '',
+        mobileSeo: mobile.seo ?? '',
+        mobileAccessibility: mobile.accessibility ?? '',
+        mobileLcp: mobile.lcp || '',
+        mobileFcp: mobile.fcp || '',
+        desktopPerformance: desktop.performance ?? '',
+        desktopLcp: desktop.lcp || '',
+
+        // Domain Authority
+        domainAuthority: pr.pageRank ?? '',
+        domainAuthorityLabel: pr.label || '',
+
+        // GBP Primary Location
+        gbpName: biz.name || '',
+        gbpRating: biz.rating ?? '',
+        gbpReviewCount: biz.reviewCount ?? '',
+        gbpPhotoCount: biz.photoCount ?? '',
+        gbpHasHours: biz.hasHours ? 'Yes' : 'No',
+        gbpCategory: biz.primaryCategory || '',
+        gbpStatus: biz.businessStatus || '',
+        gbpAddress: biz.address || '',
+        gbpPhone: biz.phone || '',
+        gbpMapsUrl: biz.mapsUrl || '',
+        gbpLocationCount: locations.length,
+
+        // All GBP locations (flattened)
+        gbpAllLocations: locations.map(l => `${l.name}|${l.rating || 'N/A'}|${l.reviewCount || 0}|${l.address || ''}`).join(' ;; '),
+
+        // Competitors
+        competitorCount: competitors.length,
+        competitors: competitors.map(c => `${c.name}|${c.rating || 'N/A'}|${c.reviewCount || 0}`).join(' ;; '),
+
+        // Site Audit (full technical checklist)
+        auditSsl: audit.ssl ? 'Yes' : 'No',
+        auditTitleTag: audit.titleTag || '',
+        auditTitleLength: audit.titleLength ?? '',
+        auditMetaDesc: audit.metaDescription ? 'Yes' : 'No',
+        auditMetaDescLength: audit.metaDescriptionLength ?? '',
+        auditH1: audit.h1 || '',
+        auditH1Count: audit.h1Count ?? '',
+        auditHasSchema: audit.hasSchemaMarkup ? 'Yes' : 'No',
+        auditHasLocalSchema: audit.hasLocalBusinessSchema ? 'Yes' : 'No',
+        auditHasCanonical: audit.hasCanonical ? 'Yes' : 'No',
+        auditHasViewport: audit.hasViewport ? 'Yes' : 'No',
+        auditHasSitemap: audit.hasSitemap ? 'Yes' : 'No',
+        auditSitemapUrls: audit.sitemapUrlCount ?? '',
+        auditHasRobots: audit.hasRobots ? 'Yes' : 'No',
+        auditBlocksGooglebot: audit.blocksGooglebot ? 'YES' : 'No',
+        auditAltTextCoverage: audit.altTextCoverage ?? '',
+        auditHasOgTitle: audit.hasOgTitle ? 'Yes' : 'No',
+        auditHasOgImage: audit.hasOgImage ? 'Yes' : 'No',
+        auditHasBookingCta: (audit.hasOnlineBooking || audit.hasBookingCTA) ? 'Yes' : 'No',
+
+        // Key findings
+        findingsCount: (report.findings || []).length,
+        findingsCritical: (report.findings || []).filter(f => f.severity === 'critical').map(f => f.detail).join(' ;; '),
+        findingsWarning: (report.findings || []).filter(f => f.severity === 'warning').map(f => f.detail).join(' ;; '),
+        topOpportunity: report.topOpportunity || '',
+    };
+
+    try {
+        fetch(CONFIG.GOOGLE_SHEETS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+    } catch (e) {
+        console.warn('SEO Sheets submission error:', e);
+    }
 }
 
 </script>
