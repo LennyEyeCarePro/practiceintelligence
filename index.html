@@ -1862,6 +1862,11 @@ function resetToStart() {
     const btn = document.getElementById('btnAnalyze');
     btn.disabled = false;
     btn.textContent = 'Analyze My Practice';
+    // Clear old step content so it doesn't flash when re-entering screen 2
+    document.getElementById('stepContainer').innerHTML = '';
+    // Reset SEO Intelligence section
+    const seoSection = document.getElementById('seoIntelligenceSection');
+    if (seoSection) seoSection.style.display = 'none';
     // Restore step progress bar and analysis bar to original state
     document.querySelector('.step-progress').style.display = '';
     const bgBar = document.getElementById('bgAnalysisBar');
