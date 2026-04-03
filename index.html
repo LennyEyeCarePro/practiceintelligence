@@ -1113,6 +1113,31 @@ body {
 .seo-comp-fill { height: 6px; border-radius: 3px; }
 .seo-comp-score { font-size: 14px; font-weight: 600; width: 36px; text-align: right; flex-shrink: 0; }
 
+/* Search Rankings */
+.seo-rank-row {
+    display: flex; align-items: center; padding: 10px 0;
+    border-bottom: 1px solid #F5F5F5; gap: 10px;
+}
+.seo-rank-row:last-of-type { border-bottom: none; }
+.seo-rank-keyword { flex: 1; font-size: 13px; color: #1a1a1a; }
+.seo-rank-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 36px; height: 28px; border-radius: 6px;
+    font-size: 13px; font-weight: 700; padding: 0 8px; flex-shrink: 0;
+}
+.seo-rank-badge.rank-top3 { background: #E8F5E9; color: #2E7D32; }
+.seo-rank-badge.rank-top10 { background: #FFF3E0; color: #E65100; }
+.seo-rank-badge.rank-top20 { background: #FFF8E1; color: #F57F17; }
+.seo-rank-badge.rank-missing { background: #FFEBEE; color: #C62828; }
+.seo-rank-badge.rank-mappack { background: #E3F2FD; color: #1565C0; }
+.seo-rank-summary {
+    display: flex; gap: 16px; padding: 12px 0; margin-bottom: 8px;
+    border-bottom: 2px solid #F0F0F0; font-size: 13px;
+}
+.seo-rank-stat { text-align: center; }
+.seo-rank-stat-value { font-size: 22px; font-weight: 700; }
+.seo-rank-stat-label { font-size: 11px; color: #888; margin-top: 2px; }
+
 /* Findings */
 .seo-finding-row {
     display: flex; align-items: flex-start; gap: 12px;
@@ -1419,6 +1444,18 @@ body {
             <!-- On-Page SEO Checklist -->
             <div class="seo-section-label">ON-PAGE SEO CHECKLIST</div>
             <div class="seo-card" id="seoChecklist"></div>
+
+            <!-- Search Rankings -->
+            <div class="seo-section-label">SEARCH RANKINGS</div>
+            <div class="seo-card" id="seoSearchRankings">
+                <div style="padding:12px 0;color:#888;font-size:14px;text-align:center">
+                    <div class="seo-rankings-loading" style="display:none" id="rankingsLoading">
+                        <div style="font-size:13px;color:#378ADD;font-weight:500">Checking Google rankings...</div>
+                        <div style="font-size:12px;color:#aaa;margin-top:4px">This may take up to 90 seconds</div>
+                    </div>
+                    <div id="rankingsContent">Search ranking data will appear here</div>
+                </div>
+            </div>
 
             <!-- Local Competitors -->
             <div class="seo-section-label">LOCAL COMPETITORS</div>
@@ -3148,19 +3185,17 @@ async function runSeoIntelligence(url) {
     const businessName = dossier?.practice?.name || '';
     const city = extractCityFromDossier();
     const practicePhone = dossier?.practice?.phone || '';
-    const practiceAddress = dossier?.locations?.addresses?.[0] || '';
 
     const results = { siteAudit: null, lighthouse: null, pageRank: null, places: null, report: null };
 
     try {
         // Phase 1: Parallel fetch of site-audit, pagerank, places
-        // Places API now accepts multiple params for reliable matching
+        // Places API now uses Text Search to DISCOVER all GBP listings automatically
         const placesParams = new URLSearchParams();
         if (businessName) placesParams.set('businessName', businessName);
         if (city) placesParams.set('city', city);
         if (domain) placesParams.set('website', domain);
         if (practicePhone) placesParams.set('phone', practicePhone);
-        if (practiceAddress) placesParams.set('address', practiceAddress);
 
         const [auditResp, rankResp, placesResp] = await Promise.all([
             fetch(`/api/site-audit?url=${encodeURIComponent(domain)}`).then(r => r.json()).catch(() => null),
@@ -3198,6 +3233,9 @@ async function runSeoIntelligence(url) {
 
     seoReportData = results;
     renderSeoSection(results);
+
+    // Fire search rankings check async (doesn't block SEO section display)
+    runSearchRankings().catch(err => console.error('Search rankings error:', err));
 }
 
 function extractCityFromDossier() {
@@ -3221,7 +3259,9 @@ function renderSeoSection(data) {
     const mobile = data.lighthouse?.mobile || lighthouseData || {};
     const desktop = data.lighthouse?.desktop || {};
     const pr = data.pageRank || {};
-    const biz = data.places?.business || {};
+    // Support both multi-location (locations[]) and single (business{}) responses
+    const locations = data.places?.locations || [];
+    const biz = locations.length > 0 ? locations[0] : (data.places?.business || {});
     const competitors = data.places?.competitors || [];
 
     section.style.display = '';
@@ -3289,25 +3329,42 @@ function renderSeoSection(data) {
         </div>` : ''}
     `;
 
-    // ── Google Business Profile ──
+    // ── Google Business Profile (supports multi-location) ──
     const gbpEl = document.getElementById('seoGbpCard');
-    if (biz.name) {
-        const rows = [];
-        rows.push(gbpRow('Business Name', biz.name));
-        rows.push(gbpRow('Rating', biz.rating ? `${biz.rating}★` : 'Not found', biz.rating >= 4.5 ? 'good' : biz.rating >= 4.0 ? 'warning' : 'critical'));
-        rows.push(gbpRow('Reviews', biz.reviewCount !== undefined ? `${biz.reviewCount} reviews` : 'N/A',
-            biz.reviewCount >= 50 ? '' : biz.reviewCount > 0 ? 'warning' : 'critical',
-            biz.reviewCount < 50 ? 'low' : ''));
-        rows.push(gbpRow('Photos', biz.photoCount !== undefined ? `${biz.photoCount} photos` : 'N/A',
-            biz.photoCount >= 10 ? '' : biz.photoCount > 0 ? '' : 'critical',
-            biz.photoCount < 5 ? 'low' : ''));
-        rows.push(gbpRow('Hours Set', biz.hasHours ? 'Yes' : 'Missing', biz.hasHours ? 'good' : 'critical'));
-        rows.push(gbpRow('Category', biz.primaryCategory || 'Unknown',
-            (biz.primaryCategory === 'Optometrist' || biz.primaryCategory === 'Ophthalmologist') ? 'good' : 'warning'));
-        rows.push(gbpRow('Status', biz.businessStatus === 'OPERATIONAL' ? 'Active' : biz.businessStatus || 'Unknown',
-            biz.businessStatus === 'OPERATIONAL' ? 'good' : 'warning'));
+    const allGbpLocations = locations.length > 0 ? locations : (biz.name ? [biz] : []);
 
-        gbpEl.innerHTML = rows.join('');
+    if (allGbpLocations.length > 0) {
+        let gbpHtml = '';
+        allGbpLocations.forEach((loc, idx) => {
+            if (allGbpLocations.length > 1) {
+                gbpHtml += `<div style="font-weight:600;font-size:14px;color:#378ADD;padding:${idx > 0 ? '16px' : '4px'} 0 8px 0;border-top:${idx > 0 ? '2px solid #E8F0FE' : 'none'}">📍 Location ${idx + 1}${loc.address ? ' — ' + loc.address.split(',')[0] : ''}</div>`;
+            }
+            const rows = [];
+            rows.push(gbpRow('Business Name', loc.name));
+            rows.push(gbpRow('Rating', loc.rating ? `${loc.rating}★` : 'Not found', loc.rating >= 4.5 ? 'good' : loc.rating >= 4.0 ? 'warning' : 'critical'));
+            rows.push(gbpRow('Reviews', loc.reviewCount !== undefined ? `${loc.reviewCount} reviews` : 'N/A',
+                loc.reviewCount >= 50 ? '' : loc.reviewCount > 0 ? 'warning' : 'critical',
+                loc.reviewCount < 50 ? 'low' : ''));
+            rows.push(gbpRow('Photos', loc.photoCount !== undefined ? `${loc.photoCount} photos` : 'N/A',
+                loc.photoCount >= 10 ? '' : loc.photoCount > 0 ? '' : 'critical',
+                loc.photoCount < 5 ? 'low' : ''));
+            rows.push(gbpRow('Hours Set', loc.hasHours ? 'Yes' : 'Missing', loc.hasHours ? 'good' : 'critical'));
+            rows.push(gbpRow('Category', loc.primaryCategory || 'Unknown',
+                (loc.primaryCategory === 'Optometrist' || loc.primaryCategory === 'Ophthalmologist') ? 'good' : 'warning'));
+            rows.push(gbpRow('Status', loc.businessStatus === 'OPERATIONAL' ? 'Active' : loc.businessStatus || 'Unknown',
+                loc.businessStatus === 'OPERATIONAL' ? 'good' : 'warning'));
+            if (loc.address) {
+                rows.push(gbpRow('Address', loc.address));
+            }
+            if (loc.phone) {
+                rows.push(gbpRow('Phone', loc.phone));
+            }
+            gbpHtml += rows.join('');
+        });
+        if (allGbpLocations.length > 1) {
+            gbpHtml = `<div style="background:#E8F0FE;padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:13px;color:#1A73E8;font-weight:500">${allGbpLocations.length} GBP Locations Found</div>` + gbpHtml;
+        }
+        gbpEl.innerHTML = gbpHtml;
     } else {
         gbpEl.innerHTML = `<div style="padding:12px 0;color:#888;font-size:14px;text-align:center">
             ${data.places?.error === 'GOOGLE_PLACES_KEY not configured' ? 'Google Places API key not configured — add GOOGLE_PLACES_KEY to Vercel env vars' : 'Google Business Profile not found'}
@@ -3359,11 +3416,18 @@ function renderSeoSection(data) {
         document.getElementById('seoBreakdownBars').innerHTML += `<div style="border-top:1px solid #F0F0F0;margin-top:4px;padding-top:4px">${daRow}</div>`;
     }
 
-    // ── Competitors ──
+    // ── Competitors (include all practice locations in the chart) ──
     const compEl = document.getElementById('seoCompetitors');
-    if (competitors.length > 0 && biz.name) {
+    if (competitors.length > 0 && (biz.name || allGbpLocations.length > 0)) {
+        // Add all practice locations as "this practice" entries
+        const practiceEntries = allGbpLocations.map((loc, idx) => ({
+            name: allGbpLocations.length > 1 ? `${loc.name} (${loc.address ? loc.address.split(',')[0] : 'Loc ' + (idx+1)})` : loc.name,
+            rating: loc.rating || 0,
+            reviewCount: loc.reviewCount || 0,
+            isThis: true,
+        }));
         const allEntries = [
-            { name: biz.name, rating: biz.rating || 0, reviewCount: biz.reviewCount || 0, isThis: true },
+            ...practiceEntries,
             ...competitors,
         ].sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
@@ -3431,6 +3495,119 @@ function checkRow(label, pass, detail, warnType) {
         <div class="seo-check-text">${label}</div>
         <div class="seo-check-status" style="color:${color}">${detail}</div>
     </div>`;
+}
+
+/**
+ * Search Rankings — checks where the practice ranks on Google for relevant keywords.
+ * Called after SEO section renders (runs async, fills in when ready).
+ */
+async function runSearchRankings() {
+    const loadingEl = document.getElementById('rankingsLoading');
+    const contentEl = document.getElementById('rankingsContent');
+    if (!loadingEl || !contentEl) return;
+
+    const domain = (dossier?.practice?.url || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    const city = extractCityFromDossier();
+    const practiceType = dossier?.practice?.type || 'unknown';
+    const serviceIds = (dossier?.services?.detected || []).map(s => s.id);
+
+    if (!domain || !city) {
+        contentEl.innerHTML = '<div style="color:#888;font-size:13px">Need domain and city to check rankings</div>';
+        return;
+    }
+
+    // Extract state from first address
+    const addr = dossier?.locations?.addresses?.[0] || '';
+    const stateMatch = addr.match(/,\s*[A-Za-z\s]+,?\s*([A-Z]{2})/);
+    const state = stateMatch ? stateMatch[1] : '';
+
+    // Show loading
+    loadingEl.style.display = '';
+    contentEl.style.display = 'none';
+
+    try {
+        const resp = await fetch('/api/search-rankings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain, city, state, practiceType, serviceIds }),
+        });
+        const data = await resp.json();
+
+        loadingEl.style.display = 'none';
+        contentEl.style.display = '';
+
+        if (data.error && (!data.keywords || data.keywords.length === 0)) {
+            contentEl.innerHTML = `<div style="color:#888;font-size:13px">${data.error}</div>`;
+            return;
+        }
+
+        renderSearchRankings(data, contentEl);
+
+    } catch (err) {
+        loadingEl.style.display = 'none';
+        contentEl.style.display = '';
+        contentEl.innerHTML = `<div style="color:#888;font-size:13px">Could not check search rankings: ${err.message}</div>`;
+    }
+}
+
+function renderSearchRankings(data, el) {
+    const keywords = data.keywords || [];
+    if (keywords.length === 0) {
+        el.innerHTML = '<div style="color:#888;font-size:13px">No ranking data available</div>';
+        return;
+    }
+
+    const found = keywords.filter(k => k.found);
+    const top3 = keywords.filter(k => k.rank && k.rank <= 3);
+    const mapPack = keywords.filter(k => k.inMapPack);
+    const missing = keywords.filter(k => !k.found);
+
+    // Summary stats
+    let html = `<div class="seo-rank-summary">
+        <div class="seo-rank-stat" style="flex:1">
+            <div class="seo-rank-stat-value" style="color:#2E7D32">${found.length}</div>
+            <div class="seo-rank-stat-label">Ranking</div>
+        </div>
+        <div class="seo-rank-stat" style="flex:1">
+            <div class="seo-rank-stat-value" style="color:#1565C0">${mapPack.length}</div>
+            <div class="seo-rank-stat-label">Map Pack</div>
+        </div>
+        <div class="seo-rank-stat" style="flex:1">
+            <div class="seo-rank-stat-value" style="color:#C62828">${missing.length}</div>
+            <div class="seo-rank-stat-label">Not Found</div>
+        </div>
+        <div class="seo-rank-stat" style="flex:1">
+            <div class="seo-rank-stat-value">${keywords.length}</div>
+            <div class="seo-rank-stat-label">Checked</div>
+        </div>
+    </div>`;
+
+    // Individual keyword rows
+    html += keywords.map(k => {
+        let badge = '';
+        if (k.inMapPack) {
+            badge = `<div class="seo-rank-badge rank-mappack">📍 Map #${k.mapPackPosition}</div>`;
+        } else if (k.rank && k.rank <= 3) {
+            badge = `<div class="seo-rank-badge rank-top3">#${k.rank}</div>`;
+        } else if (k.rank && k.rank <= 10) {
+            badge = `<div class="seo-rank-badge rank-top10">#${k.rank}</div>`;
+        } else if (k.rank && k.rank <= 20) {
+            badge = `<div class="seo-rank-badge rank-top20">#${k.rank}</div>`;
+        } else {
+            badge = `<div class="seo-rank-badge rank-missing">Not found</div>`;
+        }
+
+        return `<div class="seo-rank-row">
+            <div class="seo-rank-keyword">${k.keyword}</div>
+            ${badge}
+        </div>`;
+    }).join('');
+
+    if (data.city) {
+        html += `<div style="font-size:11px;color:#aaa;margin-top:10px;text-align:center">Rankings checked for ${data.city} area · ${new Date(data.searchedAt).toLocaleDateString()}</div>`;
+    }
+
+    el.innerHTML = html;
 }
 
 </script>
