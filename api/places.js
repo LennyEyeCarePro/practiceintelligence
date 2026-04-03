@@ -143,8 +143,9 @@ export default async function handler(req, res) {
  */
 async function textSearch(query, apiKey) {
     try {
+        // No type filter — "health" is not a valid Google place type and blocks results
         const resp = await fetch(
-            `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&type=health&key=${apiKey}`,
+            `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${apiKey}`,
             { signal: AbortSignal.timeout(10000) }
         );
         const data = await resp.json();
