@@ -3022,8 +3022,7 @@ function renderCoreAuditFromDossier(d) {
         seoBadge.textContent = '';
     }
 
-    // Search rankings placeholder
-    seoHtml += `<div id="clientSearchRankings" style="margin-top:10px;display:none;"></div>`;
+    // Note: search rankings placeholder is added by renderClientAuditPanels() when SEO data arrives
     seoBody.innerHTML = seoHtml;
 
     // 3C: Patient Conversion
