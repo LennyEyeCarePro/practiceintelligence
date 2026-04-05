@@ -88,7 +88,7 @@ body {
 .screen {
     display: none;
     animation: fadeUp .5s ease both;
-    flex: 1;
+    flex: 0 0 auto;
 }
 
 .screen.active { display: flex; flex-direction: column; }
@@ -2187,7 +2187,7 @@ function renderStep2() {
     }
 
     if (d.services?.missingHighValue?.length > 0) {
-        svcHtml.push(`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--surface-alt)"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--danger)">Not Found on Your Site</span><div style="margin-top:4px">${d.services.missingHighValue.map(l => `<span class="dossier-tag tag-red">${l}</span>`).join(' ')}</div></div>`);
+        svcHtml.push(`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--surface-alt)"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#92400E">Additional Marketing Opportunities</span><div style="margin-top:4px">${d.services.missingHighValue.map(l => `<span class="dossier-tag tag-amber">${l}</span>`).join(' ')}</div></div>`);
     }
 
     if (svcHtml.length === 0) {
@@ -2526,7 +2526,7 @@ function renderFullStory() {
         }
     }
     if (d.services?.missingHighValue?.length > 0) {
-        svcHtml.push(`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--surface-alt)"><span class="dossier-row-label" style="font-size:11px;color:var(--danger);text-transform:uppercase;letter-spacing:.5px">Not Found on Your Site</span><div style="margin-top:4px">${d.services.missingHighValue.map(l => `<span class="dossier-tag tag-red">${l}</span>`).join(' ')}</div></div>`);
+        svcHtml.push(`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--surface-alt)"><span class="dossier-row-label" style="font-size:11px;color:#92400E;text-transform:uppercase;letter-spacing:.5px">Additional Marketing Opportunities</span><div style="margin-top:4px">${d.services.missingHighValue.map(l => `<span class="dossier-tag tag-amber">${l}</span>`).join(' ')}</div></div>`);
     }
     if (svcHtml.length === 0) svcHtml.push('<div style="font-size:13px;color:var(--text-muted)">No services detected</div>');
     document.getElementById('dossierServices').innerHTML = svcHtml.join('');
@@ -2696,9 +2696,9 @@ function generateNarrative(d) {
         html += '<p>';
         const svcObs = observations.filter(o => !['online scheduling'].includes(o));
         if (svcObs.length > 0) {
-            html += `Something we found interesting — <strong>${svcObs.slice(0, 3).join(', ')}</strong>${svcObs.length > 3 ? ` and ${svcObs.length - 3} other areas` : ''} ${svcObs.length === 1 ? 'doesn\'t appear' : 'don\'t appear'} to have a strong presence on your website. `;
-            html += `<strong>We're curious — are these services you offer in-practice but haven't showcased online yet?</strong> `;
-            html += `It's a question worth exploring, because patients in your area are actively searching for these services.`;
+            html += `Something we found interesting — <strong>${svcObs.slice(0, 3).join(', ')}</strong>${svcObs.length > 3 ? ` and ${svcObs.length - 3} other areas` : ''} ${svcObs.length === 1 ? 'could benefit from' : 'could benefit from'} stronger online visibility. `;
+            html += `<strong>If you offer these services, there's an opportunity to better showcase them to patients who are already searching.</strong> `;
+            html += `Dedicated pages for these services often become some of the highest-converting pages on a practice's site.`;
         }
         if (!hasScheduling) {
             html += ` We also noticed online scheduling doesn't seem to be set up yet — have you considered it? With ${Math.round(INDUSTRY.benchmarks.patientsPreferOnlineBooking * 100)}% of patients preferring to book online, practices that add it often see an immediate lift.`;
@@ -3203,8 +3203,8 @@ function renderCoreAuditFromDossier(d) {
     // Services visibility
     if (missingHV.length > 0) {
         convHtml += `<div class="audit-metric">
-            <span class="audit-metric-label">Services Not on Website</span>
-            <span class="audit-metric-value warning">${missingHV.length} potential services</span>
+            <span class="audit-metric-label">Services to Highlight Online</span>
+            <span class="audit-metric-value warning">${missingHV.length} opportunities</span>
         </div>`;
         convIssues++;
     }
@@ -3379,7 +3379,7 @@ function generateReflection(d) {
     // Pick the most resonant reflection based on context
     if (isECP) {
         if (missingHV.length >= 2) {
-            return `Here's something worth thinking about: your EyeCarePro program handles the digital foundation well, but ${missingHV.length} services that you may offer aren't visible online yet. What would it look like if every service ${name} provides was easy to find?`;
+            return `Here's something worth thinking about: your EyeCarePro program handles the digital foundation well, and there are ${missingHV.length} additional services that could benefit from stronger online promotion. What would it look like if every service ${name} provides was easy for patients to find and understand?`;
         }
         return `Your website is built on a solid platform. But here's what we'd love to explore with you: is it working as hard as your clinical team? Is it bringing in the right patients, for the right services, at the right time?`;
     }
@@ -3590,8 +3590,8 @@ function generateInsights(d) {
         if (missingHV.length >= 2) {
             insights.push({
                 icon: '📈', iconClass: 'insight-icon-blue', priority: 7,
-                title: 'Does Your Site Show Everything You Offer?',
-                text: `We found ${missingHV.length} services that don't appear on your website. If you offer these in-practice, dedicated landing pages could capture patients who are already searching for them. It's worth checking whether the site matches what's happening in your exam rooms.`,
+                title: 'Could Your Website Better Showcase What You Offer?',
+                text: `We identified ${missingHV.length} services that could benefit from stronger online promotion. Dedicated landing pages for these services often become high-converting entry points — capturing patients who are actively searching. It's worth exploring whether your digital presence fully reflects what's happening in your exam rooms.`,
             });
         }
     }
@@ -3610,7 +3610,7 @@ function generateInsights(d) {
     return insights.slice(0, 6);
 }
 
-function generateMissingRevenue(d) {
+function generateGrowthOpportunities(d) {
     const items = [];
     const missingHV = d.services?.missingHighValue || [];
     const type = d.practice?.type || 'default';
