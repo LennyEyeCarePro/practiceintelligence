@@ -1049,6 +1049,76 @@ body {
 .insight-text strong { color: var(--text); }
 .insight-text { color: var(--text-secondary); }
 
+/* ─── Strategic Focus Card ─── */
+.strategic-focus-card {
+    position: relative;
+    background: linear-gradient(135deg, #0B2948 0%, #143D65 50%, #1A4F7A 100%);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px 24px;
+    color: #fff;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(11,41,72,.25), 0 1px 3px rgba(0,0,0,.1);
+}
+.strategic-focus-card::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 160px;
+    height: 160px;
+    background: radial-gradient(circle, rgba(78,205,196,.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.strategic-focus-card::after {
+    content: '';
+    position: absolute;
+    bottom: -30px;
+    left: -30px;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(255,255,255,.06) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.strategic-focus-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #4ECDC4;
+    background: rgba(78,205,196,.12);
+    border: 1px solid rgba(78,205,196,.25);
+    border-radius: 20px;
+    padding: 4px 12px;
+    margin-bottom: 14px;
+}
+.strategic-focus-label {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+    margin-bottom: 12px;
+    position: relative;
+    z-index: 1;
+}
+.strategic-focus-divider {
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, #4ECDC4, rgba(78,205,196,.3));
+    border-radius: 2px;
+    margin-bottom: 14px;
+}
+.strategic-focus-text {
+    font-size: 14px;
+    line-height: 1.65;
+    color: rgba(255,255,255,.85);
+    margin: 0;
+    position: relative;
+    z-index: 1;
+}
+
 .results-cta {
     text-align: center;
     padding: 28px 20px;
@@ -1750,15 +1820,11 @@ body {
         </div>
 
         <!-- ═══ STRATEGIC ADVICE (from Connectivity Logic) ═══ -->
-        <div id="strategicAdviceSection" class="gap-card" style="display:none;">
-            <div class="gap-card-header">
-                <span class="gap-card-icon">🎯</span>
-                <span class="gap-card-title">Our Strategic Focus</span>
-            </div>
-            <div class="gap-card-body">
-                <div style="font-size:13px;font-weight:600;color:var(--brand);margin-bottom:6px;" id="strategicAdviceLabel"></div>
-                <p id="strategicAdviceText"></p>
-            </div>
+        <div id="strategicAdviceSection" class="strategic-focus-card" style="display:none;">
+            <div class="strategic-focus-badge">YOUR PERSONALIZED STRATEGY</div>
+            <div class="strategic-focus-label" id="strategicAdviceLabel"></div>
+            <div class="strategic-focus-divider"></div>
+            <p class="strategic-focus-text" id="strategicAdviceText"></p>
         </div>
 
         <!-- ═══ SECTION 7: THE PATH FORWARD ═══ -->
