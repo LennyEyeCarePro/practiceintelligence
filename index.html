@@ -2809,7 +2809,7 @@ function renderFullStory() {
     const digRows = [];
     digRows.push(['Website Platform', d.digital?.cms?.name || 'Not detected']);
     digRows.push(['Marketing Vendor', d.digital?.marketingVendor ? (() => {
-        if (d.digital.isEyeCarePro) return `<span class="dossier-tag tag-blue">EyeCarePro (Existing Client)</span> <span style="font-size:11px;color:var(--text-muted)">— may be website-only or looking for upgrade</span>`;
+        if (d.digital.isEyeCarePro) return `<span class="dossier-tag tag-blue">EyeCarePro (Existing Client)</span>`;
         if (d.digital.isCompetitorClient) return `<span class="dossier-tag tag-green">${d.digital.marketingVendor.name}</span>`;
         return `<span class="dossier-tag tag-green">${d.digital.marketingVendor.name}</span>`;
     })() : 'None detected']);
