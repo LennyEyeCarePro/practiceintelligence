@@ -310,7 +310,7 @@ export default async function handler(req, res) {
         const dealProps = {
             dealname: dealName,
             pipeline: 'default',
-            dealstage: 'appointmentscheduled',
+            dealstage: 'Interested',
             amount: String(gapAmount),
             description: [
                 `Practice: ${data.practiceName || domain}`,
