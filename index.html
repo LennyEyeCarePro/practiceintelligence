@@ -3032,42 +3032,48 @@ function showResults() {
 function renderRevenueGap(d) {
     const container = document.getElementById('revenueGapContent');
     const isECP = d.digital?.isEyeCarePro;
-    const missing = generateMissingRevenue(d);
     const providerCount = d.doctors?.length || 1;
-    const locCount = d.locations?.count || 1;
+    const serviceMarketing = d.services?.serviceMarketing || [];
+    const undermarketed = d.services?.undermarketed || [];
 
-    // Estimate monthly revenue gap based on missing services + infrastructure gaps
+    // ─── New approach: Revenue opportunity based on MARKETING QUALITY of existing services ───
+    // Not "you're missing these services" but "you could earn more by promoting what you already do"
+    const opportunities = [];
     let monthlyLow = 0;
     let monthlyHigh = 0;
-    const missingHV = d.services?.missingHighValue || [];
-    const gapDrivers = []; // Track what contributes to the estimate
 
-    // Service-based estimates (monthly)
-    if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) {
-        monthlyLow += 1500; monthlyHigh += 5000;
-        gapDrivers.push({ label: 'Dry Eye Services', low: 1500, high: 5000, type: 'service' });
-    }
-    if (missingHV.some(s => s.toLowerCase().includes('myopia'))) {
-        monthlyLow += 1200; monthlyHigh += 4000;
-        gapDrivers.push({ label: 'Myopia Management', low: 1200, high: 4000, type: 'service' });
-    }
-    if (missingHV.some(s => s.toLowerCase().includes('scleral'))) {
-        monthlyLow += 800; monthlyHigh += 3000;
-        gapDrivers.push({ label: 'Scleral Lenses', low: 800, high: 3000, type: 'service' });
-    }
-    if (missingHV.some(s => /premium|iol/i.test(s))) {
-        monthlyLow += 5000; monthlyHigh += 25000;
-        gapDrivers.push({ label: 'Premium IOLs', low: 5000, high: 25000, type: 'service' });
-    }
-    if (missingHV.some(s => /lasik|refractive/i.test(s))) {
-        monthlyLow += 4000; monthlyHigh += 15000;
-        gapDrivers.push({ label: 'LASIK / Refractive', low: 4000, high: 15000, type: 'service' });
+    // Revenue estimates for undermarketed services (services they offer but don't promote well)
+    const revenueMap = {
+        'dry eye': { low: 1500, high: 5000, advice: 'Dedicated landing pages with symptom quizzes and treatment details drive 3x more bookings' },
+        'lasik': { low: 4000, high: 15000, advice: 'LASIK pages with pricing transparency, candidacy tools, and testimonials convert at 2-4x' },
+        'cataract': { low: 3000, high: 12000, advice: 'Cataract pages with IOL comparison tools and patient stories build surgical confidence' },
+        'premium': { low: 5000, high: 20000, advice: 'Dedicated premium IOL pages help patients understand value beyond insurance coverage' },
+        'myopia': { low: 1200, high: 4000, advice: 'Parent-focused content with FAQ and comparison charts drives myopia management consults' },
+        'lipiflow': { low: 1000, high: 3500, advice: 'Treatment-specific pages with before/after results and process explanations boost conversions' },
+        'optilight': { low: 1000, high: 3500, advice: 'IPL treatment pages with patient results perform best when they address candidacy and recovery' },
+        'glaucoma': { low: 2000, high: 8000, advice: 'Educational glaucoma pages that explain treatment options help retain patients long-term' },
+        'retina': { low: 2000, high: 8000, advice: 'Retina service pages with condition-specific content attract referral traffic' },
+        'contact': { low: 800, high: 2500, advice: 'Specialty contact lens pages attract patients willing to pay premium for scleral or ortho-k' },
+        'vision therapy': { low: 800, high: 3000, advice: 'Vision therapy pages targeting parents and athletes expand your patient base beyond routine care' },
+        'oculoplastic': { low: 2000, high: 10000, advice: 'Cosmetic and functional eyelid pages with gallery images convert high-value patients' },
+    };
+
+    for (const svc of undermarketed) {
+        const svcLower = svc.toLowerCase();
+        for (const [key, rev] of Object.entries(revenueMap)) {
+            if (svcLower.includes(key)) {
+                monthlyLow += rev.low;
+                monthlyHigh += rev.high;
+                opportunities.push({ label: svc, ...rev, type: 'undermarketed' });
+                break;
+            }
+        }
     }
 
-    // Infrastructure gaps
+    // Infrastructure gaps still matter
     if (!d.digital?.scheduling?.hasOnlineScheduling) {
         monthlyLow += 2000; monthlyHigh += 6000;
-        gapDrivers.push({ label: 'No Online Scheduling', low: 2000, high: 6000, type: 'infrastructure' });
+        opportunities.push({ label: 'Online Scheduling', low: 2000, high: 6000, type: 'infrastructure', advice: 'Practices with real-time online scheduling see 25-40% more appointment requests' });
     }
 
     // Scale by providers
@@ -3076,54 +3082,62 @@ function renderRevenueGap(d) {
     monthlyLow = Math.round(monthlyLow * scaleFactor);
     monthlyHigh = Math.round(monthlyHigh * scaleFactor);
 
+    // ─── Service Marketing Summary (always shown) ───
+    const strongCount = serviceMarketing.filter(s => s.marketingQuality === 'strong').length;
+    const modCount = serviceMarketing.filter(s => s.marketingQuality === 'moderate').length;
+    const minCount = serviceMarketing.filter(s => s.marketingQuality === 'minimal').length;
+    const totalDetected = serviceMarketing.length;
+
+    let summaryHtml = '';
+    if (totalDetected > 0) {
+        summaryHtml = `<div style="margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">Your Service Marketing</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                ${strongCount > 0 ? `<div style="flex:1;min-width:80px;text-align:center;padding:8px;border-radius:8px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);"><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:#4ade80;">${strongCount}</div><div style="font-size:10px;color:var(--text-muted);">Well Promoted</div></div>` : ''}
+                ${modCount > 0 ? `<div style="flex:1;min-width:80px;text-align:center;padding:8px;border-radius:8px;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.15);"><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:#facc15;">${modCount}</div><div style="font-size:10px;color:var(--text-muted);">Moderate</div></div>` : ''}
+                ${minCount > 0 ? `<div style="flex:1;min-width:80px;text-align:center;padding:8px;border-radius:8px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);"><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:#f87171;">${minCount}</div><div style="font-size:10px;color:var(--text-muted);">Undermarketed</div></div>` : ''}
+            </div>
+        </div>`;
+    }
+
     if (monthlyLow === 0 && monthlyHigh === 0) {
-        // No quantifiable gaps — still show section with qualitative message
-        container.innerHTML = `
+        container.innerHTML = summaryHtml + `
             <div style="text-align:center;padding:12px 0;font-size:14px;color:var(--text-secondary);">
                 ${isECP
                     ? 'Your program covers the fundamentals well. The next level of growth comes from <strong>optimization</strong> — conversion rates, advanced SEO, and ensuring every page works as hard as your clinical team.'
-                    : 'Your digital presence covers many bases. A deeper analysis during a strategy call can identify specific revenue opportunities in your market.'}
+                    : 'Your services are well promoted online. A deeper analysis during a strategy call can identify specific conversion optimization opportunities.'}
             </div>
         `;
         return;
     }
 
-    // Build the breakdown rows showing what drives the estimate
-    const driverRows = gapDrivers.map(g => {
-        const scaledLow = Math.round(g.low * scaleFactor);
-        const scaledHigh = Math.round(g.high * scaleFactor);
-        const icon = g.type === 'service' ? '🏥' : '⚙️';
-        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);">
-            <span style="font-size:13px;">${icon} ${g.label}</span>
-            <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--brand-light,#60a5fa);">$${scaledLow.toLocaleString()} – $${scaledHigh.toLocaleString()}</span>
+    // Build opportunity rows — focused on better marketing of existing services
+    const oppRows = opportunities.map(o => {
+        const scaledLow = Math.round(o.low * scaleFactor);
+        const scaledHigh = Math.round(o.high * scaleFactor);
+        const icon = o.type === 'undermarketed' ? '📈' : '⚙️';
+        return `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:13px;font-weight:500;">${icon} ${o.label}</span>
+                <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--brand-light,#60a5fa);">+$${scaledLow.toLocaleString()} – $${scaledHigh.toLocaleString()}/mo</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;padding-left:22px;">${o.advice}</div>
         </div>`;
     }).join('');
 
-    let html = `
+    let html = summaryHtml + `
         <div class="revenue-gap-big">
             <div class="revenue-gap-amount">$${monthlyLow.toLocaleString()} – $${monthlyHigh.toLocaleString()}</div>
-            <div class="revenue-gap-label">Estimated monthly revenue left on the table</div>
+            <div class="revenue-gap-label">Estimated monthly revenue from better marketing your services</div>
         </div>
         <div style="margin:12px 0 8px;padding:12px 16px;background:rgba(0,0,0,.15);border-radius:8px;">
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">What's driving this estimate</div>
-            ${driverRows}
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;margin-top:4px;font-size:11px;color:var(--text-muted);">
-                <span>Provider scaling (${providerCount} provider${providerCount !== 1 ? 's' : ''} × ${scaleFactor.toFixed(2)})</span>
-                <span>Based on industry benchmarks for similar practices</span>
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">Growth Opportunities</div>
+            ${oppRows}
+            <div style="padding:8px 0 0;margin-top:4px;font-size:11px;color:var(--text-muted);">
+                Scaled for ${providerCount} provider${providerCount !== 1 ? 's' : ''} · Based on industry benchmarks for similar practices
             </div>
         </div>
     `;
-
-    if (missing.length > 0) {
-        html += `<div class="revenue-gap-items">`;
-        html += missing.slice(0, 4).map(m => `
-            <div class="revenue-gap-item">
-                <div style="font-size:16px;margin-top:1px;">💰</div>
-                <div><strong style="color:var(--text);">${m.title}</strong><br><span style="color:var(--text-secondary);">${m.text}</span></div>
-            </div>
-        `).join('');
-        html += `</div>`;
-    }
 
     container.innerHTML = html;
 }
