@@ -198,6 +198,29 @@ body {
     box-shadow: none;
 }
 
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .15s;
+    margin-bottom: 16px;
+}
+.btn-back:hover {
+    color: var(--brand);
+    border-color: var(--brand);
+    background: rgba(15,76,129,.04);
+}
+.btn-back svg { width: 16px; height: 16px; }
+
 .intake-footer {
     text-align: center;
     margin-top: 16px;
@@ -1445,6 +1468,8 @@ body {
          ══════════════════════════════════════════════════════ -->
     <div id="screen2" class="screen">
 
+        <button class="btn-back" onclick="goBack(2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+
         <!-- Step Progress Bar -->
         <div class="step-progress">
             <div class="step-pip active" id="pip1">1<span class="step-pip-label">Practice</span></div>
@@ -1469,6 +1494,7 @@ body {
          SCREEN 3 — THE STORY (after all 3 confirmations)
          ══════════════════════════════════════════════════════ -->
     <div id="screen3" class="screen">
+        <button class="btn-back" onclick="goBack(3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
         <div class="dossier-header">
             <div class="dossier-badge">Your Practice Intelligence Report</div>
             <h2 class="dossier-title" id="dossierPracticeName">Your Practice</h2>
@@ -1570,6 +1596,7 @@ body {
          SCREEN 4 — STRATEGIC QUESTIONS
          ══════════════════════════════════════════════════════ -->
     <div id="screen4" class="screen">
+        <button class="btn-back" onclick="goBack(4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
         <div class="strategic-card">
             <div class="strategic-q-label">Question 1 of 4</div>
             <div class="strategic-q-text">What's the #1 thing you want to grow this year?</div>
@@ -1599,6 +1626,8 @@ body {
          SCREEN 5 — PERSONALIZED RESULTS
          ══════════════════════════════════════════════════════ -->
     <div id="screen5" class="screen">
+
+        <button class="btn-back" onclick="goBack(5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
 
         <!-- ═══ SECTION 1: THE GROWTH SCORE ═══ -->
         <div class="results-hero" id="resultsHero">
@@ -1972,6 +2001,11 @@ function showScreen(num) {
         target.style.animation = '';
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goBack(fromScreen) {
+    // Screen 2 → 1, Screen 3 → 2, Screen 4 → 3, Screen 5 → 4
+    showScreen(fromScreen - 1);
 }
 
 // ─── START ANALYSIS (Progressive Flow) ─────────────────────
@@ -4465,114 +4499,4 @@ function renderClientSearchRankings(keywords, found, mapPack, missing, city) {
     }
 
     el.innerHTML = html;
-}
-
-/**
- * Submit SEO Intelligence data to Google Sheets (internal capture).
- * Fires after SEO data loads — appends technical data to the same row.
- */
-function submitSeoToSheets(data) {
-    if (!CONFIG.GOOGLE_SHEETS_URL || CONFIG.GOOGLE_SHEETS_URL.includes('PASTE_YOUR')) return;
-
-    const report = data.report || {};
-    const audit = data.siteAudit || {};
-    const mobile = data.lighthouse?.mobile || lighthouseData || {};
-    const desktop = data.lighthouse?.desktop || {};
-    const pr = data.pageRank || {};
-    const locations = data.places?.locations || [];
-    const biz = locations.length > 0 ? locations[0] : (data.places?.business || {});
-    const competitors = data.places?.competitors || [];
-
-    const payload = {
-        _type: 'seo_update',
-        timestamp: new Date().toISOString(),
-        url: userAnswers.url || dossier?.meta?.url || '',
-        email: userAnswers.email || '',
-
-        // SEO Report scores
-        seoOverallScore: report.overallScore ?? '',
-        seoGrade: report.grade || '',
-        seoHeadline: report.headline || '',
-        pillarPageSpeed: report.pillarScores?.pageSpeed ?? '',
-        pillarOnPageSeo: report.pillarScores?.onPageSeo ?? '',
-        pillarLocalGbp: report.pillarScores?.localGbp ?? '',
-        pillarBacklinks: report.pillarScores?.backlinks ?? '',
-        pillarTechnical: report.pillarScores?.technical ?? '',
-
-        // PageSpeed Insights
-        mobilePerformance: mobile.performance ?? '',
-        mobileSeo: mobile.seo ?? '',
-        mobileAccessibility: mobile.accessibility ?? '',
-        mobileLcp: mobile.lcp || '',
-        mobileFcp: mobile.fcp || '',
-        desktopPerformance: desktop.performance ?? '',
-        desktopLcp: desktop.lcp || '',
-
-        // Domain Authority
-        domainAuthority: pr.pageRank ?? '',
-        domainAuthorityLabel: pr.label || '',
-
-        // GBP Primary Location
-        gbpName: biz.name || '',
-        gbpRating: biz.rating ?? '',
-        gbpReviewCount: biz.reviewCount ?? '',
-        gbpPhotoCount: biz.photoCount ?? '',
-        gbpHasHours: biz.hasHours ? 'Yes' : 'No',
-        gbpCategory: biz.primaryCategory || '',
-        gbpStatus: biz.businessStatus || '',
-        gbpAddress: biz.address || '',
-        gbpPhone: biz.phone || '',
-        gbpMapsUrl: biz.mapsUrl || '',
-        gbpLocationCount: locations.length,
-
-        // All GBP locations (flattened)
-        gbpAllLocations: locations.map(l => `${l.name}|${l.rating || 'N/A'}|${l.reviewCount || 0}|${l.address || ''}`).join(' ;; '),
-
-        // Competitors
-        competitorCount: competitors.length,
-        competitors: competitors.map(c => `${c.name}|${c.rating || 'N/A'}|${c.reviewCount || 0}`).join(' ;; '),
-
-        // Site Audit (full technical checklist)
-        auditSsl: audit.ssl ? 'Yes' : 'No',
-        auditTitleTag: audit.titleTag || '',
-        auditTitleLength: audit.titleLength ?? '',
-        auditMetaDesc: audit.metaDescription ? 'Yes' : 'No',
-        auditMetaDescLength: audit.metaDescriptionLength ?? '',
-        auditH1: audit.h1 || '',
-        auditH1Count: audit.h1Count ?? '',
-        auditHasSchema: audit.hasSchemaMarkup ? 'Yes' : 'No',
-        auditHasLocalSchema: audit.hasLocalBusinessSchema ? 'Yes' : 'No',
-        auditHasCanonical: audit.hasCanonical ? 'Yes' : 'No',
-        auditHasViewport: audit.hasViewport ? 'Yes' : 'No',
-        auditHasSitemap: audit.hasSitemap ? 'Yes' : 'No',
-        auditSitemapUrls: audit.sitemapUrlCount ?? '',
-        auditHasRobots: audit.hasRobots ? 'Yes' : 'No',
-        auditBlocksGooglebot: audit.blocksGooglebot ? 'YES' : 'No',
-        auditAltTextCoverage: audit.altTextCoverage ?? '',
-        auditHasOgTitle: audit.hasOgTitle ? 'Yes' : 'No',
-        auditHasOgImage: audit.hasOgImage ? 'Yes' : 'No',
-        auditHasBookingCta: (audit.hasOnlineBooking || audit.hasBookingCTA) ? 'Yes' : 'No',
-
-        // Key findings
-        findingsCount: (report.findings || []).length,
-        findingsCritical: (report.findings || []).filter(f => f.severity === 'critical').map(f => f.detail).join(' ;; '),
-        findingsWarning: (report.findings || []).filter(f => f.severity === 'warning').map(f => f.detail).join(' ;; '),
-        topOpportunity: report.topOpportunity || '',
-    };
-
-    try {
-        fetch(CONFIG.GOOGLE_SHEETS_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-    } catch (e) {
-        console.warn('SEO Sheets submission error:', e);
-    }
-}
-
-</script>
-
-</body>
-</html>
+}
