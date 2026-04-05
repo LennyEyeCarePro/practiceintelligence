@@ -2068,6 +2068,13 @@ async function startAnalysis() {
         dossier = result;
         // Auto-correct practice type: if both MDs and ODs present, force multi_specialty
         correctPracticeType(dossier);
+        // Sanity-check location count: if addresses array is shorter, trust addresses
+        if (dossier.locations) {
+            const addrCount = dossier.locations.addresses?.length || 0;
+            if (dossier.locations.count > 10 && addrCount < dossier.locations.count) {
+                dossier.locations.count = Math.max(addrCount, 1);
+            }
+        }
         apifyDone = true;
         onApifyComplete();
     }).catch(() => {
@@ -2395,7 +2402,7 @@ function renderStep3() {
     digRows.push(['Website Platform', d.digital?.cms?.name || 'Not detected']);
     digRows.push(['Marketing Vendor', d.digital?.marketingVendor ? (() => {
         if (d.digital.isEyeCarePro) return `<span class="dossier-tag tag-blue">EyeCarePro (Existing Client)</span>`;
-        if (d.digital.isCompetitorClient) return `<span class="dossier-tag tag-amber">${d.digital.marketingVendor.name} ⚠️</span>`;
+        if (d.digital.isCompetitorClient) return `<span class="dossier-tag tag-green">${d.digital.marketingVendor.name}</span>`;
         return `<span class="dossier-tag tag-green">${d.digital.marketingVendor.name}</span>`;
     })() : 'None detected']);
     digRows.push(['Online Scheduling', d.digital?.scheduling?.hasOnlineScheduling ?
@@ -2677,7 +2684,7 @@ function renderFullStory() {
     digRows.push(['Website Platform', d.digital?.cms?.name || 'Not detected']);
     digRows.push(['Marketing Vendor', d.digital?.marketingVendor ? (() => {
         if (d.digital.isEyeCarePro) return `<span class="dossier-tag tag-blue">EyeCarePro (Existing Client)</span> <span style="font-size:11px;color:var(--text-muted)">— may be website-only or looking for upgrade</span>`;
-        if (d.digital.isCompetitorClient) return `<span class="dossier-tag tag-amber">${d.digital.marketingVendor.name} ⚠️</span>`;
+        if (d.digital.isCompetitorClient) return `<span class="dossier-tag tag-green">${d.digital.marketingVendor.name}</span>`;
         return `<span class="dossier-tag tag-green">${d.digital.marketingVendor.name}</span>`;
     })() : 'None detected']);
     digRows.push(['Online Scheduling', d.digital?.scheduling?.hasOnlineScheduling ?
@@ -2730,8 +2737,11 @@ function renderFullStory() {
         }).join('');
     }
 
-    // Gaps
-    const gaps = (d.gaps || []).slice(0, 8);
+    // Gaps — filter out any competitor/switch language before displaying to prospect
+    const gaps = (d.gaps || []).slice(0, 8).filter(g => {
+        const f = (g.finding || '').toLowerCase();
+        return !f.includes('competitor') && !f.includes('switch candidate') && !f.includes('potential switch') && !f.includes('known competitor');
+    });
     document.getElementById('dossierGaps').innerHTML = gaps.map(g =>
         `<li class="dossier-gap-item"><div class="gap-severity gap-${g.severity}"></div><span>${g.finding}</span></li>`
     ).join('');
@@ -2851,7 +2861,7 @@ function generateNarrative(d) {
     if (isECP) {
         html += `Since you're already an EyeCarePro client, the digital foundation is in place. The question that's worth exploring: <strong>is your current program fully reflecting what the practice is capable of?</strong> Specialty landing pages, advanced SEO, patient recalls — there may be tools already available to you that could be doing more.`;
     } else if (d.digital?.isCompetitorClient) {
-        html += `We can see that <strong>${d.digital.competitorName || d.digital.marketingVendor?.name}</strong> is managing your marketing. ${userPain ? `You mentioned that <em>"${userPain.toLowerCase()}"</em> — have you had a chance to discuss that with them?` : 'Here\'s what we\'d ask: is the digital strategy keeping pace with what your clinical team is capable of?'} When the website doesn't reflect the full scope of what a practice offers, patients make decisions based on incomplete information.`;
+        html += `You're already investing in marketing — which shows you understand its importance. ${userPain ? `You mentioned that <em>"${userPain.toLowerCase()}"</em> — that's something worth exploring further.` : 'Here\'s the question worth exploring: is the digital strategy keeping pace with what your clinical team is capable of?'} When the website doesn't reflect the full scope of what a practice offers, patients make decisions based on incomplete information.`;
     } else {
         if (userPain) {
             html += `You mentioned that <em>"${userPain.toLowerCase()}"</em> — that's something we hear from a lot of practices. `;
@@ -3383,9 +3393,6 @@ function showResults() {
     } else if (gap.monthlyGap > 0) {
         ctaTitle.textContent = `Let's Reclaim Your ${gap.monthlyLossFormatted}/Month`;
         ctaSub.textContent = 'Book a free 30-minute strategy session. We\'ll walk through this gap analysis and show you exactly how to close it.';
-    } else if (d.digital?.isCompetitorClient) {
-        ctaTitle.textContent = 'Ready to see what a strategic partner looks like?';
-        ctaSub.textContent = 'Book a free 30-minute consultation. We\'ll walk through your results and show you what\'s possible.';
     } else {
         ctaTitle.textContent = 'Let\'s discuss what we found';
         ctaSub.textContent = 'Book a free 30-minute strategy session and we\'ll walk through your results together.';
@@ -3776,11 +3783,7 @@ function generateReflection(d) {
         return `Here's what we'd ask: is the goal simply more patients, or more of the <em>right</em> patients for the services that matter most to your bottom line? What does the ideal new patient look like for ${name}?`;
     }
 
-    if (d.digital?.isCompetitorClient) {
-        return `You're already investing in marketing — which is smart. The question worth exploring: is that investment returning what ${name} deserves? If the opportunities in this report haven't been raised by your current partner, it might be worth a conversation about what a more proactive approach looks like.`;
-    }
-
-    // Default
+    // Default (also used for competitor clients — no special language)
     return `If ${name} could capture even a fraction of the opportunities identified here — what would that look like over the next 12 months? That's the kind of conversation we'd love to have with you.`;
 }
 
@@ -3971,14 +3974,7 @@ function generateInsights(d) {
         }
     }
 
-    // ── Competitor Client Insight ──
-    if (d.digital?.isCompetitorClient) {
-        insights.unshift({
-            icon: '🔄', iconClass: 'insight-icon-amber', priority: 10,
-            title: `Currently with ${d.digital.competitorName || d.digital.marketingVendor?.name} — How's It Going?`,
-            text: `The opportunities we've identified suggest there may be room to do more. Have you discussed these gaps with your current partner? A strategic marketing program should be proactively addressing these for you.`,
-        });
-    }
+    // ── Competitor Client Insight (hidden from prospect — internal use only) ──
 
     // Sort by priority (highest first) and return top 6
     insights.sort((a, b) => (b.priority || 0) - (a.priority || 0));
