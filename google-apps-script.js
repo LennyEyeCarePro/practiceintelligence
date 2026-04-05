@@ -15,7 +15,8 @@ const SHEET_NAME = 'Assessments';  // Change this if your sheet tab has a differ
 // ─── Column headers for the initial submission ──────────────
 const INITIAL_HEADERS = [
   'timestamp', 'name', 'email', 'url',
-  'growthGoal', 'biggestPain', 'freetext', 'corrections',
+  'growthGoal', 'biggestPain', 'freetext',
+  'step1Corrections', 'step2Corrections', 'step3Corrections',
   'practiceName', 'practiceType', 'practiceSubType', 'yearEstablished',
   'doctorCount', 'mdCount', 'odCount', 'doctorNames',
   'locationCount', 'phone', 'address',

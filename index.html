@@ -880,7 +880,47 @@ body {
     font-size: 13px;
     font-weight: 500;
     opacity: .8;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
+}
+
+.results-score-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    padding: 0 12px;
+}
+
+.score-sub-item {
+    text-align: center;
+    min-width: 70px;
+}
+
+.score-sub-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,.15);
+    margin-bottom: 4px;
+    overflow: hidden;
+}
+
+.score-sub-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width .6s ease;
+}
+
+.score-sub-label {
+    font-size: 10px;
+    opacity: .7;
+    letter-spacing: .3px;
+}
+
+.score-sub-value {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .results-tier-badge {
@@ -1537,7 +1577,8 @@ body {
         <!-- ═══ SECTION 1: THE GROWTH SCORE ═══ -->
         <div class="results-hero" id="resultsHero">
             <div class="results-score-big" id="resultsScoreBig">--</div>
-            <div class="results-score-label">Practice Growth Score</div>
+            <div class="results-score-label">Practice Growth Score <span style="font-weight:400;opacity:.7">out of 100</span></div>
+            <div class="results-score-breakdown" id="resultsScoreBreakdown"></div>
             <div class="results-tier-badge" id="resultsTierBadge"></div>
         </div>
 
@@ -1885,6 +1926,8 @@ async function startAnalysis() {
     // Track completion
     apifyPromise.then(result => {
         dossier = result;
+        // Auto-correct practice type: if both MDs and ODs present, force multi_specialty
+        correctPracticeType(dossier);
         apifyDone = true;
         onApifyComplete();
     }).catch(() => {
@@ -1927,6 +1970,16 @@ function updateBgAnalysisBar() {
     }
 }
 
+// ─── PRACTICE TYPE AUTO-CORRECTION ─────────────────────────
+function correctPracticeType(d) {
+    if (!d?.doctors?.length) return;
+    const mdCount = d.doctors.filter(dr => dr.type === 'ophthalmologist').length;
+    const odCount = d.doctors.filter(dr => dr.type === 'optometrist').length;
+    if (mdCount > 0 && odCount > 0 && d.practice) {
+        d.practice.type = 'multi_specialty';
+    }
+}
+
 // ─── APIFY COMPLETE → Show Step 1 ──────────────────────────
 function onApifyComplete() {
     updateBgAnalysisBar();
@@ -1934,6 +1987,7 @@ function onApifyComplete() {
         // Fallback
         runFallbackScraper(userAnswers.url).then(fb => {
             dossier = fb;
+            correctPracticeType(dossier);
             if (isNonEyeCare(dossier)) { renderNonEyeCareRedirect(); return; }
             renderStep1();
             // Also fire SEO early in fallback path
@@ -2673,10 +2727,20 @@ function generateNarrative(d) {
         html += `<p>You told us your top priority is <strong>${userGoal.toLowerCase()}</strong>. The opportunities below are ranked with that goal in mind.</p>`;
     }
 
-    // Include user corrections if any
-    const allCorrections = [userAnswers.step1Corrections, userAnswers.step2Corrections, userAnswers.step3Corrections].filter(Boolean);
-    if (allCorrections.length > 0) {
-        html += `<p style="font-size:13px;color:var(--text-secondary);font-style:italic;margin-top:8px;padding-top:8px;border-top:1px solid var(--surface-alt)">Your additional context has been factored into this analysis: "${allCorrections.join('; ')}"</p>`;
+    // Include user corrections — specific callouts for each type
+    const s1 = userAnswers.step1Corrections;
+    const s2 = userAnswers.step2Corrections;
+    const s3 = userAnswers.step3Corrections;
+    const ft = userAnswers.freetext;
+
+    if (s1 || s2 || s3 || ft) {
+        html += `<div style="font-size:13px;color:var(--text-secondary);margin-top:12px;padding:12px 16px;background:var(--surface-alt);border-radius:8px;border-left:3px solid var(--brand);">`;
+        html += `<strong style="color:var(--text);font-size:12px;text-transform:uppercase;letter-spacing:.5px;">Your Input Incorporated</strong>`;
+        if (s2) html += `<p style="margin:6px 0 0">Services you confirmed you offer: <em>"${s2}"</em> — our revenue gap and recommendations have been adjusted accordingly.</p>`;
+        if (s1) html += `<p style="margin:6px 0 0">Practice corrections: <em>"${s1}"</em></p>`;
+        if (s3) html += `<p style="margin:6px 0 0">Additional context: <em>"${s3}"</em></p>`;
+        if (ft) html += `<p style="margin:6px 0 0">Your notes: <em>"${ft}"</em></p>`;
+        html += `</div>`;
     }
 
     return html;
@@ -2827,9 +2891,42 @@ function selectOption(el, key, value) {
     userAnswers[key] = value;
 }
 
+// ─── APPLY USER CORRECTIONS TO DOSSIER ─────────────────────
+function applyUserCorrections(d) {
+    // Step 2: "We Offer More" — remove user-confirmed services from missingHighValue
+    const svcCorrection = userAnswers.step2Corrections || '';
+    if (svcCorrection && d.services?.missingHighValue?.length > 0) {
+        const corrLower = svcCorrection.toLowerCase();
+        // Check each missing service — if the user mentioned it, they offer it
+        const stillMissing = d.services.missingHighValue.filter(svc => {
+            const svcLower = svc.toLowerCase();
+            // Match on key terms: "dry eye" matches "Dry Eye Treatment", etc.
+            const keywords = svcLower.split(/[\s\/\-]+/).filter(w => w.length > 2);
+            const userMentioned = keywords.some(kw => corrLower.includes(kw));
+            if (userMentioned) {
+                // Move from missing to detected
+                if (!d.services.detected) d.services.detected = [];
+                d.services.detected.push({ label: svc, source: 'user_correction' });
+                // Also add to categories
+                if (!d.services.categories) d.services.categories = {};
+                if (!d.services.categories.user_confirmed) d.services.categories.user_confirmed = [];
+                d.services.categories.user_confirmed.push(svc);
+            }
+            return !userMentioned;
+        });
+        d.services.missingHighValue = stillMissing;
+    }
+
+    // Step 1: practice info corrections — stored for narrative but don't change dossier fields
+    // Step 3 + freetext: digital context — stored for narrative
+}
+
 // ─── SCREEN 5 — RESULTS ────────────────────────────────────
 function showResults() {
     userAnswers.freetext = document.getElementById('q3Freetext').value.trim();
+
+    // Apply user corrections before rendering
+    applyUserCorrections(dossier);
 
     const d = dossier;
     const isECP = d.digital?.isEyeCarePro;
@@ -2846,6 +2943,23 @@ function showResults() {
     } else {
         document.getElementById('resultsScoreBig').textContent = score;
         document.getElementById('resultsTierBadge').textContent = d.recommendedTier || 'Schedule a call';
+
+        // Sub-score breakdown
+        const subScores = [
+            { label: 'Digital Presence', value: d.scores?.digitalPresence || 0, weight: '25%' },
+            { label: 'Content', value: d.scores?.contentQuality || 0, weight: '20%' },
+            { label: 'Patient Exp', value: d.scores?.patientExperience || 0, weight: '30%' },
+            { label: 'Marketing', value: d.scores?.marketingMaturity || 0, weight: '25%' },
+        ];
+        const breakdownEl = document.getElementById('resultsScoreBreakdown');
+        breakdownEl.innerHTML = subScores.map(s => {
+            const color = s.value >= 70 ? '#4ade80' : s.value >= 40 ? '#facc15' : '#f87171';
+            return `<div class="score-sub-item">
+                <div class="score-sub-value" style="color:${color}">${s.value}</div>
+                <div class="score-sub-bar"><div class="score-sub-fill" style="width:${s.value}%;background:${color}"></div></div>
+                <div class="score-sub-label">${s.label} (${s.weight})</div>
+            </div>`;
+        }).join('');
     }
 
     // ═══ SECTION 2: THE REVENUE GAP ═══
@@ -2926,21 +3040,41 @@ function renderRevenueGap(d) {
     let monthlyLow = 0;
     let monthlyHigh = 0;
     const missingHV = d.services?.missingHighValue || [];
+    const gapDrivers = []; // Track what contributes to the estimate
 
     // Service-based estimates (monthly)
-    if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) { monthlyLow += 1500; monthlyHigh += 5000; }
-    if (missingHV.some(s => s.toLowerCase().includes('myopia'))) { monthlyLow += 1200; monthlyHigh += 4000; }
-    if (missingHV.some(s => s.toLowerCase().includes('scleral'))) { monthlyLow += 800; monthlyHigh += 3000; }
-    if (missingHV.some(s => /premium|iol/i.test(s))) { monthlyLow += 5000; monthlyHigh += 25000; }
-    if (missingHV.some(s => /lasik|refractive/i.test(s))) { monthlyLow += 4000; monthlyHigh += 15000; }
+    if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) {
+        monthlyLow += 1500; monthlyHigh += 5000;
+        gapDrivers.push({ label: 'Dry Eye Services', low: 1500, high: 5000, type: 'service' });
+    }
+    if (missingHV.some(s => s.toLowerCase().includes('myopia'))) {
+        monthlyLow += 1200; monthlyHigh += 4000;
+        gapDrivers.push({ label: 'Myopia Management', low: 1200, high: 4000, type: 'service' });
+    }
+    if (missingHV.some(s => s.toLowerCase().includes('scleral'))) {
+        monthlyLow += 800; monthlyHigh += 3000;
+        gapDrivers.push({ label: 'Scleral Lenses', low: 800, high: 3000, type: 'service' });
+    }
+    if (missingHV.some(s => /premium|iol/i.test(s))) {
+        monthlyLow += 5000; monthlyHigh += 25000;
+        gapDrivers.push({ label: 'Premium IOLs', low: 5000, high: 25000, type: 'service' });
+    }
+    if (missingHV.some(s => /lasik|refractive/i.test(s))) {
+        monthlyLow += 4000; monthlyHigh += 15000;
+        gapDrivers.push({ label: 'LASIK / Refractive', low: 4000, high: 15000, type: 'service' });
+    }
 
     // Infrastructure gaps
-    if (!d.digital?.scheduling?.hasOnlineScheduling) { monthlyLow += 2000; monthlyHigh += 6000; }
+    if (!d.digital?.scheduling?.hasOnlineScheduling) {
+        monthlyLow += 2000; monthlyHigh += 6000;
+        gapDrivers.push({ label: 'No Online Scheduling', low: 2000, high: 6000, type: 'infrastructure' });
+    }
 
     // Scale by providers
     const scale = Math.min(providerCount, 4);
-    monthlyLow = Math.round(monthlyLow * (0.5 + scale * 0.25));
-    monthlyHigh = Math.round(monthlyHigh * (0.5 + scale * 0.25));
+    const scaleFactor = 0.5 + scale * 0.25;
+    monthlyLow = Math.round(monthlyLow * scaleFactor);
+    monthlyHigh = Math.round(monthlyHigh * scaleFactor);
 
     if (monthlyLow === 0 && monthlyHigh === 0) {
         // No quantifiable gaps — still show section with qualitative message
@@ -2954,14 +3088,28 @@ function renderRevenueGap(d) {
         return;
     }
 
+    // Build the breakdown rows showing what drives the estimate
+    const driverRows = gapDrivers.map(g => {
+        const scaledLow = Math.round(g.low * scaleFactor);
+        const scaledHigh = Math.round(g.high * scaleFactor);
+        const icon = g.type === 'service' ? '🏥' : '⚙️';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+            <span style="font-size:13px;">${icon} ${g.label}</span>
+            <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--brand-light,#60a5fa);">$${scaledLow.toLocaleString()} – $${scaledHigh.toLocaleString()}</span>
+        </div>`;
+    }).join('');
+
     let html = `
         <div class="revenue-gap-big">
             <div class="revenue-gap-amount">$${monthlyLow.toLocaleString()} – $${monthlyHigh.toLocaleString()}</div>
             <div class="revenue-gap-label">Estimated monthly revenue left on the table</div>
-            <div class="revenue-gap-formula">
-                <span class="formula-part">Avg Patient Value</span>
-                <span>×</span>
-                <span class="formula-part">Uncaptured Local Demand</span>
+        </div>
+        <div style="margin:12px 0 8px;padding:12px 16px;background:rgba(0,0,0,.15);border-radius:8px;">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">What's driving this estimate</div>
+            ${driverRows}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;margin-top:4px;font-size:11px;color:var(--text-muted);">
+                <span>Provider scaling (${providerCount} provider${providerCount !== 1 ? 's' : ''} × ${scaleFactor.toFixed(2)})</span>
+                <span>Based on industry benchmarks for similar practices</span>
             </div>
         </div>
     `;
@@ -3562,7 +3710,9 @@ function submitToSheets() {
         growthGoal: userAnswers.goal || '',
         biggestPain: userAnswers.pain || '',
         freetext: userAnswers.freetext || '',
-        corrections: [userAnswers.step1Corrections, userAnswers.step2Corrections, userAnswers.step3Corrections].filter(Boolean).join(' | '),
+        step1Corrections: userAnswers.step1Corrections || '',
+        step2Corrections: userAnswers.step2Corrections || '',
+        step3Corrections: userAnswers.step3Corrections || '',
         practiceName: d.practice?.name || '',
         practiceType: d.practice?.type || '',
         practiceSubType: d.practice?.subType || '',
