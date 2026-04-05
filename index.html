@@ -3403,6 +3403,7 @@ function mapGoalToTargetStatement(goalAnswer) {
 function generateScreen6Data() {
     const practiceType = dossier?.practice?.type || 'optometry';
     const name = dossier?.practice?.name || 'Your practice';
+    const isECP = dossier?.digital?.isEyeCarePro;
 
     // Determine benchmark and slots based on practice type
     let averageValue, valueType, emptySlotsWeekly;
@@ -3460,7 +3461,9 @@ function generateScreen6Data() {
         secondaryGap,
         secondaryLabel,
         malignancySummary: emptySlotsWeekly > 0
-            ? `You are leaving ${emptySlotsWeekly} slots empty every week. At a conservative realized value of $${averageValue} per patient (${valueType}), this represents an annual 'Do Nothing' cost of $${Math.round(annualGap).toLocaleString()}.`
+            ? (isECP
+                ? `You are leaving ${emptySlotsWeekly} slots empty every week. At a conservative realized value of $${averageValue} per patient (${valueType}), this represents an annual revenue opportunity of $${Math.round(annualGap).toLocaleString()}.`
+                : `You are leaving ${emptySlotsWeekly} slots empty every week. At a conservative realized value of $${averageValue} per patient (${valueType}), this represents an annual cost of $${Math.round(annualGap).toLocaleString()}.`)
             : `Based on your inputs, there's a significant growth opportunity. Let's quantify what better marketing could mean for ${name}.`,
         technicalRootCause: seoScore >= 80
             ? `Your website's technical SEO structure scores ${seoScore}/100 — that's a strong foundation. The opportunity now is in the strategy layer: content, service visibility, local search presence, and patient conversion paths.`
@@ -3510,6 +3513,10 @@ function showResults() {
     }
 
     // ═══ SECTION 2: THE MALIGNANCY ═══
+    const malignancyTitle = document.querySelector('#gapMalignancySection .results-section-title');
+    if (isECP) {
+        malignancyTitle.innerHTML = '<span style="font-size:18px;">📈</span> Revenue Opportunity';
+    }
     document.getElementById('gapMalignancyBody').innerHTML = `<p>${gap.malignancySummary}</p>` +
         (gap.secondaryLabel ? `<p style="margin-top:8px;font-size:13px;color:var(--text-secondary);">Additional gaps: ${gap.secondaryLabel}</p>` : '');
 
@@ -3754,6 +3761,11 @@ function renderCoreAuditFromDossier(d) {
 
     // Note: search rankings placeholder is added by renderClientAuditPanels() when SEO data arrives
     seoBody.innerHTML = seoHtml;
+
+    // Hide SEO Health panel entirely for EyeCarePro clients
+    if (isECP) {
+        document.getElementById('auditSeoHealth').style.display = 'none';
+    }
 
     // 3C: Patient Conversion
     const convBody = document.getElementById('patientConversionBody');
