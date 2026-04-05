@@ -2866,7 +2866,7 @@ function renderFullStory() {
     // Gaps — filter out any competitor/switch language before displaying to prospect
     const gaps = (d.gaps || []).slice(0, 8).filter(g => {
         const f = (g.finding || '').toLowerCase();
-        return !f.includes('competitor') && !f.includes('switch candidate') && !f.includes('potential switch') && !f.includes('known competitor');
+        return !f.includes('competitor') && !f.includes('switch candidate') && !f.includes('potential switch') && !f.includes('known competitor') && !f.includes('eyecarepro client') && !f.includes('website-only');
     });
     document.getElementById('dossierGaps').innerHTML = gaps.map(g =>
         `<li class="dossier-gap-item"><div class="gap-severity gap-${g.severity}"></div><span>${g.finding}</span></li>`
