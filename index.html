@@ -2075,6 +2075,21 @@ async function startAnalysis() {
                 dossier.locations.count = Math.max(addrCount, 1);
             }
         }
+        // Sanity-check practice name: generic service names are likely scraper errors
+        const GENERIC_NAMES = ['eye exams','contact lenses','eye care','optical','services',
+            'about us','home','our services','about','welcome','locations','schedule',
+            'eyeglasses','frames','sunglasses','blog','news','careers','faqs'];
+        const detectedName = (dossier.practice?.name || '').trim();
+        if (!detectedName || GENERIC_NAMES.includes(detectedName.toLowerCase())) {
+            // Fall back to domain-based name (e.g. empresseyeclinic.com -> Empress Eye Clinic)
+            const domain = (dossier.meta?.domain || '').replace(/^www\./, '').split('.')[0];
+            if (domain) {
+                dossier.practice.name = domain
+                    .replace(/[-_]/g, ' ')
+                    .replace(/([a-z])([A-Z])/g, '$1 $2')
+                    .replace(/\b\w/g, c => c.toUpperCase());
+            }
+        }
         apifyDone = true;
         onApifyComplete();
     }).catch(() => {
@@ -3082,7 +3097,7 @@ function renderQ3() {
         html += `<div class="q3-sub-question">${q.config.question}</div>`;
         html += `<div class="strategic-options" id="q3Opts_${q.config.key}">`;
         q.config.options.forEach(opt => {
-            const escaped = opt.replace(/'/g, "\\'");
+            const escaped = opt.replace(/'/g, "\\'").replace(/"/g, '&quot;');
             html += `<div class="strategic-option" onclick="selectQ3Option(this, '${q.config.key}', '${escaped}')">
                 <div class="strategic-option-dot"></div>${opt}
             </div>`;
@@ -3184,11 +3199,11 @@ function mapFrustrationToRootCause(painAnswer) {
     if (p.includes('outdated') || p.includes('doesn\'t reflect') || p.includes('generic') || p.includes('where to start'))
         return "Your practice is suffering from 'clinical invisibility.' By looking like every other generic office, you are forcing patients to choose based on zip code rather than your clinical expertise.";
     if (p.includes('roi') || p.includes('spending money') || p.includes('ads'))
-        return "You are trapped in a 'Leaky Bucket' cycle. You are paying to drive traffic into an intake system that is structurally incapable of converting them.";
+        return "This is what we call a 'Leaky Bucket' cycle. You're investing in driving traffic, but the intake experience may not be converting those visitors into booked patients as effectively as it could.";
     if (p.includes('vendor') || p.includes('doesn\'t understand') || p.includes('eye care'))
-        return "You are paying 'The Generalist Tax.' Your vendor is learning the industry on your dime while missing the specific nuances of patient intent that drive high-value exams.";
+        return "This is what we call 'The Generalist Tax.' When a marketing partner isn't specialized in eye care, they often miss the specific nuances of patient intent that drive high-value exams and specialty bookings.";
     if (p.includes('no real') || p.includes('strategy') || p.includes('sits there') || p.includes('no digital') || p.includes('autopilot'))
-        return "Your practice is on 'Digital Autopilot.' This isn't a strategy — it is a slow descent into stagnation while your local competitors aggressively pivot to take your market share.";
+        return "Your practice appears to be on 'Digital Autopilot.' Without an active strategy, it's easy for competitors with more aggressive marketing to capture the patients searching in your area.";
     if (p.includes('referral') || p.includes('capabilities'))
         return "Your referral network can't send you patients for services they don't know you offer. You have a 'Referral Visibility Gap' that's costing you high-value surgical cases every month.";
     if (p.includes('competitor') || p.includes('losing'))
@@ -3199,7 +3214,7 @@ function mapFrustrationToRootCause(painAnswer) {
         return "Your social presence isn't generating the awareness your practice needs. In a market driven by visual trust signals, a silent social profile tells prospective patients you're not a serious contender.";
     if (p.includes('warby') || p.includes('online retailer') || p.includes('compete'))
         return "You're not losing to online retailers on price — you're losing on convenience and visibility. Your unique advantage is in-person expertise, but patients can't act on what they can't find.";
-    return "Your current marketing model has reached its structural ceiling.";
+    return "Your current marketing approach may have room to grow. The opportunities identified here suggest there's untapped potential worth exploring.";
 }
 
 function mapGoalToTargetStatement(goalAnswer) {
@@ -3291,11 +3306,13 @@ function generateScreen6Data() {
         malignancySummary: emptySlotsWeekly > 0
             ? `You are leaving ${emptySlotsWeekly} slots empty every week. At a conservative realized value of $${averageValue} per patient (${valueType}), this represents an annual 'Do Nothing' cost of $${Math.round(annualGap).toLocaleString()}.`
             : `Based on your inputs, there's a significant growth opportunity. Let's quantify what better marketing could mean for ${name}.`,
-        technicalRootCause: seoScore > 0
-            ? `Your SEO/Web score of ${seoScore}/100 acts as a 'Digital Barrier' that is currently blocking your front door.`
+        technicalRootCause: seoScore >= 80
+            ? `Your SEO/Web score of ${seoScore}/100 is solid — but score alone doesn't tell the full story. The gap is in converting that visibility into booked appointments.`
+            : seoScore > 0
+            ? `Your SEO/Web score of ${seoScore}/100 means potential patients are having trouble finding or engaging with your practice online.`
             : `Your digital presence has structural gaps acting as barriers to patient acquisition.`,
         emotionalRootCause,
-        targetStatement: `You want to achieve ${targetStatement}. Your current model is not just lagging — it is structurally incapable of hitting that target.`,
+        targetStatement: `You want to achieve ${targetStatement}. Your current marketing approach — website, SEO, and patient acquisition strategy — may need to evolve to get you there.`,
         competitorTheftText,
         competitorNames,
         annualGap: Math.round(annualGap),
