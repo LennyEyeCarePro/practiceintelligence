@@ -1629,69 +1629,96 @@ body {
 
         <button class="btn-back" onclick="goBack(5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
 
-        <!-- ═══ SECTION 1: THE GROWTH SCORE ═══ -->
+        <!-- ═══ SECTION 1: THE REVENUE GAP HEADLINE ═══ -->
         <div class="results-hero" id="resultsHero">
-            <div class="results-score-big" id="resultsScoreBig">--</div>
-            <div class="results-score-label">Practice Growth Score <span style="font-weight:400;opacity:.7">out of 100</span></div>
-            <div class="results-score-breakdown" id="resultsScoreBreakdown"></div>
-            <div class="results-tier-badge" id="resultsTierBadge"></div>
+            <div class="results-score-big" id="gapMonthlyAmount">--</div>
+            <div class="results-score-label" id="gapHeadlineLabel">Estimated Monthly Revenue Gap</div>
+            <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin:12px 0 6px;">
+                <div style="text-align:center;">
+                    <div style="font-family:var(--mono);font-size:22px;font-weight:700;" id="gapWeeklyAmount">--</div>
+                    <div style="font-size:11px;opacity:.7;">Per Week</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-family:var(--mono);font-size:22px;font-weight:700;" id="gapAnnualAmount">--</div>
+                    <div style="font-size:11px;opacity:.7;">Per Year</div>
+                </div>
+            </div>
+            <div class="results-tier-badge" id="gapValueType"></div>
         </div>
 
-        <!-- ═══ SECTION 2: THE REVENUE GAP ═══ -->
-        <div class="results-section" id="resultsRevenueGap">
+        <!-- ═══ SECTION 2: THE MALIGNANCY (What's Costing You) ═══ -->
+        <div class="results-section" id="gapMalignancySection">
             <div class="results-section-title" style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:18px;">💰</span> Estimated Monthly Revenue Gap
+                <span style="font-size:18px;">🩺</span> The Cost of Doing Nothing
             </div>
-            <div id="revenueGapContent">
-                <!-- Filled by JS -->
+            <div class="narrative-body" id="gapMalignancyBody"></div>
+        </div>
+
+        <!-- ═══ SECTION 3: THE TRUTH-TELLER (Root Cause) ═══ -->
+        <div class="results-section" id="gapRootCauseSection">
+            <div class="results-section-title" style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:18px;">🔍</span> Why This Is Happening
+            </div>
+            <div id="gapRootCauseBody">
+                <div class="narrative-body" id="gapTechnicalCause" style="margin-bottom:12px;"></div>
+                <div style="background:var(--surface-alt);border-radius:10px;padding:16px 20px;border-left:4px solid var(--danger);">
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--danger);margin-bottom:6px;">The Real Issue</div>
+                    <div class="narrative-body" id="gapEmotionalCause"></div>
+                </div>
             </div>
         </div>
 
-        <!-- ═══ SECTION 3: CORE AUDIT — THE MALIGNANCIES ═══ -->
+        <!-- ═══ SECTION 4: YOUR GOAL vs. REALITY ═══ -->
+        <div class="results-section" id="gapTargetSection">
+            <div class="results-section-title" style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:18px;">🎯</span> Your Goal vs. Your Current Model
+            </div>
+            <div class="narrative-body" id="gapTargetBody"></div>
+        </div>
+
+        <!-- ═══ SECTION 5: COMPETITOR ANCHOR ═══ -->
+        <div class="results-section" id="gapCompetitorSection">
+            <div class="results-section-title" style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:18px;">📍</span> Who's Capturing Your Patients
+            </div>
+            <div id="gapCompetitorBody">
+                <div class="narrative-body" id="gapCompetitorText"></div>
+                <div id="gapCompetitorChart" style="margin-top:12px;"></div>
+            </div>
+        </div>
+
+        <!-- ═══ SECTION 6: CORE AUDIT (existing panels) ═══ -->
         <div class="results-section" id="resultsCoreAudit">
             <div class="results-section-title" style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:18px;">🔍</span> What We Found
+                <span style="font-size:18px;">⚡</span> What We Found
             </div>
 
-            <!-- 3A: Local Visibility (GBP + Map Pack + Competitors) -->
             <div class="audit-panel" id="auditLocalVisibility">
                 <div class="audit-panel-header">
                     <span class="audit-panel-icon">📍</span>
                     <span class="audit-panel-title">Local Visibility</span>
                     <span class="audit-panel-badge" id="localVisibilityBadge"></span>
                 </div>
-                <div class="audit-panel-body" id="localVisibilityBody">
-                    <!-- GBP summary, competitor chart, map pack status -->
-                </div>
+                <div class="audit-panel-body" id="localVisibilityBody"></div>
             </div>
 
-            <!-- 3B: SEO Health (Mobile speed, core web vitals) -->
             <div class="audit-panel" id="auditSeoHealth">
                 <div class="audit-panel-header">
                     <span class="audit-panel-icon">⚡</span>
                     <span class="audit-panel-title">Website & SEO Health</span>
                     <span class="audit-panel-badge" id="seoHealthBadge"></span>
                 </div>
-                <div class="audit-panel-body" id="seoHealthBody">
-                    <!-- Mobile speed, search rankings -->
-                </div>
+                <div class="audit-panel-body" id="seoHealthBody"></div>
             </div>
 
-            <!-- 3C: Patient Conversion / UX -->
             <div class="audit-panel" id="auditPatientConversion">
                 <div class="audit-panel-header">
                     <span class="audit-panel-icon">🎯</span>
                     <span class="audit-panel-title">Patient Conversion</span>
                     <span class="audit-panel-badge" id="patientConversionBadge"></span>
                 </div>
-                <div class="audit-panel-body" id="patientConversionBody">
-                    <!-- Scheduling, missing services, site experience -->
-                </div>
+                <div class="audit-panel-body" id="patientConversionBody"></div>
             </div>
-        </div>
-
-        <!-- ═══ SECTION 3.5: STRATEGIC REFLECTION ═══ -->
-        <div class="results-section" id="resultsReflection" style="display:none;">
         </div>
 
         <!-- Hidden SEO data containers (for internal data capture / Sheets — not shown to client) -->
@@ -1723,7 +1750,7 @@ body {
             <div id="seoOpportunityBox" style="display:none;"></div>
         </div>
 
-        <!-- ═══ SECTION 4: THE PATH FORWARD ═══ -->
+        <!-- ═══ SECTION 7: THE PATH FORWARD ═══ -->
         <div class="results-cta">
             <div class="results-cta-text" id="ctaTitle">Ready to close these gaps?</div>
             <div class="results-cta-sub" id="ctaSub">Book a free 30-minute strategy session and we'll walk through your results together.</div>
@@ -3109,7 +3136,168 @@ function applyUserCorrections(d) {
     // Step 3 + freetext: digital context — stored for narrative
 }
 
-// ─── SCREEN 5 — RESULTS ────────────────────────────────────
+// ─── GAP-SELLING LOGIC ─────────────────────────────────────
+
+function parseCapacityToSlots(answer, type) {
+    if (!answer) return 0;
+    const a = answer.toLowerCase();
+    if (type === 'optometry') {
+        if (a.includes('less than 5')) return 3;
+        if (a.includes('5 to 15')) return 10;
+        if (a.includes('15 to 25')) return 20;
+        if (a.includes('25+')) return 30;
+    } else if (type === 'ophthalmology') {
+        // Return a % gap — we'll interpret as "missed cases/week"
+        if (a.includes('90%+')) return 2;
+        if (a.includes('70%')) return 6;
+        if (a.includes('50%')) return 12;
+        if (a.includes('below 50%')) return 20;
+    } else if (type === 'optical') {
+        if (a.includes('0-2')) return 1;
+        if (a.includes('3-5')) return 4;
+        if (a.includes('6-10')) return 8;
+        if (a.includes('10+')) return 12;
+    }
+    return 0;
+}
+
+const GAP_BENCHMARKS = {
+    optometry: { basic: 80, contactLens: 120, full: 350 },
+    ophthalmology: 2500,
+    optical: 300
+};
+
+function mapFrustrationToRootCause(painAnswer) {
+    const p = (painAnswer || '').toLowerCase();
+    if (p.includes('don\'t show up') || p.includes('google') || p.includes('visibility') || p.includes('search'))
+        return "Your current visibility score is creating a 'digital blackout.' You are effectively invisible to the 70% of local patients currently searching for a provider.";
+    if (p.includes('outdated') || p.includes('doesn\'t reflect') || p.includes('generic') || p.includes('where to start'))
+        return "Your practice is suffering from 'clinical invisibility.' By looking like every other generic office, you are forcing patients to choose based on zip code rather than your clinical expertise.";
+    if (p.includes('roi') || p.includes('spending money') || p.includes('ads'))
+        return "You are trapped in a 'Leaky Bucket' cycle. You are paying to drive traffic into an intake system that is structurally incapable of converting them.";
+    if (p.includes('vendor') || p.includes('doesn\'t understand') || p.includes('eye care'))
+        return "You are paying 'The Generalist Tax.' Your vendor is learning the industry on your dime while missing the specific nuances of patient intent that drive high-value exams.";
+    if (p.includes('no real') || p.includes('strategy') || p.includes('sits there') || p.includes('no digital') || p.includes('autopilot'))
+        return "Your practice is on 'Digital Autopilot.' This isn't a strategy — it is a slow descent into stagnation while your local competitors aggressively pivot to take your market share.";
+    if (p.includes('referral') || p.includes('capabilities'))
+        return "Your referral network can't send you patients for services they don't know you offer. You have a 'Referral Visibility Gap' that's costing you high-value surgical cases every month.";
+    if (p.includes('competitor') || p.includes('losing'))
+        return "Your competitors aren't clinically better — they're digitally louder. Patients are choosing them because they appear first, look more modern, and make it easier to act.";
+    if (p.includes('booking') || p.includes('specialty services'))
+        return "You built the clinical expertise but your website isn't translating that into patient demand. You have a 'Conversion Disconnect' between your capabilities and your digital storefront.";
+    if (p.includes('instagram') || p.includes('social') || p.includes('engagement'))
+        return "Your social presence isn't generating the awareness your practice needs. In a market driven by visual trust signals, a silent social profile tells prospective patients you're not a serious contender.";
+    if (p.includes('warby') || p.includes('online retailer') || p.includes('compete'))
+        return "You're not losing to online retailers on price — you're losing on convenience and visibility. Your unique advantage is in-person expertise, but patients can't act on what they can't find.";
+    return "Your current marketing model has reached its structural ceiling.";
+}
+
+function mapGoalToTargetStatement(goalAnswer) {
+    const g = (goalAnswer || '').toLowerCase();
+    if (g.includes('new patient') || g.includes('volume') || g.includes('foot traffic'))
+        return "a high-velocity acquisition engine that fills every available lane";
+    if (g.includes('specialty') || g.includes('dry eye') || g.includes('myopia') || g.includes('medical'))
+        return "becoming the undisputed clinical authority for specialty care in your radius";
+    if (g.includes('optical') || g.includes('frame') || g.includes('transaction'))
+        return "a high-margin retail powerhouse that eliminates RX leakage";
+    if (g.includes('multi-location') || g.includes('brand consistency'))
+        return "a scalable enterprise model designed for market leadership and maximum valuation";
+    if (g.includes('surgical') || g.includes('cataract') || g.includes('lasik'))
+        return "a surgical pipeline that consistently fills your OR days with high-value cases";
+    if (g.includes('referral'))
+        return "a referral engine where every provider in your radius knows exactly what you offer — and sends their most complex cases to you";
+    if (g.includes('premium') || g.includes('iol') || g.includes('refractive'))
+        return "a premium conversion machine where patients understand — and choose — your advanced lens and refractive options before the consultation";
+    if (g.includes('reputation') || g.includes('review'))
+        return "a reputation fortress where your online presence reflects the exceptional care you deliver";
+    if (g.includes('retention') || g.includes('recall') || g.includes('loyalty'))
+        return "a patient loyalty engine that maximizes lifetime value and eliminates attrition to competitors";
+    if (g.includes('e-commerce') || g.includes('online'))
+        return "an omnichannel retail model that captures patients where they already shop";
+    if (g.includes('instagram') || g.includes('social'))
+        return "a brand that dominates the local visual landscape and makes your practice the aspirational choice";
+    return "sustainable, measurable growth across every dimension of your practice";
+}
+
+function generateScreen6Data() {
+    const practiceType = dossier?.practice?.type || 'optometry';
+    const name = dossier?.practice?.name || 'Your practice';
+
+    // Determine benchmark and slots based on practice type
+    let averageValue, valueType, emptySlotsWeekly;
+
+    if (practiceType === 'ophthalmology') {
+        averageValue = GAP_BENCHMARKS.ophthalmology;
+        valueType = "Surgical Case Value";
+        emptySlotsWeekly = parseCapacityToSlots(userAnswers.capacitySurgical, 'ophthalmology');
+    } else if (practiceType === 'optical') {
+        averageValue = GAP_BENCHMARKS.optical;
+        valueType = "Retail Capture Value";
+        emptySlotsWeekly = parseCapacityToSlots(userAnswers.capacityOptical, 'optical');
+    } else {
+        // Optometry, multi_specialty, default — use full realized value
+        averageValue = GAP_BENCHMARKS.optometry.full;
+        valueType = "Full Patient Lifecycle Value (Exam + Materials)";
+        emptySlotsWeekly = parseCapacityToSlots(userAnswers.capacityOptometry, 'optometry');
+    }
+
+    // For multi-specialty, also factor in surgical and optical gaps
+    let secondaryGap = 0;
+    let secondaryLabel = '';
+    if (practiceType === 'multi_specialty') {
+        const surgSlots = parseCapacityToSlots(userAnswers.capacitySurgical, 'ophthalmology');
+        const optSlots = parseCapacityToSlots(userAnswers.capacityOptical, 'optical');
+        secondaryGap = (surgSlots * GAP_BENCHMARKS.ophthalmology) + (optSlots * GAP_BENCHMARKS.optical);
+        if (surgSlots > 0) secondaryLabel += `${surgSlots} surgical cases/wk`;
+        if (optSlots > 0) secondaryLabel += (secondaryLabel ? ' + ' : '') + `${optSlots} optical walk-ins/day`;
+    }
+
+    const weeklyGap = (emptySlotsWeekly * averageValue) + secondaryGap;
+    const monthlyGap = weeklyGap * 4.33;
+    const annualGap = monthlyGap * 12;
+
+    // SEO score from lighthouse or dossier
+    const seoScore = lighthouseData?.seo || lighthouseData?.performance || dossier?.scores?.digitalPresence || 0;
+
+    const emotionalRootCause = mapFrustrationToRootCause(userAnswers.pain);
+    const targetStatement = mapGoalToTargetStatement(userAnswers.goal);
+
+    // Competitor theft text
+    const competitors = seoReportData?.places?.competitors || [];
+    const competitorNames = competitors.slice(0, 3).map(c => c.name).filter(Boolean);
+    const competitorTheftText = competitorNames.length > 0
+        ? `We identified ${competitorNames.length} competitor${competitorNames.length > 1 ? 's' : ''} in your radius currently capturing the patients you're missing: ${competitorNames.join(', ')}.`
+        : `We have identified competitors in your immediate radius who are currently capturing the ${emptySlotsWeekly} patients you miss every week.`;
+
+    return {
+        name,
+        practiceType,
+        headline: monthlyGap > 0 ? `Let's Reclaim Your $${Math.round(monthlyGap).toLocaleString()} Monthly Revenue Gap` : `Let's Unlock Your Growth Potential`,
+        emptySlotsWeekly,
+        averageValue,
+        valueType,
+        secondaryGap,
+        secondaryLabel,
+        malignancySummary: emptySlotsWeekly > 0
+            ? `You are leaving ${emptySlotsWeekly} slots empty every week. At a conservative realized value of $${averageValue} per patient (${valueType}), this represents an annual 'Do Nothing' cost of $${Math.round(annualGap).toLocaleString()}.`
+            : `Based on your inputs, there's a significant growth opportunity. Let's quantify what better marketing could mean for ${name}.`,
+        technicalRootCause: seoScore > 0
+            ? `Your SEO/Web score of ${seoScore}/100 acts as a 'Digital Barrier' that is currently blocking your front door.`
+            : `Your digital presence has structural gaps acting as barriers to patient acquisition.`,
+        emotionalRootCause,
+        targetStatement: `You want to achieve ${targetStatement}. Your current model is not just lagging — it is structurally incapable of hitting that target.`,
+        competitorTheftText,
+        competitorNames,
+        annualGap: Math.round(annualGap),
+        monthlyGap: Math.round(monthlyGap),
+        weeklyGap: Math.round(weeklyGap),
+        seoScore,
+        annualLossFormatted: `$${Math.round(annualGap).toLocaleString()}`,
+        monthlyLossFormatted: `$${Math.round(monthlyGap).toLocaleString()}`,
+    };
+}
+
+// ─── SCREEN 5 — RESULTS (Gap-Selling Dashboard) ──────────────
 function showResults() {
     userAnswers.freetext = document.getElementById('q4Freetext').value.trim();
 
@@ -3118,85 +3306,86 @@ function showResults() {
 
     const d = dossier;
     const isECP = d.digital?.isEyeCarePro;
-    const score = d.scores?.overall || 0;
     const name = d.practice?.name || 'Your practice';
 
-    // ═══ SECTION 1: THE GROWTH SCORE ═══
+    // ═══ GENERATE GAP-SELLING DATA ═══
+    const gap = generateScreen6Data();
+
+    // ═══ SECTION 1: REVENUE GAP HEADLINE ═══
     const heroEl = document.getElementById('resultsHero');
     if (isECP) {
         heroEl.innerHTML = `
-            <div style="font-size:20px;font-weight:700;color:var(--brand-blue);margin-bottom:6px">Practice Growth Assessment</div>
-            <div style="font-size:14px;color:var(--text-secondary)">${name} — Account Review</div>
+            <div style="font-size:20px;font-weight:700;margin-bottom:6px">Practice Growth Assessment</div>
+            <div style="font-size:14px;opacity:.8">${name} — Account Review</div>
         `;
     } else {
-        document.getElementById('resultsScoreBig').textContent = score;
-        document.getElementById('resultsTierBadge').textContent = d.recommendedTier || 'Schedule a call';
-
-        // Sub-score breakdown
-        const subScores = [
-            { label: 'Digital Presence', value: d.scores?.digitalPresence || 0, weight: '25%' },
-            { label: 'Content', value: d.scores?.contentQuality || 0, weight: '20%' },
-            { label: 'Patient Exp', value: d.scores?.patientExperience || 0, weight: '30%' },
-            { label: 'Marketing', value: d.scores?.marketingMaturity || 0, weight: '25%' },
-        ];
-        const breakdownEl = document.getElementById('resultsScoreBreakdown');
-        breakdownEl.innerHTML = subScores.map(s => {
-            const color = s.value >= 70 ? '#4ade80' : s.value >= 40 ? '#facc15' : '#f87171';
-            return `<div class="score-sub-item">
-                <div class="score-sub-value" style="color:${color}">${s.value}</div>
-                <div class="score-sub-bar"><div class="score-sub-fill" style="width:${s.value}%;background:${color}"></div></div>
-                <div class="score-sub-label">${s.label} (${s.weight})</div>
-            </div>`;
-        }).join('');
+        document.getElementById('gapMonthlyAmount').textContent = gap.monthlyGap > 0 ? gap.monthlyLossFormatted : '--';
+        document.getElementById('gapHeadlineLabel').textContent = gap.monthlyGap > 0 ? 'Estimated Monthly Revenue Gap' : 'Growth Potential Assessment';
+        document.getElementById('gapWeeklyAmount').textContent = gap.weeklyGap > 0 ? `$${gap.weeklyGap.toLocaleString()}` : '--';
+        document.getElementById('gapAnnualAmount').textContent = gap.annualGap > 0 ? gap.annualLossFormatted : '--';
+        document.getElementById('gapValueType').textContent = gap.valueType;
     }
 
-    // ═══ SECTION 2: THE REVENUE GAP ═══
-    renderRevenueGap(d);
+    // ═══ SECTION 2: THE MALIGNANCY ═══
+    document.getElementById('gapMalignancyBody').innerHTML = `<p>${gap.malignancySummary}</p>` +
+        (gap.secondaryLabel ? `<p style="margin-top:8px;font-size:13px;color:var(--text-secondary);">Additional gaps: ${gap.secondaryLabel}</p>` : '');
 
-    // ═══ SECTION 3: CORE AUDIT (pre-fill from dossier data, SEO data fills in when ready) ═══
+    // ═══ SECTION 3: ROOT CAUSE ═══
+    document.getElementById('gapTechnicalCause').innerHTML = `<p>${gap.technicalRootCause}</p>`;
+    document.getElementById('gapEmotionalCause').innerHTML = `<p>${gap.emotionalRootCause}</p>`;
+
+    // ═══ SECTION 4: GOAL vs. REALITY ═══
+    document.getElementById('gapTargetBody').innerHTML = `<p>${gap.targetStatement}</p>`;
+
+    // ═══ SECTION 5: COMPETITOR ANCHOR ═══
+    document.getElementById('gapCompetitorText').innerHTML = `<p>${gap.competitorTheftText}</p>`;
+
+    // Build competitor comparison chart if data available
+    const competitors = seoReportData?.places?.competitors || [];
+    const chartEl = document.getElementById('gapCompetitorChart');
+    if (competitors.length > 0) {
+        const primaryLoc = seoReportData?.places?.locations?.[0] || seoReportData?.places?.business || {};
+        const allEntries = [
+            { name: primaryLoc.name || name, rating: primaryLoc.rating || 0, reviewCount: primaryLoc.reviewCount || 0, isThis: true },
+            ...competitors.slice(0, 3),
+        ].sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+        const maxReviews = Math.max(...allEntries.map(c => c.reviewCount || 0), 1);
+
+        chartEl.innerHTML = `<div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Local Market Comparison</div>` +
+            allEntries.map(c => {
+                const pct = ((c.reviewCount || 0) / maxReviews) * 100;
+                const barColor = c.isThis ? '#4CAF50' : '#378ADD';
+                return `<div class="audit-comp-row">
+                    <div class="audit-comp-name ${c.isThis ? 'highlight' : ''}">${c.isThis ? '★ ' : ''}${c.name}</div>
+                    <div class="audit-comp-bar"><div class="audit-comp-fill" style="width:${pct}%;background:${barColor}"></div></div>
+                    <div class="audit-comp-score">${c.rating ? c.rating + '★' : 'N/A'} · ${c.reviewCount || 0}</div>
+                </div>`;
+            }).join('') +
+            `<div style="font-size:11px;color:#aaa;margin-top:6px;">Rating · Review count within 5 miles</div>`;
+    } else {
+        chartEl.innerHTML = '';
+        // Hide competitor section if no data
+        document.getElementById('gapCompetitorSection').style.display = competitors.length === 0 && !gap.competitorNames.length ? 'none' : '';
+    }
+
+    // ═══ SECTION 6: CORE AUDIT (existing panels, still live) ═══
     renderCoreAuditFromDossier(d);
-
-    // If SEO data is already loaded (fired early), render the audit panels now
     if (seoReportData) {
         renderClientAuditPanels(seoReportData);
     }
 
-    // ═══ SECTION 3.5: STRATEGIC REFLECTION ═══
-    const reflectionEl = document.getElementById('resultsReflection');
-    const reflectionQ = generateReflection(d);
-    if (reflectionQ) {
-        reflectionEl.style.display = '';
-        reflectionEl.innerHTML = `
-            <div style="background:var(--surface-alt);border-radius:12px;padding:20px 24px;border-left:4px solid var(--brand);">
-                <div style="font-size:13px;font-weight:600;color:var(--brand);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">A Question Worth Considering</div>
-                <div style="font-size:15px;color:var(--text);line-height:1.6;font-style:italic">${reflectionQ}</div>
-            </div>
-        `;
-    } else {
-        reflectionEl.style.display = 'none';
-    }
-
-    // ═══ SECTION 4: THE PATH FORWARD (CTA) ═══
+    // ═══ SECTION 7: THE PATH FORWARD (CTA) ═══
     const ctaTitle = document.getElementById('ctaTitle');
     const ctaSub = document.getElementById('ctaSub');
     if (isECP) {
         ctaTitle.textContent = 'Let\'s optimize your program together';
         ctaSub.textContent = 'Book a quick review with your growth team and we\'ll walk through these opportunities.';
+    } else if (gap.monthlyGap > 0) {
+        ctaTitle.textContent = `Let's Reclaim Your ${gap.monthlyLossFormatted}/Month`;
+        ctaSub.textContent = 'Book a free 30-minute strategy session. We\'ll walk through this gap analysis and show you exactly how to close it.';
     } else if (d.digital?.isCompetitorClient) {
         ctaTitle.textContent = 'Ready to see what a strategic partner looks like?';
         ctaSub.textContent = 'Book a free 30-minute consultation. We\'ll walk through your results and show you what\'s possible.';
-    } else if (isOphthalmologyPractice(d)) {
-        const tier = d.recommendedTier || '';
-        if (tier.includes('Platinum')) {
-            ctaTitle.textContent = 'Ready to own your market?';
-            ctaSub.textContent = 'Book a complimentary consultation. We\'ll discuss how EyeMDPRO Platinum builds the brand presence that multi-location and aesthetics-driven practices need.';
-        } else if (tier.includes('Gold')) {
-            ctaTitle.textContent = 'Let\'s talk about driving surgical volume';
-            ctaSub.textContent = 'Book a complimentary consultation. We\'ll show you how EyeMDPRO Gold helps LASIK and refractive practices turn online visibility into self-pay consultations.';
-        } else {
-            ctaTitle.textContent = 'Let\'s strengthen your referral presence';
-            ctaSub.textContent = 'Book a complimentary consultation. We\'ll discuss how EyeMDPRO Silver builds the medical-grade online presence that earns referring doctor confidence.';
-        }
     } else {
         ctaTitle.textContent = 'Let\'s discuss what we found';
         ctaSub.textContent = 'Book a free 30-minute strategy session and we\'ll walk through your results together.';
@@ -3205,9 +3394,7 @@ function showResults() {
     showScreen(5);
     submitToSheets();
 
-    // SEO Intelligence now fires early (in onApifyComplete), so by the time
-    // the user reaches this screen, data is usually already loaded.
-    // Only fire here as a safety fallback if it hasn't started yet.
+    // SEO Intelligence safety fallback
     if (!seoReportData) {
         const seoUrl = userAnswers.url || dossier?.meta?.url || '';
         if (seoUrl && !dossier?.digital?.isEyeCarePro) {
