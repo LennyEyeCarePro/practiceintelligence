@@ -1561,7 +1561,7 @@ body {
         <!-- CTA after story -->
         <div class="confirm-card">
             <h3>Ready to see your growth opportunities?</h3>
-            <p>We'll ask you a few quick questions to personalize your recommendations, then show you exactly where the biggest growth potential is.</p>
+            <p>We'll ask you 2-3 quick questions to personalize your recommendations, then show you exactly where the biggest growth potential is.</p>
             <button class="btn-primary" onclick="goToStrategic()">Show My Opportunities</button>
         </div>
     </div>
@@ -1843,7 +1843,6 @@ const Q3_CAPACITY = {
     },
 };
 
-// Optical-triggering Q1 answers (any of these triggers the optical capacity question)
 const OPTICAL_GOAL_TRIGGERS = [
     'Optical sales & frame revenue',
     'Frame sales & average transaction value',
@@ -2974,7 +2973,7 @@ function selectOption(el, key, value) {
     if (key === 'goal') renderQ3();
 }
 
-// ─── Q3 BRANCHING LOGIC ────────────────────────────────────
+// âââ Q3 BRANCHING LOGIC ââââââââââââââââââââââââââââââââââââ
 function renderQ3() {
     const practiceType = dossier?.practice?.type || 'default';
     const q1Goal = userAnswers.goal || '';
@@ -3046,7 +3045,7 @@ function selectQ3Option(el, key, value) {
     userAnswers[key] = value;
 }
 
-// ─── APPLY USER CORRECTIONS TO DOSSIER ─────────────────────
+// âââ APPLY USER CORRECTIONS TO DOSSIER âââââââââââââââââââââ
 function applyUserCorrections(d) {
     // Step 2: "We Offer More" — remove user-confirmed services from missingHighValue
     const svcCorrection = userAnswers.step2Corrections || '';
