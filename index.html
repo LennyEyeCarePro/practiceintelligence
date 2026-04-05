@@ -207,12 +207,17 @@ body {
     font-size: 14px;
     font-weight: 600;
     color: var(--text-secondary);
-    background: none;
+    background: rgba(245,247,250,.95);
     border: 1.5px solid var(--border);
     border-radius: 8px;
     cursor: pointer;
     transition: all .15s;
     margin-bottom: 16px;
+    position: sticky;
+    top: 12px;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 .btn-back:hover {
     color: var(--brand);
@@ -2084,10 +2089,40 @@ async function startAnalysis() {
             // Fall back to domain-based name (e.g. empresseyeclinic.com -> Empress Eye Clinic)
             const domain = (dossier.meta?.domain || '').replace(/^www\./, '').split('.')[0];
             if (domain) {
-                dossier.practice.name = domain
-                    .replace(/[-_]/g, ' ')
-                    .replace(/([a-z])([A-Z])/g, '$1 $2')
-                    .replace(/\b\w/g, c => c.toUpperCase());
+                let name = domain.replace(/[-_]/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+                // Split concatenated words using known eye care vocabulary
+                const eyeWords = ['eye','care','clinic','center','vision','optical','optometry',
+                    'ophthalmology','medical','group','associates','family','health','wellness',
+                    'premier','advanced','total','complete','bright','clear','eagle','coastal',
+                    'south','north','east','west','lake','valley','mountain','river','metro',
+                    'central','professional','specialists','specialist','doctors','doctor','md','od'];
+                // Greedy match: try longest words first
+                const sorted = [...eyeWords].sort((a, b) => b.length - a.length);
+                let remaining = name.toLowerCase().replace(/\s+/g, '');
+                const parts = [];
+                while (remaining.length > 0) {
+                    let matched = false;
+                    for (const w of sorted) {
+                        if (remaining.startsWith(w)) {
+                            parts.push(w);
+                            remaining = remaining.slice(w.length);
+                            matched = true;
+                            break;
+                        }
+                    }
+                    if (!matched) {
+                        // Take characters until the next known word starts
+                        let chunk = '';
+                        for (let i = 0; i < remaining.length; i++) {
+                            chunk += remaining[i];
+                            const rest = remaining.slice(i + 1);
+                            if (sorted.some(w => rest.startsWith(w))) break;
+                        }
+                        parts.push(chunk);
+                        remaining = remaining.slice(chunk.length);
+                    }
+                }
+                dossier.practice.name = parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
             }
         }
         apifyDone = true;
@@ -2295,7 +2330,7 @@ function renderStep1() {
             '</div>';
     } else {
         doctorsHtml = '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--surface-alt)">' +
-            '<div style="font-size:13px;color:var(--text-muted)">No providers detected on your website</div></div>';
+            '<div style="font-size:13px;color:var(--text-muted)">Provider details will be confirmed during your strategy session</div></div>';
     }
 
     const rowsHtml = idRows.map(([l, v]) =>
