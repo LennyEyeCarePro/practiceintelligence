@@ -846,6 +846,28 @@ body {
 
 .strategic-textarea:focus { border-color: var(--brand-light); }
 
+.q3-sub-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--brand);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 16px 0 4px;
+}
+.q3-sub-label:first-of-type { margin-top: 0; }
+.q3-sub-question {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+.q3-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 18px 0;
+}
+
 /* ─── SCREEN 5 — RESULTS ─────────────────────────────── */
 
 .results-hero {
@@ -1539,7 +1561,7 @@ body {
         <!-- CTA after story -->
         <div class="confirm-card">
             <h3>Ready to see your growth opportunities?</h3>
-            <p>We'll ask you 2 quick questions to personalize your recommendations, then show you exactly where the biggest growth potential is.</p>
+            <p>We'll ask you a few quick questions to personalize your recommendations, then show you exactly where the biggest growth potential is.</p>
             <button class="btn-primary" onclick="goToStrategic()">Show My Opportunities</button>
         </div>
     </div>
@@ -1549,21 +1571,25 @@ body {
          ══════════════════════════════════════════════════════ -->
     <div id="screen4" class="screen">
         <div class="strategic-card">
-            <div class="strategic-q-label">Question 1 of 3</div>
+            <div class="strategic-q-label">Question 1 of 4</div>
             <div class="strategic-q-text">What's the #1 thing you want to grow this year?</div>
             <div class="strategic-options" id="q1Options"></div>
         </div>
 
         <div class="strategic-card">
-            <div class="strategic-q-label">Question 2 of 3</div>
+            <div class="strategic-q-label">Question 2 of 4</div>
             <div class="strategic-q-text">What's your biggest frustration with your current marketing?</div>
             <div class="strategic-options" id="q2Options"></div>
         </div>
 
+        <div id="q3Container">
+            <!-- Dynamically populated by renderQ3() based on practice type + Q1 answer -->
+        </div>
+
         <div class="strategic-card">
-            <div class="strategic-q-label">Question 3 of 3</div>
+            <div class="strategic-q-label">Question 4 of 4</div>
             <div class="strategic-q-text">Anything else we should know?</div>
-            <textarea class="strategic-textarea" id="q3Freetext" placeholder="Optional — any specific challenges, goals, or context that would help us personalize your results..."></textarea>
+            <textarea class="strategic-textarea" id="q4Freetext" placeholder="Optional — any specific challenges, goals, or context that would help us personalize your results..."></textarea>
         </div>
 
         <button class="btn-primary" id="btnShowResults" onclick="showResults()">Show My Growth Plan</button>
@@ -1729,6 +1755,13 @@ const GOAL_OPTIONS = {
         'Social media & Instagram presence',
         'Customer retention & loyalty',
     ],
+    multi_specialty: [
+        'New patient volume',
+        'Surgical case volume (cataract, LASIK)',
+        'Optical sales & frame revenue',
+        'Online visibility & local search ranking',
+        'Patient retention & recall',
+    ],
     default: [
         'New patient volume',
         'Revenue per patient',
@@ -1760,6 +1793,13 @@ const PAIN_OPTIONS = {
         'Our website doesn\'t showcase our frames well',
         'We have no email marketing or customer follow-up',
     ],
+    multi_specialty: [
+        'Referral sources don\'t know our full capabilities',
+        'We\'re spending money on ads with no clear ROI',
+        'Our website doesn\'t reflect the quality of our practice',
+        'We need better coordination across departments (medical + optical)',
+        'Our current vendor doesn\'t understand eye care',
+    ],
     default: [
         'Our website feels outdated',
         'We don\'t show up on Google',
@@ -1768,6 +1808,45 @@ const PAIN_OPTIONS = {
         'We have no digital marketing strategy',
     ],
 };
+
+// ─── QUESTION 3 — CAPACITY / UTILIZATION OPTIONS ────────────
+const Q3_CAPACITY = {
+    optometry: {
+        question: 'On average, how many exam slots are left empty across your practice each week?',
+        key: 'capacityOptometry',
+        options: [
+            'Less than 5 (We are mostly full, looking for higher-value patients)',
+            '5 to 15 (We have consistent gaps we need to fill)',
+            '15 to 25 (We are under-utilized and losing revenue daily)',
+            '25+ (We have a critical need for new patient acquisition)',
+        ],
+    },
+    ophthalmology: {
+        question: 'What is your current surgical volume vs. your ideal capacity?',
+        key: 'capacitySurgical',
+        options: [
+            'Operating at 90%+ (Looking to optimize for premium IOLs/Refractive)',
+            '70% - 90% (Need more consistent Cataract/LASIK leads to fill OR days)',
+            '50% - 70% (Significant gaps in the surgical schedule)',
+            'Below 50% (Under-utilized MDs and high overhead pressure)',
+        ],
+    },
+    optical: {
+        question: 'On average, how many additional "walk-ins" or RX-captures could your optical handle per day?',
+        key: 'capacityOptical',
+        options: [
+            '0-2 (We are at peak capacity/staffing limits)',
+            '3-5 (We need a steady boost in daily foot traffic)',
+            '6-10 (We have significant "dead time" in the dispensary)',
+            '10+ (We are heavily under-performing relative to our floor space)',
+        ],
+    },
+};
+
+const OPTICAL_GOAL_TRIGGERS = [
+    'Optical sales & frame revenue',
+    'Frame sales & average transaction value',
+];
 
 // ─── INDUSTRY BENCHMARKS & ECP PACKAGE DATA ─────────────────
 const INDUSTRY = {
@@ -2882,6 +2961,7 @@ function goToStrategic() {
         </div>`
     ).join('');
 
+    renderQ3();
     showScreen(4);
 }
 
@@ -2889,9 +2969,83 @@ function selectOption(el, key, value) {
     el.parentElement.querySelectorAll('.strategic-option').forEach(o => o.classList.remove('selected'));
     el.classList.add('selected');
     userAnswers[key] = value;
+    // Re-render Q3 when Q1 answer changes (optical goal may toggle optical capacity question)
+    if (key === 'goal') renderQ3();
 }
 
-// ─── APPLY USER CORRECTIONS TO DOSSIER ─────────────────────
+// âââ Q3 BRANCHING LOGIC ââââââââââââââââââââââââââââââââââââ
+function renderQ3() {
+    const practiceType = dossier?.practice?.type || 'default';
+    const q1Goal = userAnswers.goal || '';
+    const isOpticalGoal = OPTICAL_GOAL_TRIGGERS.some(t => t === q1Goal);
+
+    // Determine which sub-questions to show
+    const questions = []; // Array of { config, label }
+
+    if (practiceType === 'multi_specialty') {
+        questions.push({ config: Q3_CAPACITY.optometry, label: 'Optometry' });
+        questions.push({ config: Q3_CAPACITY.ophthalmology, label: 'Ophthalmology' });
+        if (isOpticalGoal) {
+            questions.push({ config: Q3_CAPACITY.optical, label: 'Optical' });
+        }
+    } else if (practiceType === 'ophthalmology') {
+        questions.push({ config: Q3_CAPACITY.ophthalmology, label: null });
+    } else if (practiceType === 'optical') {
+        questions.push({ config: Q3_CAPACITY.optical, label: null });
+    } else {
+        // optometry, default, or unknown
+        questions.push({ config: Q3_CAPACITY.optometry, label: null });
+        if (isOpticalGoal) {
+            questions.push({ config: Q3_CAPACITY.optical, label: null });
+        }
+    }
+
+    // Build HTML
+    let html = '<div class="strategic-card"><div class="strategic-q-label">Question 3 of 4</div>';
+    html += '<div class="strategic-q-text">How much capacity do you have to grow?</div>';
+
+    questions.forEach((q, idx) => {
+        if (q.label) {
+            html += `<div class="q3-sub-label">${q.label}:</div>`;
+        }
+        html += `<div class="q3-sub-question">${q.config.question}</div>`;
+        html += `<div class="strategic-options" id="q3Opts_${q.config.key}">`;
+        q.config.options.forEach(opt => {
+            const escaped = opt.replace(/'/g, "\\'");
+            html += `<div class="strategic-option" onclick="selectQ3Option(this, '${q.config.key}', '${escaped}')">
+                <div class="strategic-option-dot"></div>${opt}
+            </div>`;
+        });
+        html += '</div>';
+        if (idx < questions.length - 1) {
+            html += '<div class="q3-divider"></div>';
+        }
+    });
+
+    html += '</div>';
+    document.getElementById('q3Container').innerHTML = html;
+
+    // Restore previously selected answers if they still exist
+    questions.forEach(q => {
+        const prev = userAnswers[q.config.key];
+        if (prev) {
+            const container = document.getElementById('q3Opts_' + q.config.key);
+            if (container) {
+                container.querySelectorAll('.strategic-option').forEach(opt => {
+                    if (opt.textContent.trim() === prev) opt.classList.add('selected');
+                });
+            }
+        }
+    });
+}
+
+function selectQ3Option(el, key, value) {
+    el.parentElement.querySelectorAll('.strategic-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    userAnswers[key] = value;
+}
+
+// âââ APPLY USER CORRECTIONS TO DOSSIER âââââââââââââââââââââ
 function applyUserCorrections(d) {
     // Step 2: "We Offer More" — remove user-confirmed services from missingHighValue
     const svcCorrection = userAnswers.step2Corrections || '';
@@ -2923,7 +3077,7 @@ function applyUserCorrections(d) {
 
 // ─── SCREEN 5 — RESULTS ────────────────────────────────────
 function showResults() {
-    userAnswers.freetext = document.getElementById('q3Freetext').value.trim();
+    userAnswers.freetext = document.getElementById('q4Freetext').value.trim();
 
     // Apply user corrections before rendering
     applyUserCorrections(dossier);
@@ -3724,6 +3878,9 @@ function submitToSheets() {
         growthGoal: userAnswers.goal || '',
         biggestPain: userAnswers.pain || '',
         freetext: userAnswers.freetext || '',
+        capacityOptometry: userAnswers.capacityOptometry || '',
+        capacitySurgical: userAnswers.capacitySurgical || '',
+        capacityOptical: userAnswers.capacityOptical || '',
         step1Corrections: userAnswers.step1Corrections || '',
         step2Corrections: userAnswers.step2Corrections || '',
         step3Corrections: userAnswers.step3Corrections || '',
