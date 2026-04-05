@@ -123,8 +123,8 @@ export default async function handler(req, res) {
         const matchedPlaces = filterToMatchingBusiness(allPlaces, businessName, website);
         debugLog.push({ step: 'post_filter', matchedCount: matchedPlaces.length });
 
-        // If filter removed everything, use all results (filter may be too strict)
-        const finalPlaces = matchedPlaces.length > 0 ? matchedPlaces : allPlaces.slice(0, 5);
+        // If filter removed everything, use only the top result (not all 5 — filter was likely correct to exclude them)
+        const finalPlaces = matchedPlaces.length > 0 ? matchedPlaces : allPlaces.slice(0, 1);
 
         // ── Step 3: Get Place Details for each matched location (parallel, max 10) ──
         const detailPromises = finalPlaces.slice(0, 10).map(p => getPlaceDetails(p.place_id, API_KEY));
@@ -214,11 +214,37 @@ function filterToMatchingBusiness(places, businessName, website) {
     const normName = normalizeName(businessName);
     const domain = website ? website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').toLowerCase() : null;
 
+    // Extract distinctive words (3+ chars, skip common eye care filler words)
+    const skipWords = new Set(['the','and','of','for','in','at','eye','care','clinic','center',
+        'group','associates','llc','pc','md','od','pa','inc','office','practice','vision',
+        'optical','optometry','ophthalmology','doctor','doctors','medical']);
+    const bizWords = normName.split(' ').filter(w => w.length >= 3 && !skipWords.has(w));
+
     return places.filter(p => {
         const pName = normalizeName(p.name || '');
-        // Check if the place name contains the business name or vice versa
-        // e.g. "Access Eye" matches "Access Eye - Fredericksburg" or "Access Eye Consultants"
-        return pName.includes(normName) || normName.includes(pName);
+
+        // Exact or near-exact match: one name fully contains the other
+        if (pName.includes(normName)) return true;
+
+        // Only allow reverse contain if the place name is substantial (>= 3 words)
+        // to prevent "Eye Clinic" matching "Empress Eye Clinic"
+        const pWords = pName.split(' ');
+        if (pWords.length >= 3 && normName.includes(pName)) return true;
+
+        // Distinctive word match: at least 1 non-generic word from the business name
+        // must appear in the Google result name
+        if (bizWords.length > 0) {
+            const matchCount = bizWords.filter(w => pName.includes(w)).length;
+            if (matchCount >= 1) return true;
+        }
+
+        // Website domain match: if the place has a website matching ours, it's ours
+        if (domain && p.website) {
+            const pDomain = p.website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').toLowerCase();
+            if (pDomain === domain) return true;
+        }
+
+        return false;
     });
 }
 
