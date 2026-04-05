@@ -1749,6 +1749,18 @@ body {
             <div id="seoOpportunityBox" style="display:none;"></div>
         </div>
 
+        <!-- ═══ STRATEGIC ADVICE (from Connectivity Logic) ═══ -->
+        <div id="strategicAdviceSection" class="gap-card" style="display:none;">
+            <div class="gap-card-header">
+                <span class="gap-card-icon">🎯</span>
+                <span class="gap-card-title">Our Strategic Focus</span>
+            </div>
+            <div class="gap-card-body">
+                <div style="font-size:13px;font-weight:600;color:var(--brand);margin-bottom:6px;" id="strategicAdviceLabel"></div>
+                <p id="strategicAdviceText"></p>
+            </div>
+        </div>
+
         <!-- ═══ SECTION 7: THE PATH FORWARD ═══ -->
         <div class="results-cta">
             <div class="results-cta-text" id="ctaTitle">Ready to close these gaps?</div>
@@ -3225,6 +3237,51 @@ const GAP_BENCHMARKS = {
     optical: 300
 };
 
+// ─── CONNECTIVITY LOGIC: Goal → Strategic Focus → Advice ──────────────
+const connectivityLogic = {
+    goals: {
+        // Optometry & multi-specialty
+        "New patient volume": "Search-to-Schedule Alignment",
+        "Specialty services revenue (dry eye, myopia)": "Clinical Authority Integration",
+        "Optical sales & frame revenue": "Traffic-to-Retail Conversion",
+        "Online visibility & local search ranking": "Expertise-Driven Systems",
+        "Patient retention & recall": "Loyalty-to-Convenience Bridge",
+        // Ophthalmology
+        "Surgical case volume (cataract, LASIK)": "Surgical Case Acceleration",
+        "Referral network growth": "Referral Authority Positioning",
+        "Premium IOL & refractive conversions": "Premium Conversion Pipeline",
+        "Multi-location brand consistency": "Unified Brand Authority",
+        "Online reputation & patient reviews": "Reputation-to-Revenue Engine",
+        // Optical
+        "Frame sales & average transaction value": "Traffic-to-Retail Conversion",
+        "Online/e-commerce eyewear sales": "Digital Storefront Optimization",
+        "Brand awareness & foot traffic": "Local Discovery Acceleration",
+        "Social media & Instagram presence": "Social-to-Showroom Pipeline",
+        "Customer retention & loyalty": "Loyalty-to-Convenience Bridge",
+        // Default
+        "Revenue per patient": "Per-Patient Value Optimization",
+        "Online visibility & search ranking": "Expertise-Driven Systems",
+        "Patient experience & retention": "Loyalty-to-Convenience Bridge",
+        "Brand awareness in my market": "Local Discovery Acceleration",
+    },
+    advice: {
+        "Search-to-Schedule Alignment": "We will focus on removing the digital barrier between local searches and your exam chair by ensuring your visibility is directly linked to an immediate booking path.",
+        "Clinical Authority Integration": "Your medical expertise needs a direct, frictionless booking funnel so patients seeking specialized care can take immediate action.",
+        "Traffic-to-Retail Conversion": "We will optimize your patient journey to ensure 'browsers' are converted into optical appointments before they leave your site, stopping RX leakage.",
+        "Expertise-Driven Systems": "You need a system that speaks the language of Optometry and syncs your unique value with your actual patient flow.",
+        "Loyalty-to-Convenience Bridge": "We will modernize your intake system to eliminate friction, ensuring your loyal patients have the 'Next Yes' ready at their fingertips.",
+        "Surgical Case Acceleration": "We will build a direct pipeline from patient awareness to surgical consultation, ensuring your case volume reflects your clinical capacity.",
+        "Referral Authority Positioning": "We will position your practice as the clear referral destination by amplifying your surgical outcomes and clinical expertise to referring ODs.",
+        "Premium Conversion Pipeline": "We will create a patient education pathway that increases premium IOL selection rates by helping patients understand their options before consultation.",
+        "Unified Brand Authority": "We will create a cohesive digital presence across all locations so every patient touchpoint reinforces the same standard of care.",
+        "Reputation-to-Revenue Engine": "We will turn your patient satisfaction into a visible growth engine — reviews, testimonials, and social proof that drive new patient decisions.",
+        "Digital Storefront Optimization": "We will build an online eyewear experience that captures the patients who are already browsing frames on their phones.",
+        "Local Discovery Acceleration": "We will make your practice the first name patients see when searching for eye care in your area — across Google, Maps, and social.",
+        "Social-to-Showroom Pipeline": "We will turn your social media presence into a patient acquisition channel that brings followers into your dispensary.",
+        "Per-Patient Value Optimization": "We will help you capture more value from every patient visit by ensuring your full range of services is visible and bookable.",
+    }
+};
+
 function mapFrustrationToRootCause(painAnswer) {
     const p = (painAnswer || '').toLowerCase();
     if (p.includes('don\'t show up') || p.includes('google') || p.includes('visibility') || p.includes('search'))
@@ -3432,6 +3489,18 @@ function showResults() {
     renderCoreAuditFromDossier(d);
     if (seoReportData) {
         renderClientAuditPanels(seoReportData);
+    }
+
+    // ═══ STRATEGIC ADVICE (Connectivity Logic) ═══
+    const userGoal = userAnswers.goal || '';
+    const strategicFocus = connectivityLogic.goals[userGoal];
+    const strategicAdviceEl = document.getElementById('strategicAdviceSection');
+    if (strategicFocus && connectivityLogic.advice[strategicFocus]) {
+        document.getElementById('strategicAdviceLabel').textContent = strategicFocus;
+        document.getElementById('strategicAdviceText').textContent = connectivityLogic.advice[strategicFocus];
+        strategicAdviceEl.style.display = '';
+    } else {
+        strategicAdviceEl.style.display = 'none';
     }
 
     // ═══ SECTION 7: THE PATH FORWARD (CTA) ═══
