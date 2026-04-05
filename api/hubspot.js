@@ -207,6 +207,107 @@ async function createDeal(dealProps, contactId, companyId) {
     return deal.id;
 }
 
+// ── Create Note and associate to Contact + Company ────────────────────
+async function createNote(noteBody, contactId, companyId) {
+    const note = await hsPost('/crm/v3/objects/notes', {
+        properties: {
+            hs_timestamp: new Date().toISOString(),
+            hs_note_body: noteBody,
+        },
+    });
+
+    const assocPromises = [];
+    if (contactId) {
+        assocPromises.push(
+            fetch(`${BASE}/crm/v3/objects/notes/${note.id}/associations/contacts/${contactId}/note_to_contact`, {
+                method: 'PUT', headers: headers(),
+            }).catch(() => {})
+        );
+    }
+    if (companyId) {
+        assocPromises.push(
+            fetch(`${BASE}/crm/v3/objects/notes/${note.id}/associations/companies/${companyId}/note_to_company`, {
+                method: 'PUT', headers: headers(),
+            }).catch(() => {})
+        );
+    }
+    await Promise.allSettled(assocPromises);
+    return note.id;
+}
+
+// ── Build assessment report note body ─────────────────────────────────
+function buildReportNote(data, domain) {
+    const gap = data.revenueGapMonthly || 0;
+    const lines = [
+        `<h2>Practice Growth Assessment Report</h2>`,
+        `<p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>`,
+        `<p><strong>Assessed by:</strong> ${data.name || 'N/A'} (${data.email})</p>`,
+        `<p><strong>Website:</strong> ${data.url || domain}</p>`,
+        `<hr>`,
+        `<h3>Practice Profile</h3>`,
+        `<ul>`,
+        `<li><strong>Practice Name:</strong> ${data.practiceName || domain}</li>`,
+        `<li><strong>Type:</strong> ${data.practiceType || 'Unknown'}${data.practiceSubType ? ` (${data.practiceSubType})` : ''}</li>`,
+        `<li><strong>Locations:</strong> ${data.locationCount || 1}</li>`,
+        `<li><strong>Doctors:</strong> ${data.doctorCount || 0} (${data.doctorNames || 'None detected'})</li>`,
+        data.phone ? `<li><strong>Phone:</strong> ${data.phone}</li>` : '',
+        data.address ? `<li><strong>Address:</strong> ${data.address}</li>` : '',
+        data.yearEstablished ? `<li><strong>Year Established:</strong> ${data.yearEstablished}</li>` : '',
+        `</ul>`,
+        `<h3>Digital Presence</h3>`,
+        `<ul>`,
+        `<li><strong>CMS:</strong> ${data.cms || 'Unknown'}</li>`,
+        `<li><strong>Marketing Vendor:</strong> ${data.marketingVendor || 'None detected'}</li>`,
+        `<li><strong>EyeCarePro Client:</strong> ${data.isEyeCarePro || 'No'}</li>`,
+        `<li><strong>Competitor Client:</strong> ${data.isCompetitorClient || 'No'}</li>`,
+        `<li><strong>Online Scheduling:</strong> ${data.hasScheduling || 'No'}${data.schedulingPlatform ? ` (${data.schedulingPlatform})` : ''}</li>`,
+        `<li><strong>Analytics:</strong> ${data.analyticsTools || 'None detected'}</li>`,
+        `<li><strong>Social Platforms:</strong> ${data.socialPlatforms || 'None'} (${data.socialCount || 0})</li>`,
+        `<li><strong>Blog:</strong> ${data.blogExists || 'No'}</li>`,
+        `</ul>`,
+        `<h3>SEO & Performance Scores</h3>`,
+        `<ul>`,
+        `<li><strong>Overall Score:</strong> ${data.scoreOverall || '--'}/100</li>`,
+        `<li><strong>Digital Presence:</strong> ${data.scoreDigital || '--'}/100</li>`,
+        `<li><strong>Content Quality:</strong> ${data.scoreContent || '--'}/100</li>`,
+        `<li><strong>Patient Experience:</strong> ${data.scorePatientExp || '--'}/100</li>`,
+        `<li><strong>Marketing Maturity:</strong> ${data.scoreMarketing || '--'}/100</li>`,
+        `<li><strong>Lighthouse Performance:</strong> ${data.lighthousePerformance || '--'}</li>`,
+        `<li><strong>Lighthouse SEO:</strong> ${data.lighthouseSeo || '--'}</li>`,
+        `</ul>`,
+        `<h3>Services</h3>`,
+        `<ul>`,
+        `<li><strong>Services Detected:</strong> ${data.servicesCount || 0} — ${data.servicesDetected || 'None'}</li>`,
+        `<li><strong>Missing High-Value Services:</strong> ${data.missingServices || 'None'}</li>`,
+        data.hasOptical === 'Yes' ? `<li><strong>Optical:</strong> ${data.frameBrandCount || 0} frame brands (${data.brandPositioning || 'N/A'})</li>` : '',
+        data.insurancePlans ? `<li><strong>Insurance Plans:</strong> ${data.insurancePlans}</li>` : '',
+        `</ul>`,
+        `<h3>Revenue Gap Analysis</h3>`,
+        `<ul>`,
+        `<li><strong>Monthly Revenue Gap:</strong> $${gap.toLocaleString()}</li>`,
+        `<li><strong>Annual Revenue Gap:</strong> $${(gap * 12).toLocaleString()}</li>`,
+        `<li><strong>Gap Count:</strong> ${data.gapCount || 0}</li>`,
+        data.topGaps ? `<li><strong>Top Gaps:</strong> ${data.topGaps}</li>` : '',
+        `</ul>`,
+        `<h3>Prospect Inputs</h3>`,
+        `<ul>`,
+        `<li><strong>Growth Goal:</strong> ${data.growthGoal || 'Not specified'}</li>`,
+        `<li><strong>Biggest Pain:</strong> ${data.biggestPain || 'Not specified'}</li>`,
+        data.strategicFocus ? `<li><strong>Strategic Focus:</strong> ${data.strategicFocus}</li>` : '',
+        data.strategicAdvice ? `<li><strong>Strategic Advice:</strong> ${data.strategicAdvice}</li>` : '',
+        data.freetext ? `<li><strong>Additional Notes:</strong> ${data.freetext}</li>` : '',
+        `</ul>`,
+        `<h3>Gap Analysis Narrative</h3>`,
+        data.malignancySummary ? `<p><strong>The Gap:</strong> ${data.malignancySummary}</p>` : '',
+        data.technicalRootCause ? `<p><strong>Technical Root Cause:</strong> ${data.technicalRootCause}</p>` : '',
+        data.emotionalRootCause ? `<p><strong>Emotional Root Cause:</strong> ${data.emotionalRootCause}</p>` : '',
+        data.targetStatement ? `<p><strong>Goal vs. Reality:</strong> ${data.targetStatement}</p>` : '',
+        data.recommendedTier ? `<p><strong>Recommended Tier:</strong> ${data.recommendedTier}</p>` : '',
+    ];
+
+    return lines.filter(Boolean).join('\n');
+}
+
 // ── Main handler ──────────────────────────────────────────────────────
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -327,12 +428,17 @@ export default async function handler(req, res) {
 
         const dealId = await createDeal(dealProps, contactId, companyId);
 
+        // Step 5: Create Note with full assessment report
+        const noteBody = buildReportNote(data, domain);
+        const noteId = await createNote(noteBody, contactId, companyId);
+
         return res.status(200).json({
             success: true,
             companyId,
             contactId,
             dealId,
-            message: `Synced to HubSpot: Company ${companyId}, Contact ${contactId}, Deal ${dealId}`,
+            noteId,
+            message: `Synced to HubSpot: Company ${companyId}, Contact ${contactId}, Deal ${dealId}, Note ${noteId}`,
         });
 
     } catch (err) {

@@ -4332,6 +4332,15 @@ function submitToHubSpot(gap) {
         insurancePlans: (d.insurance?.detected || []).map(i => i.name).join('; '),
         recommendedTier: d.recommendedTier || '',
         revenueGapMonthly: gap?.monthlyGap || 0,
+        facebookUrl: d.social?.facebookUrl || '',
+        instagramUrl: d.social?.instagramUrl || '',
+        strategicFocus: connectivityLogic.goals[userAnswers.goal] || '',
+        strategicAdvice: connectivityLogic.advice[connectivityLogic.goals[userAnswers.goal]] || '',
+        // Gap analysis narrative for note
+        malignancySummary: gap?.malignancySummary || '',
+        technicalRootCause: gap?.technicalRootCause || '',
+        emotionalRootCause: gap?.emotionalRootCause || '',
+        targetStatement: gap?.targetStatement || '',
     };
 
     fetch('/api/hubspot', {
