@@ -3220,7 +3220,7 @@ function parseCapacityToSlots(answer, type) {
 }
 
 const GAP_BENCHMARKS = {
-    optometry: { basic: 80, contactLens: 120, full: 350 },
+    optometry: { basic: 80, contactLens: 120, full: 300 },
     ophthalmology: 2500,
     optical: 300
 };
@@ -3340,10 +3340,10 @@ function generateScreen6Data() {
             ? `You are leaving ${emptySlotsWeekly} slots empty every week. At a conservative realized value of $${averageValue} per patient (${valueType}), this represents an annual 'Do Nothing' cost of $${Math.round(annualGap).toLocaleString()}.`
             : `Based on your inputs, there's a significant growth opportunity. Let's quantify what better marketing could mean for ${name}.`,
         technicalRootCause: seoScore >= 80
-            ? `Your SEO/Web score of ${seoScore}/100 is solid — but score alone doesn't tell the full story. The gap is in converting that visibility into booked appointments.`
+            ? `Your website's technical SEO structure scores ${seoScore}/100 — that's a strong foundation. The opportunity now is in the strategy layer: content, service visibility, local search presence, and patient conversion paths.`
             : seoScore > 0
-            ? `Your SEO/Web score of ${seoScore}/100 means potential patients are having trouble finding or engaging with your practice online.`
-            : `Your digital presence has structural gaps acting as barriers to patient acquisition.`,
+            ? `Your website's technical SEO structure scores ${seoScore}/100, which means there are foundational issues that could be limiting how easily patients find your practice online.`
+            : `Your digital presence has structural gaps that may be limiting how patients discover your practice.`,
         emotionalRootCause,
         targetStatement: `You want to achieve ${targetStatement}. Your current marketing approach — website, SEO, and patient acquisition strategy — may need to evolve to get you there.`,
         competitorTheftText,
