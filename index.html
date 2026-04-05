@@ -1754,7 +1754,7 @@ body {
         <div class="results-cta">
             <div class="results-cta-text" id="ctaTitle">Ready to close these gaps?</div>
             <div class="results-cta-sub" id="ctaSub">Book a free 30-minute strategy session and we'll walk through your results together.</div>
-            <a class="btn-cta-calendly" href="https://calendly.com/eyecarepro-business-development/30-min-consultation-with-eyecarepro" target="_blank" id="calendlyLink">Book Your Strategy Session</a>
+            <a class="btn-cta-calendly" href="https://calendly.com/eyecarepro-business-development/30-min-strategy-session-with-eyecarepro" target="_blank" id="calendlyLink">Book Your Strategy Session</a>
         </div>
 
         <div class="results-footer">
@@ -2101,6 +2101,10 @@ async function startAnalysis() {
         lighthouseData = result;
         lighthouseDone = true;
         updateBgAnalysisBar();
+        // If SEO intelligence already ran but captured null lighthouse, backfill it now
+        if (seoReportData && !seoReportData.lighthouse) {
+            seoReportData.lighthouse = lighthouseFullData;
+        }
     }).catch(() => {
         lighthouseDone = true;
         updateBgAnalysisBar();
@@ -3638,8 +3642,8 @@ function renderClientAuditPanels(data) {
     const biz = data.places?.locations?.[0] || data.places?.business || {};
     const allLocs = data.places?.locations || (biz.name ? [biz] : []);
     const competitors = data.places?.competitors || [];
-    const mobile = data.lighthouse?.mobile || lighthouseData || {};
-    const desktop = data.lighthouse?.desktop || {};
+    const mobile = data.lighthouse?.mobile || lighthouseFullData?.mobile || lighthouseData || {};
+    const desktop = data.lighthouse?.desktop || lighthouseFullData?.desktop || {};
     const audit = data.siteAudit || {};
     const report = data.report || {};
 
@@ -4283,8 +4287,8 @@ function renderSeoSection(data) {
 
     const report = data.report || {};
     const audit = data.siteAudit || {};
-    const mobile = data.lighthouse?.mobile || lighthouseData || {};
-    const desktop = data.lighthouse?.desktop || {};
+    const mobile = data.lighthouse?.mobile || lighthouseFullData?.mobile || lighthouseData || {};
+    const desktop = data.lighthouse?.desktop || lighthouseFullData?.desktop || {};
     const pr = data.pageRank || {};
     // Support both multi-location (locations[]) and single (business{}) responses
     const locations = data.places?.locations || [];
