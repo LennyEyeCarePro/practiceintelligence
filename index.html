@@ -3450,6 +3450,7 @@ function showResults() {
 
     showScreen(5);
     submitToSheets();
+    submitToHubSpot(gap);
 
     // SEO Intelligence safety fallback
     if (!seoReportData) {
@@ -4209,6 +4210,74 @@ function submitToSheets() {
     } catch (e) {
         console.warn('Sheets submission error:', e);
     }
+}
+
+// ─── Submit assessment data to HubSpot CRM ────────────────
+function submitToHubSpot(gap) {
+    const d = dossier;
+    const lh = lighthouseData || {};
+
+    const payload = {
+        name: userAnswers.name,
+        email: userAnswers.email,
+        url: userAnswers.url,
+        growthGoal: userAnswers.goal || '',
+        biggestPain: userAnswers.pain || '',
+        freetext: userAnswers.freetext || '',
+        practiceName: d.practice?.name || '',
+        practiceType: d.practice?.type || '',
+        practiceSubType: d.practice?.subType || '',
+        yearEstablished: d.practice?.yearEstablished || '',
+        doctorCount: d.doctors?.length || 0,
+        mdCount: (d.doctors || []).filter(dr => dr.type === 'ophthalmologist').length,
+        odCount: (d.doctors || []).filter(dr => dr.type === 'optometrist').length,
+        doctorNames: (d.doctors || []).map(dr => `${dr.name} (${dr.credential || dr.type})`).join('; '),
+        locationCount: d.locations?.count || 0,
+        phone: (d.locations?.phones || [])[0] || '',
+        address: (d.locations?.addresses || [])[0] || '',
+        servicesDetected: (d.services?.detected || []).map(s => s.label).join('; '),
+        servicesCount: d.services?.totalCount || 0,
+        missingServices: (d.services?.missingHighValue || []).join('; '),
+        cms: d.digital?.cms?.name || '',
+        marketingVendor: d.digital?.marketingVendor?.name || '',
+        isCompetitorClient: d.digital?.isCompetitorClient ? 'YES' : 'No',
+        isEyeCarePro: d.digital?.isEyeCarePro ? 'YES' : 'No',
+        hasScheduling: d.digital?.scheduling?.hasOnlineScheduling ? 'Yes' : 'No',
+        schedulingPlatform: d.digital?.scheduling?.platform?.name || '',
+        analyticsTools: (d.digital?.analytics || []).map(a => a.name).join('; '),
+        socialPlatforms: (d.social?.links || []).map(l => l.platform).join('; '),
+        socialCount: d.social?.platformCount || 0,
+        blogExists: d.content?.blogExists ? 'Yes' : 'No',
+        lighthousePerformance: lh.performance || 0,
+        lighthouseSeo: lh.seo || 0,
+        scoreDigital: d.scores?.digitalPresence || 0,
+        scoreContent: d.scores?.contentQuality || 0,
+        scorePatientExp: d.scores?.patientExperience || 0,
+        scoreMarketing: d.scores?.marketingMaturity || 0,
+        scoreOverall: d.scores?.overall || 0,
+        gapCount: (d.gaps || []).length,
+        topGaps: (d.gaps || []).slice(0, 5).map(g => `[${g.severity}] ${g.finding}`).join('; '),
+        hasOptical: d.optical?.hasOptical ? 'Yes' : 'No',
+        frameBrandCount: d.optical?.totalBrands || 0,
+        brandPositioning: d.optical?.positioning || '',
+        insurancePlans: (d.insurance?.detected || []).map(i => i.name).join('; '),
+        recommendedTier: d.recommendedTier || '',
+        revenueGapMonthly: gap?.monthlyGap || 0,
+    };
+
+    fetch('/api/hubspot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    }).then(r => r.json()).then(result => {
+        if (result.success) {
+            console.log('HubSpot sync:', result.message);
+        } else {
+            console.warn('HubSpot sync issue:', result.error, result.detail);
+        }
+    }).catch(err => {
+        console.warn('HubSpot submission error:', err);
+    });
 }
 
 // ═══════════════════════════════════════════════════════════
