@@ -591,6 +591,9 @@ body {
                     <div class="progress-step" id="step-suggest"><span class="progress-icon">⏳</span> Google Search Suggestions</div>
                     <div class="progress-step" id="step-serp"><span class="progress-icon">⏳</span> SERP Keyword Mining (People Also Ask)</div>
                     <div class="progress-step" id="step-competitive"><span class="progress-icon">⏳</span> Competitive Keyword Analysis</div>
+                    <div class="progress-step" id="step-backlinks"><span class="progress-icon">⏳</span> Backlink Discovery & Toxic Link Check</div>
+                    <div class="progress-step" id="step-brokenlinks"><span class="progress-icon">⏳</span> Broken Link Audit</div>
+                    <div class="progress-step" id="step-validate"><span class="progress-icon">⏳</span> HTML Validation & Rich Results</div>
                 </div>
                 <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div>
             </div>
@@ -801,6 +804,45 @@ body {
                     <div class="panel-chevron">▾</div>
                 </div>
                 <div class="panel-body"><div class="panel-content" id="competitiveContent"></div></div>
+            </div>
+
+            <!-- Backlink Profile -->
+            <div class="panel" id="panelBacklinks">
+                <div class="panel-header" onclick="togglePanel('panelBacklinks')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(121,85,72,.15)">🔗</div>
+                        <div class="panel-title">Backlink Profile & Toxic Links</div>
+                    </div>
+                    <span class="panel-badge" id="backlinkBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="backlinkContent"></div></div>
+            </div>
+
+            <!-- Broken Link Audit -->
+            <div class="panel" id="panelBrokenLinks">
+                <div class="panel-header" onclick="togglePanel('panelBrokenLinks')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(244,67,54,.15)">🔗</div>
+                        <div class="panel-title">Broken Link Audit</div>
+                    </div>
+                    <span class="panel-badge" id="brokenLinkBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="brokenLinkContent"></div></div>
+            </div>
+
+            <!-- HTML Validation & Rich Results -->
+            <div class="panel" id="panelValidation">
+                <div class="panel-header" onclick="togglePanel('panelValidation')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(63,81,181,.15)">✅</div>
+                        <div class="panel-title">HTML Validation & Rich Results</div>
+                    </div>
+                    <span class="panel-badge" id="validateBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="validateContent"></div></div>
             </div>
 
             <!-- AI Findings -->
@@ -1047,6 +1089,31 @@ async function startScan() {
         setStep('suggest', suggestResp?.error && !suggestResp?.suggestions?.length ? 'error' : 'done');
         setStep('serp', serpResp?.error && !serpResp?.peopleAlsoAsk?.length ? 'error' : 'done');
         setStep('competitive', compKwResp?.error && !compKwResp?.analysis?.keywordGaps?.length ? 'error' : 'done');
+        setProgress(90);
+
+        // Phase 5: Parallel — Backlinks, Broken Links, HTML Validation
+        setStep('backlinks', 'active');
+        setStep('brokenlinks', 'active');
+        setStep('validate', 'active');
+
+        const [backlinkResp, brokenResp, validateResp] = await Promise.all([
+            fetch(API_BASE + '/backlinks?domain=' + encodeURIComponent(domain))
+                .then(r => r.json()).catch(e => ({ error: e.message, backlinks: [], stats: {} })),
+
+            fetch(API_BASE + '/broken-links?url=' + encodeURIComponent(domain))
+                .then(r => r.json()).catch(e => ({ error: e.message, stats: {} })),
+
+            fetch(API_BASE + '/html-validate?url=' + encodeURIComponent(domain))
+                .then(r => r.json()).catch(e => ({ error: e.message, validation: {}, richResults: {} })),
+        ]);
+
+        scanData.backlinks = backlinkResp;
+        scanData.brokenLinks = brokenResp;
+        scanData.htmlValidation = validateResp;
+
+        setStep('backlinks', backlinkResp?.error && !backlinkResp?.backlinks?.length ? 'error' : 'done');
+        setStep('brokenlinks', brokenResp?.error && !brokenResp?.stats?.linkHealth ? 'error' : 'done');
+        setStep('validate', validateResp?.error && !validateResp?.validation?.validationScore ? 'error' : 'done');
         setProgress(100);
 
         // Render results
@@ -1062,7 +1129,7 @@ async function startScan() {
 
 // ─── RENDER ALL RESULTS ─────────────────────────────
 function renderResults() {
-    const { lighthouse, siteAudit: audit, pageRank: pr, places, report, domain, businessName, moz, safeBrowsing, ssl, keywordSuggestions, googleSuggest, serpKeywords, competitiveKeywords } = scanData;
+    const { lighthouse, siteAudit: audit, pageRank: pr, places, report, domain, businessName, moz, safeBrowsing, ssl, keywordSuggestions, googleSuggest, serpKeywords, competitiveKeywords, backlinks: backlinkData, brokenLinks: brokenLinkData, htmlValidation } = scanData;
     const mobile = lighthouse?.mobile || {};
     const desktop = lighthouse?.desktop || {};
     const biz = places?.locations?.[0] || places?.business || {};
@@ -1164,6 +1231,15 @@ function renderResults() {
 
     // ═══ COMPETITIVE KEYWORD ANALYSIS ═══
     renderCompetitiveKeywords(competitiveKeywords || {});
+
+    // ═══ BACKLINK PROFILE ═══
+    renderBacklinks(backlinkData || {});
+
+    // ═══ BROKEN LINK AUDIT ═══
+    renderBrokenLinks(brokenLinkData || {});
+
+    // ═══ HTML VALIDATION & RICH RESULTS ═══
+    renderValidation(htmlValidation || {});
 
     // ═══ FINDINGS ═══
     renderFindings(report || {});
@@ -2222,6 +2298,288 @@ function renderCompetitiveKeywords(data) {
     document.getElementById('competitiveContent').innerHTML = html;
 }
 
+// ─── BACKLINK PROFILE & TOXIC LINKS ────────────────
+function renderBacklinks(data) {
+    const badge = document.getElementById('backlinkBadge');
+
+    if (data.error && !data.backlinks?.length && !data.indexedPages) {
+        badge.textContent = 'Error';
+        badge.className = 'panel-badge badge-critical';
+        document.getElementById('backlinkContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">${data.error}</div>`;
+        return;
+    }
+
+    const stats = data.stats || {};
+    const healthScore = stats.healthScore;
+
+    badge.textContent = stats.healthLabel || 'Analyzed';
+    badge.className = `panel-badge ${healthScore >= 80 ? 'badge-good' : healthScore >= 50 ? 'badge-warning' : 'badge-critical'}`;
+
+    let html = '';
+
+    // Stats grid
+    html += `<div class="content-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:var(--accent);">${stats.totalDiscovered || 0}</div>
+            <div class="content-stat-label">Discovered</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#4CAF50;">${stats.cleanCount || 0}</div>
+            <div class="content-stat-label">Clean</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#F44336;">${stats.toxicCount || 0}</div>
+            <div class="content-stat-label">Toxic</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:${healthScore >= 80 ? 'var(--success)' : healthScore >= 50 ? 'var(--warn)' : 'var(--danger)'};">${healthScore ?? 'N/A'}</div>
+            <div class="content-stat-label">Health Score</div>
+        </div>
+    </div>`;
+
+    // CommonCrawl indexed pages
+    if (data.indexedPages > 0) {
+        html += `<div class="metric-row"><span class="metric-label">Pages Indexed in CommonCrawl</span><span class="metric-value">${data.indexedPages}</span></div>`;
+        html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">From crawl: ${data.crawlIndex || 'latest'}</div>`;
+    }
+
+    // Toxic backlinks (show first — most important)
+    if (data.toxicBacklinks?.length > 0) {
+        html += '<div class="section-label" style="color:var(--danger);">Toxic / Suspicious Backlinks</div>';
+        html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Consider disavowing these in Google Search Console</div>';
+        html += data.toxicBacklinks.map(b =>
+            `<div class="check-row">
+                <span class="check-icon">🚨</span>
+                <span class="check-text" style="word-break:break-all;">${b.source}</span>
+                <span class="check-status" style="color:var(--danger);font-size:11px;">${b.toxicReason || 'Suspicious'}</span>
+            </div>`
+        ).join('');
+    }
+
+    // Clean backlinks
+    if (data.cleanBacklinks?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Clean Backlinks Found</div>';
+        html += data.cleanBacklinks.slice(0, 10).map(b =>
+            `<div class="check-row">
+                <span class="check-icon">✅</span>
+                <span class="check-text" style="word-break:break-all;">${b.source}</span>
+                <span class="check-status" style="color:var(--text-muted);font-size:11px;">${b.type || 'link'}</span>
+            </div>`
+        ).join('');
+    }
+
+    // Referring domains
+    if (data.topReferringDomains?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Top Referring Domains</div>';
+        html += data.topReferringDomains.map(d =>
+            `<div class="metric-row"><span class="metric-label" style="word-break:break-all;">${d.domain}</span><span class="metric-value">${d.count} link${d.count > 1 ? 's' : ''}</span></div>`
+        ).join('');
+    }
+
+    // Site pages in CommonCrawl
+    if (data.sitePages?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Your Pages in CommonCrawl Index</div>';
+        html += data.sitePages.slice(0, 8).map(p => {
+            const shortUrl = p.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60);
+            return `<div class="metric-row"><span class="metric-label" style="word-break:break-all;flex:1;">${shortUrl}</span><span class="metric-value" style="width:auto;">${p.status || ''}</span></div>`;
+        }).join('');
+    }
+
+    if (stats.toxicCount > 0) {
+        html += `<div class="opportunity-box" style="margin-top:16px;border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08)"><p style="color:var(--danger);"><strong>Toxic backlinks detected!</strong> Submit a disavow file in Google Search Console to tell Google to ignore these spammy links. Toxic backlinks can trigger penalties and hurt your rankings.</p></div>`;
+    } else if (stats.totalDiscovered > 0) {
+        html += `<div class="opportunity-box" style="margin-top:16px"><p><strong>Backlink profile looks clean.</strong> Continue building quality backlinks through local directories, partnerships, and content marketing to strengthen domain authority.</p></div>`;
+    }
+
+    document.getElementById('backlinkContent').innerHTML = html;
+}
+
+// ─── BROKEN LINK AUDIT ─────────────────────────────
+function renderBrokenLinks(data) {
+    const badge = document.getElementById('brokenLinkBadge');
+
+    if (data.error && !data.stats?.linkHealth) {
+        badge.textContent = 'Error';
+        badge.className = 'panel-badge badge-critical';
+        document.getElementById('brokenLinkContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">${data.error}</div>`;
+        return;
+    }
+
+    const stats = data.stats || {};
+    badge.textContent = stats.linkHealthLabel || 'Checked';
+    badge.className = `panel-badge ${stats.linkHealth >= 95 ? 'badge-good' : stats.linkHealth >= 85 ? 'badge-warning' : 'badge-critical'}`;
+
+    let html = '';
+
+    // Stats
+    html += `<div class="content-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+        <div class="content-stat">
+            <div class="content-stat-value">${data.totalLinksFound || 0}</div>
+            <div class="content-stat-label">Links Found</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value">${data.totalChecked || 0}</div>
+            <div class="content-stat-label">Checked</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#F44336;">${stats.broken || 0}</div>
+            <div class="content-stat-label">Broken</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:${stats.linkHealth >= 95 ? 'var(--success)' : stats.linkHealth >= 85 ? 'var(--warn)' : 'var(--danger)'};">${stats.linkHealth ?? '--'}%</div>
+            <div class="content-stat-label">Health</div>
+        </div>
+    </div>`;
+
+    html += `<div class="metric-row"><span class="metric-label">Internal Links</span><span class="metric-value">${data.internalCount || 0}</span></div>`;
+    html += `<div class="metric-row"><span class="metric-label">External Links</span><span class="metric-value">${data.externalCount || 0}</span></div>`;
+    html += `<div class="metric-row"><span class="metric-label">Redirected</span><span class="metric-value ${stats.redirected > 5 ? 'warning' : ''}">${stats.redirected || 0}</span></div>`;
+    html += `<div class="metric-row"><span class="metric-label">Timed Out</span><span class="metric-value">${stats.timeout || 0}</span></div>`;
+
+    // Broken links (most important)
+    if (data.brokenLinks?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;color:var(--danger);">Broken Links (404/410)</div>';
+        html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">These links return errors and should be fixed or removed immediately</div>';
+        html += data.brokenLinks.map(l => {
+            const shortUrl = l.url.replace(/^https?:\/\//, '').slice(0, 50);
+            return `<div class="check-row">
+                <span class="check-icon">❌</span>
+                <span class="check-text" style="word-break:break-all;font-size:12px;">${shortUrl}</span>
+                <span class="check-status" style="color:var(--danger);font-size:11px;">${l.httpStatus || 'Error'}${l.isInternal ? ' · Internal' : ''}</span>
+            </div>`;
+        }).join('');
+    }
+
+    // Redirected links
+    if (data.redirectedLinks?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Redirected Links (301/302)</div>';
+        html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Update these to point directly to the final URL</div>';
+        html += data.redirectedLinks.slice(0, 8).map(l => {
+            const shortUrl = l.url.replace(/^https?:\/\//, '').slice(0, 45);
+            return `<div class="check-row">
+                <span class="check-icon">↪️</span>
+                <span class="check-text" style="word-break:break-all;font-size:12px;">${shortUrl}</span>
+                <span class="check-status" style="color:var(--warn);font-size:11px;">${l.httpStatus}</span>
+            </div>`;
+        }).join('');
+    }
+
+    if (stats.broken > 0) {
+        html += `<div class="opportunity-box" style="margin-top:16px;border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08)"><p style="color:var(--danger);"><strong>${stats.broken} broken link${stats.broken > 1 ? 's' : ''} found!</strong> Broken links hurt user experience and waste "link equity" — the SEO value passed through links. Fix or remove these immediately.</p></div>`;
+    } else if (data.totalChecked > 0) {
+        html += `<div class="opportunity-box" style="margin-top:16px"><p><strong>No broken links detected.</strong> All ${stats.ok || 0} checked links are working correctly. Great job maintaining link health!</p></div>`;
+    }
+
+    document.getElementById('brokenLinkContent').innerHTML = html;
+}
+
+// ─── HTML VALIDATION & RICH RESULTS ────────────────
+function renderValidation(data) {
+    const badge = document.getElementById('validateBadge');
+
+    if (data.error && !data.validation?.validationScore && !data.richResults?.schemas?.length) {
+        badge.textContent = 'Error';
+        badge.className = 'panel-badge badge-critical';
+        document.getElementById('validateContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">${data.error}</div>`;
+        return;
+    }
+
+    const v = data.validation || {};
+    const rr = data.richResults || {};
+
+    badge.textContent = v.validationLabel || (rr.hasStructuredData ? 'Has Schema' : 'N/A');
+    badge.className = `panel-badge ${(v.validationScore || 0) >= 70 ? 'badge-good' : (v.validationScore || 0) >= 50 ? 'badge-warning' : 'badge-critical'}`;
+
+    let html = '';
+
+    // ─── W3C VALIDATION ───
+    if (v.validationScore != null) {
+        const vColor = v.validationScore >= 70 ? 'var(--success)' : v.validationScore >= 50 ? 'var(--warn)' : 'var(--danger)';
+        html += `<div class="dual-scores">
+            <div class="dual-card">
+                <div class="dual-label">W3C Validation</div>
+                <div class="dual-score" style="color:${vColor}">${v.validationScore}</div>
+                <div class="dual-sub">${v.validationLabel} · ${v.errorCount || 0} errors</div>
+            </div>
+            <div class="dual-card">
+                <div class="dual-label">Rich Results</div>
+                <div class="dual-score" style="color:${rr.hasStructuredData ? 'var(--success)' : 'var(--danger)'};">${rr.totalSchemas || 0}</div>
+                <div class="dual-sub">${rr.hasStructuredData ? 'Schema detected' : 'No structured data'}</div>
+            </div>
+        </div>`;
+
+        // Error categories
+        if (v.errorCategories) {
+            const cats = v.errorCategories;
+            html += '<div class="section-label">Validation Error Breakdown</div>';
+            if (cats.accessibility > 0) html += `<div class="metric-row"><span class="metric-label">Accessibility Issues</span><span class="metric-value critical">${cats.accessibility}</span></div>`;
+            if (cats.structuralSEO > 0) html += `<div class="metric-row"><span class="metric-label">SEO Structure Issues</span><span class="metric-value warning">${cats.structuralSEO}</span></div>`;
+            if (cats.deprecated > 0) html += `<div class="metric-row"><span class="metric-label">Deprecated Code</span><span class="metric-value warning">${cats.deprecated}</span></div>`;
+            if (cats.syntax > 0) html += `<div class="metric-row"><span class="metric-label">Syntax Errors</span><span class="metric-value">${cats.syntax}</span></div>`;
+            if (cats.other > 0) html += `<div class="metric-row"><span class="metric-label">Other Issues</span><span class="metric-value">${cats.other}</span></div>`;
+            html += `<div class="metric-row"><span class="metric-label">Warnings</span><span class="metric-value">${v.warningCount || 0}</span></div>`;
+        }
+
+        // Top errors
+        if (v.errors?.length > 0) {
+            html += '<div class="section-label" style="margin-top:16px;">Top HTML Errors</div>';
+            html += v.errors.slice(0, 8).map(e =>
+                `<div class="check-row">
+                    <span class="check-icon">❌</span>
+                    <span class="check-text" style="font-size:12px;">${e.message}${e.line ? ` <span style="color:var(--text-muted)">(line ${e.line})</span>` : ''}</span>
+                </div>`
+            ).join('');
+        }
+    }
+
+    // ─── RICH RESULTS ───
+    if (rr.eligible?.length > 0 || rr.missing?.length > 0) {
+        html += '<div class="section-label" style="margin-top:20px;">Rich Result Eligibility</div>';
+
+        // Eligible
+        if (rr.eligible?.length > 0) {
+            html += rr.eligible.map(e =>
+                `<div class="check-row">
+                    <span class="check-icon">${e.status === 'eligible' ? '✅' : '⚠️'}</span>
+                    <span class="check-text">${e.type}</span>
+                    <span class="check-status" style="color:${e.status === 'eligible' ? 'var(--success)' : 'var(--warn)'};">${e.status === 'eligible' ? 'Eligible' : 'Partial'}</span>
+                </div>`
+            ).join('');
+        }
+
+        // Missing (opportunities)
+        if (rr.missing?.length > 0) {
+            html += '<div class="section-label" style="margin-top:12px;">Missing Schema — Rich Result Opportunities</div>';
+            html += rr.missing.map(m =>
+                `<div class="check-row">
+                    <span class="check-icon">💡</span>
+                    <span class="check-text">${m.type} — <span style="color:var(--text-muted);font-size:12px;">${m.reason}</span></span>
+                    <span class="check-status" style="color:${m.impact === 'high' ? 'var(--danger)' : 'var(--warn)'}; font-size:11px;">${m.impact === 'high' ? 'HIGH' : 'MED'} impact</span>
+                </div>`
+            ).join('');
+        }
+    }
+
+    // Schema types found
+    if (rr.schemas?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Structured Data Found</div>';
+        html += '<div class="tech-tags">';
+        html += rr.schemas.map(s =>
+            `<div class="tech-tag">${s.type}${s.name ? ` — ${s.name}` : ''} <span style="color:var(--text-muted);font-size:11px;">(${s.fieldCount} fields)</span></div>`
+        ).join('');
+        html += '</div>';
+    }
+
+    // Actionable advice
+    if (!rr.hasStructuredData) {
+        html += `<div class="opportunity-box" style="margin-top:16px;border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08)"><p style="color:var(--danger);"><strong>No structured data found!</strong> Adding JSON-LD schema markup (LocalBusiness, FAQPage, AggregateRating) is one of the highest-impact SEO improvements. It enables rich snippets in Google and dramatically increases click-through rates.</p></div>`;
+    } else if (rr.missing?.some(m => m.impact === 'high')) {
+        html += `<div class="opportunity-box" style="margin-top:16px"><p><strong>Schema opportunity:</strong> You have structured data but are missing high-impact types like ${rr.missing.filter(m => m.impact === 'high').map(m => m.type).join(', ')}. Adding these could earn rich snippets and boost CTR.</p></div>`;
+    }
+
+    document.getElementById('validateContent').innerHTML = html;
+}
+
 // ─── HELPERS ────────────────────────────────────────
 function checkRowHtml(label, pass, detail, warnType) {
     const icon = pass ? '✅' : (warnType === 'warn' ? '⚠️' : '❌');
@@ -2396,6 +2754,48 @@ function exportReport() {
         text += '\n';
     }
 
+    const blData = scanData.backlinks || {};
+    if (blData.stats?.totalDiscovered > 0) {
+        text += `BACKLINK PROFILE:\n`;
+        text += `  Total Discovered: ${blData.stats.totalDiscovered}\n`;
+        text += `  Clean: ${blData.stats.cleanCount || 0} · Toxic: ${blData.stats.toxicCount || 0}\n`;
+        text += `  Health Score: ${blData.stats.healthScore ?? 'N/A'} (${blData.stats.healthLabel})\n`;
+        if (blData.toxicBacklinks?.length > 0) {
+            text += `  Toxic Links:\n`;
+            blData.toxicBacklinks.forEach(b => { text += `    ⚠ ${b.source} (${b.toxicReason})\n`; });
+        }
+        text += '\n';
+    }
+
+    const brData = scanData.brokenLinks || {};
+    if (brData.totalChecked > 0) {
+        text += `BROKEN LINK AUDIT:\n`;
+        text += `  Links Checked: ${brData.totalChecked} (${brData.internalCount || 0} internal, ${brData.externalCount || 0} external)\n`;
+        text += `  Broken: ${brData.stats?.broken || 0} · Redirected: ${brData.stats?.redirected || 0}\n`;
+        text += `  Link Health: ${brData.stats?.linkHealth ?? 'N/A'}% (${brData.stats?.linkHealthLabel})\n`;
+        if (brData.brokenLinks?.length > 0) {
+            text += `  Broken URLs:\n`;
+            brData.brokenLinks.forEach(l => { text += `    ✗ ${l.url} (${l.httpStatus})\n`; });
+        }
+        text += '\n';
+    }
+
+    const valData = scanData.htmlValidation || {};
+    if (valData.validation?.validationScore != null) {
+        text += `HTML VALIDATION: ${valData.validation.validationScore}/100 (${valData.validation.validationLabel})\n`;
+        text += `  Errors: ${valData.validation.errorCount || 0} · Warnings: ${valData.validation.warningCount || 0}\n`;
+    }
+    if (valData.richResults?.hasStructuredData) {
+        text += `STRUCTURED DATA: ${valData.richResults.totalSchemas} schemas found\n`;
+        if (valData.richResults.eligible?.length > 0) {
+            text += `  Rich Results Eligible: ${valData.richResults.eligible.map(e => e.type).join(', ')}\n`;
+        }
+        if (valData.richResults.missing?.length > 0) {
+            text += `  Missing Schema: ${valData.richResults.missing.map(m => m.type).join(', ')}\n`;
+        }
+    }
+    text += '\n';
+
     if (report?.findings?.length > 0) {
         text += `KEY FINDINGS:\n`;
         report.findings.forEach(f => {
@@ -2426,7 +2826,7 @@ function resetScan() {
     document.getElementById('inputState').value = '';
     document.getElementById('inputIndustry').selectedIndex = 0;
     // Reset progress steps
-    ['lighthouse','audit','pagerank','places','report','moz','safe','ssl','keywords','suggest','serp','competitive'].forEach(id => {
+    ['lighthouse','audit','pagerank','places','report','moz','safe','ssl','keywords','suggest','serp','competitive','backlinks','brokenlinks','validate'].forEach(id => {
         const el = document.getElementById('step-' + id);
         if (el) {
             el.className = 'progress-step';
