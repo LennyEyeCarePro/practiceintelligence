@@ -1063,7 +1063,7 @@ async function startScan() {
         if (topKws.length > 0 && city) serpKeywords.push(`${topKws[0]} ${city} ${state}`.trim());
 
         // Build competitor domains from Places data
-        const competitorDomains = (competitors || [])
+        const competitorDomains = (placesResp?.competitors || [])
             .filter(c => c.website)
             .map(c => c.website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, ''))
             .slice(0, 3);
