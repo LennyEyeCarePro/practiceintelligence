@@ -174,23 +174,65 @@ body {
     border-radius: var(--radius-lg);
     padding: 24px;
 }
-.progress-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
-.progress-step {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 0; font-size: 14px; color: var(--text-muted);
-    transition: color .3s;
+.progress-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px;
 }
-.progress-step.active { color: var(--accent); }
+.progress-title { font-size: 16px; font-weight: 700; }
+.progress-counter {
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    font-family: var(--mono);
+}
+.progress-phase {
+    font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;
+    min-height: 18px;
+}
+.progress-phase-dot {
+    display: inline-block; width: 6px; height: 6px;
+    background: var(--accent); border-radius: 50%;
+    margin-right: 6px; vertical-align: middle;
+    animation: pulseDot 1.2s ease-in-out infinite;
+}
+@keyframes pulseDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .4; transform: scale(.7); }
+}
+.progress-step {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; font-size: 13px; color: var(--text-muted);
+    transition: all .3s; border-radius: 8px; margin-bottom: 2px;
+}
+.progress-step.active {
+    color: var(--accent); background: rgba(78,205,196,.06);
+    font-weight: 600;
+}
 .progress-step.done { color: var(--success); }
 .progress-step.error { color: var(--danger); }
-.progress-icon { width: 20px; text-align: center; flex-shrink: 0; }
+.progress-icon { width: 20px; text-align: center; flex-shrink: 0; font-size: 14px; }
+.progress-step-num {
+    font-size: 11px; font-weight: 700; color: var(--text-muted);
+    font-family: var(--mono); min-width: 22px;
+}
+.progress-step.active .progress-step-num { color: var(--accent); }
+.progress-step.done .progress-step-num { color: var(--success); }
+.progress-step.error .progress-step-num { color: var(--danger); }
+.progress-step.active .progress-icon { animation: spin 1.5s linear infinite; }
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 .progress-bar-wrap {
-    height: 4px; background: var(--bg); border-radius: 2px;
+    height: 6px; background: var(--bg); border-radius: 3px;
     margin-top: 16px; overflow: hidden;
 }
 .progress-bar-fill {
     height: 100%; background: linear-gradient(90deg, var(--accent), #2196F3);
-    border-radius: 2px; transition: width .4s ease; width: 0%;
+    border-radius: 3px; transition: width .5s ease; width: 0%;
+}
+.progress-elapsed {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 8px; font-size: 12px; color: var(--text-muted);
+    font-family: var(--mono);
 }
 
 /* ─── RESULTS ────────────────────────────────────── */
@@ -577,25 +619,30 @@ body {
         <!-- Progress -->
         <div id="progressSection">
             <div class="progress-card">
-                <div class="progress-title">Scanning...</div>
+                <div class="progress-header">
+                    <div class="progress-title">Running SEO Audit</div>
+                    <div class="progress-counter" id="progressCounter">0 / 15 checks</div>
+                </div>
+                <div class="progress-phase" id="progressPhase"><span class="progress-phase-dot"></span>Initializing scan...</div>
                 <div id="progressSteps">
-                    <div class="progress-step" id="step-lighthouse"><span class="progress-icon">⏳</span> Lighthouse Performance Audit (Mobile + Desktop)</div>
-                    <div class="progress-step" id="step-audit"><span class="progress-icon">⏳</span> On-Page SEO Site Audit</div>
-                    <div class="progress-step" id="step-pagerank"><span class="progress-icon">⏳</span> Domain Authority Check</div>
-                    <div class="progress-step" id="step-places"><span class="progress-icon">⏳</span> Google Business Profile Discovery</div>
-                    <div class="progress-step" id="step-report"><span class="progress-icon">⏳</span> AI-Powered Analysis</div>
-                    <div class="progress-step" id="step-moz"><span class="progress-icon">⏳</span> Moz Domain Authority</div>
-                    <div class="progress-step" id="step-safe"><span class="progress-icon">⏳</span> Google Safe Browsing Check</div>
-                    <div class="progress-step" id="step-ssl"><span class="progress-icon">⏳</span> SSL Certificate Analysis</div>
-                    <div class="progress-step" id="step-keywords"><span class="progress-icon">⏳</span> Keyword Gap Discovery</div>
-                    <div class="progress-step" id="step-suggest"><span class="progress-icon">⏳</span> Google Search Suggestions</div>
-                    <div class="progress-step" id="step-serp"><span class="progress-icon">⏳</span> SERP Keyword Mining (People Also Ask)</div>
-                    <div class="progress-step" id="step-competitive"><span class="progress-icon">⏳</span> Competitive Keyword Analysis</div>
-                    <div class="progress-step" id="step-backlinks"><span class="progress-icon">⏳</span> Backlink Discovery & Toxic Link Check</div>
-                    <div class="progress-step" id="step-brokenlinks"><span class="progress-icon">⏳</span> Broken Link Audit</div>
-                    <div class="progress-step" id="step-validate"><span class="progress-icon">⏳</span> HTML Validation & Rich Results</div>
+                    <div class="progress-step" id="step-lighthouse"><span class="progress-step-num">01</span><span class="progress-icon">○</span> Lighthouse Performance (Mobile + Desktop)</div>
+                    <div class="progress-step" id="step-audit"><span class="progress-step-num">02</span><span class="progress-icon">○</span> On-Page SEO Audit</div>
+                    <div class="progress-step" id="step-pagerank"><span class="progress-step-num">03</span><span class="progress-icon">○</span> Domain Authority Check</div>
+                    <div class="progress-step" id="step-places"><span class="progress-step-num">04</span><span class="progress-icon">○</span> Google Business Profile</div>
+                    <div class="progress-step" id="step-report"><span class="progress-step-num">05</span><span class="progress-icon">○</span> AI-Powered Analysis</div>
+                    <div class="progress-step" id="step-moz"><span class="progress-step-num">06</span><span class="progress-icon">○</span> Moz Domain Authority</div>
+                    <div class="progress-step" id="step-safe"><span class="progress-step-num">07</span><span class="progress-icon">○</span> Safe Browsing Check</div>
+                    <div class="progress-step" id="step-ssl"><span class="progress-step-num">08</span><span class="progress-icon">○</span> SSL Certificate Analysis</div>
+                    <div class="progress-step" id="step-keywords"><span class="progress-step-num">09</span><span class="progress-icon">○</span> Keyword Gap Discovery</div>
+                    <div class="progress-step" id="step-suggest"><span class="progress-step-num">10</span><span class="progress-icon">○</span> Google Search Suggestions</div>
+                    <div class="progress-step" id="step-serp"><span class="progress-step-num">11</span><span class="progress-icon">○</span> SERP Mining (People Also Ask)</div>
+                    <div class="progress-step" id="step-competitive"><span class="progress-step-num">12</span><span class="progress-icon">○</span> Competitive Keyword Analysis</div>
+                    <div class="progress-step" id="step-backlinks"><span class="progress-step-num">13</span><span class="progress-icon">○</span> Backlink Discovery & Toxic Links</div>
+                    <div class="progress-step" id="step-brokenlinks"><span class="progress-step-num">14</span><span class="progress-icon">○</span> Broken Link Audit</div>
+                    <div class="progress-step" id="step-validate"><span class="progress-step-num">15</span><span class="progress-icon">○</span> HTML Validation & Rich Results</div>
                 </div>
                 <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div>
+                <div class="progress-elapsed"><span id="progressElapsed">0:00</span><span id="progressPct">0%</span></div>
             </div>
         </div>
 
@@ -897,17 +944,61 @@ function togglePanel(id) {
 }
 
 // ─── PROGRESS TRACKING ──────────────────────────────
+let scanTimer = null;
+let scanStartTime = null;
+let completedSteps = 0;
+const TOTAL_STEPS = 15;
+
 function setStep(id, state) {
     const el = document.getElementById('step-' + id);
     if (!el) return;
+    const prev = el.className;
     el.className = 'progress-step ' + state;
     const icon = el.querySelector('.progress-icon');
-    if (state === 'active') icon.textContent = '⏳';
-    else if (state === 'done') icon.textContent = '✅';
-    else if (state === 'error') icon.textContent = '❌';
+    if (state === 'active') icon.textContent = '⟳';
+    else if (state === 'done') { icon.textContent = '✓'; }
+    else if (state === 'error') icon.textContent = '✗';
+
+    // Update counter when a step finishes
+    if ((state === 'done' || state === 'error') && !prev.includes('done') && !prev.includes('error')) {
+        completedSteps++;
+        const counter = document.getElementById('progressCounter');
+        if (counter) counter.textContent = completedSteps + ' / ' + TOTAL_STEPS + ' checks';
+    }
+
+    // Auto-scroll to keep active step visible
+    if (state === 'active') {
+        el.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+    }
 }
+
+function setPhase(label) {
+    const el = document.getElementById('progressPhase');
+    if (el) el.innerHTML = '<span class="progress-phase-dot"></span>' + label;
+}
+
 function setProgress(pct) {
     document.getElementById('progressBar').style.width = pct + '%';
+    const pctEl = document.getElementById('progressPct');
+    if (pctEl) pctEl.textContent = pct + '%';
+}
+
+function startTimer() {
+    scanStartTime = Date.now();
+    completedSteps = 0;
+    const counter = document.getElementById('progressCounter');
+    if (counter) counter.textContent = '0 / ' + TOTAL_STEPS + ' checks';
+    scanTimer = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - scanStartTime) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = (elapsed % 60).toString().padStart(2, '0');
+        const el = document.getElementById('progressElapsed');
+        if (el) el.textContent = mins + ':' + secs;
+    }, 1000);
+}
+
+function stopTimer() {
+    if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
 }
 
 // ─── MAIN SCAN ──────────────────────────────────────
@@ -928,9 +1019,11 @@ async function startScan() {
     document.getElementById('progressSection').style.display = '';
     document.getElementById('resultsSection').style.display = 'none';
     setProgress(0);
+    startTimer();
 
     try {
         // Phase 1: Parallel — Lighthouse, Site Audit, PageRank, Places
+        setPhase('Phase 1 of 5 — Core performance & business data');
         setStep('lighthouse', 'active');
         setStep('audit', 'active');
         setStep('pagerank', 'active');
@@ -991,6 +1084,7 @@ async function startScan() {
         setProgress(60);
 
         // Phase 2: AI Report
+        setPhase('Phase 2 of 5 — AI-powered analysis');
         setStep('report', 'active');
         const reportResp = await fetch(API_BASE + '/seo-report', {
             method: 'POST',
@@ -1011,6 +1105,7 @@ async function startScan() {
         setProgress(70);
 
         // Phase 3: Parallel — Moz DA, Safe Browsing, SSL Labs, Keyword Suggestions
+        setPhase('Phase 3 of 5 — Security, authority & keyword gaps');
         setStep('moz', 'active');
         setStep('safe', 'active');
         setStep('ssl', 'active');
@@ -1049,6 +1144,7 @@ async function startScan() {
         setProgress(80);
 
         // Phase 4: Parallel — Google Suggest, SERP Mining, Competitive Keywords
+        setPhase('Phase 4 of 5 — Keyword intelligence & competitors');
         setStep('suggest', 'active');
         setStep('serp', 'active');
         setStep('competitive', 'active');
@@ -1110,6 +1206,7 @@ async function startScan() {
         setProgress(90);
 
         // Phase 5: Parallel — Backlinks, Broken Links, HTML Validation
+        setPhase('Phase 5 of 5 — Link health & validation');
         setStep('backlinks', 'active');
         setStep('brokenlinks', 'active');
         setStep('validate', 'active');
@@ -1133,12 +1230,16 @@ async function startScan() {
         setStep('brokenlinks', brokenResp?.error && !brokenResp?.stats?.linkHealth ? 'error' : 'done');
         setStep('validate', validateResp?.error && !validateResp?.validation?.validationScore ? 'error' : 'done');
         setProgress(100);
+        setPhase('Audit complete — generating report...');
+        stopTimer();
 
         // Render results
         renderResults();
 
     } catch (err) {
         console.error('Scan error:', err);
+        stopTimer();
+        setPhase('Scan failed — ' + err.message);
         alert('Scan failed: ' + err.message);
     } finally {
         document.getElementById('btnScan').disabled = false;
@@ -2887,10 +2988,20 @@ function resetScan() {
         const el = document.getElementById('step-' + id);
         if (el) {
             el.className = 'progress-step';
-            el.querySelector('.progress-icon').textContent = '⏳';
+            el.querySelector('.progress-icon').textContent = '○';
         }
     });
     setProgress(0);
+    stopTimer();
+    completedSteps = 0;
+    const counter = document.getElementById('progressCounter');
+    if (counter) counter.textContent = '0 / ' + TOTAL_STEPS + ' checks';
+    const elapsed = document.getElementById('progressElapsed');
+    if (elapsed) elapsed.textContent = '0:00';
+    const pct = document.getElementById('progressPct');
+    if (pct) pct.textContent = '0%';
+    const phase = document.getElementById('progressPhase');
+    if (phase) phase.innerHTML = '<span class="progress-phase-dot"></span>Initializing scan...';
 }
 </script>
 </body>
