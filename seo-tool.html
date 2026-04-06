@@ -588,6 +588,9 @@ body {
                     <div class="progress-step" id="step-safe"><span class="progress-icon">⏳</span> Google Safe Browsing Check</div>
                     <div class="progress-step" id="step-ssl"><span class="progress-icon">⏳</span> SSL Certificate Analysis</div>
                     <div class="progress-step" id="step-keywords"><span class="progress-icon">⏳</span> Keyword Gap Discovery</div>
+                    <div class="progress-step" id="step-suggest"><span class="progress-icon">⏳</span> Google Search Suggestions</div>
+                    <div class="progress-step" id="step-serp"><span class="progress-icon">⏳</span> SERP Keyword Mining (People Also Ask)</div>
+                    <div class="progress-step" id="step-competitive"><span class="progress-icon">⏳</span> Competitive Keyword Analysis</div>
                 </div>
                 <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div>
             </div>
@@ -759,6 +762,45 @@ body {
                     <div class="panel-chevron">▾</div>
                 </div>
                 <div class="panel-body"><div class="panel-content" id="kwGapContent"></div></div>
+            </div>
+
+            <!-- Google Search Suggestions -->
+            <div class="panel" id="panelSuggest">
+                <div class="panel-header" onclick="togglePanel('panelSuggest')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(103,58,183,.15)">🔮</div>
+                        <div class="panel-title">Google Search Suggestions</div>
+                    </div>
+                    <span class="panel-badge badge-info" id="suggestBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="suggestContent"></div></div>
+            </div>
+
+            <!-- SERP Keyword Mining -->
+            <div class="panel" id="panelSerp">
+                <div class="panel-header" onclick="togglePanel('panelSerp')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(255,152,0,.15)">🔥</div>
+                        <div class="panel-title">SERP Mining — People Also Ask</div>
+                    </div>
+                    <span class="panel-badge badge-info" id="serpBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="serpContent"></div></div>
+            </div>
+
+            <!-- Competitive Keyword Analysis -->
+            <div class="panel" id="panelCompetitive">
+                <div class="panel-header" onclick="togglePanel('panelCompetitive')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(0,150,136,.15)">⚔️</div>
+                        <div class="panel-title">Competitive Keyword Analysis</div>
+                    </div>
+                    <span class="panel-badge" id="competitiveBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="competitiveContent"></div></div>
             </div>
 
             <!-- AI Findings -->
@@ -944,6 +986,67 @@ async function startScan() {
         setStep('safe', safeResp?.error && safeResp?.safe === null ? 'error' : 'done');
         setStep('ssl', sslResp?.error && !sslResp?.grade && !sslResp?.hasSSL ? 'error' : 'done');
         setStep('keywords', kwResp?.error ? 'error' : 'done');
+        setProgress(80);
+
+        // Phase 4: Parallel — Google Suggest, SERP Mining, Competitive Keywords
+        setStep('suggest', 'active');
+        setStep('serp', 'active');
+        setStep('competitive', 'active');
+
+        // Build search queries for SERP mining
+        const serpKeywords = [];
+        if (industry && city) {
+            const industryLabel = document.getElementById('inputIndustry').selectedOptions[0]?.text || industry;
+            serpKeywords.push(`${industryLabel.split(' ')[0].toLowerCase()} ${city} ${state}`.trim());
+        }
+        if (businessName) serpKeywords.push(businessName);
+        if (topKws.length > 0 && city) serpKeywords.push(`${topKws[0]} ${city} ${state}`.trim());
+
+        // Build competitor domains from Places data
+        const competitorDomains = (competitors || [])
+            .filter(c => c.website)
+            .map(c => c.website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, ''))
+            .slice(0, 3);
+
+        const suggestQuery = topKws.length > 0 ? topKws[0] : (businessName || domain);
+
+        const [suggestResp, serpResp, compKwResp] = await Promise.all([
+            fetch(API_BASE + '/google-suggest?q=' + encodeURIComponent(suggestQuery)
+                + (city ? '&city=' + encodeURIComponent(city + (state ? ' ' + state : '')) : '')
+                + '&expand=true')
+                .then(r => r.json()).catch(e => ({ error: e.message, suggestions: [], expanded: [] })),
+
+            serpKeywords.length > 0
+                ? fetch(API_BASE + '/serp-keywords', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keywords: serpKeywords, maxPages: 1 }),
+                }).then(r => r.json()).catch(e => ({ error: e.message, peopleAlsoAsk: [], relatedSearches: [] }))
+                : Promise.resolve({ peopleAlsoAsk: [], relatedSearches: [] }),
+
+            topKws.length > 0 && competitorDomains.length > 0
+                ? fetch(API_BASE + '/competitive-keywords', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        targetKeywords: topKws,
+                        targetDomain: domain,
+                        competitors: competitorDomains,
+                        industry,
+                        city,
+                        state,
+                    }),
+                }).then(r => r.json()).catch(e => ({ error: e.message, analysis: {} }))
+                : Promise.resolve({ analysis: { sharedKeywords: [], keywordGaps: [], uniqueToTarget: [], opportunities: [] } }),
+        ]);
+
+        scanData.googleSuggest = suggestResp;
+        scanData.serpKeywords = serpResp;
+        scanData.competitiveKeywords = compKwResp;
+
+        setStep('suggest', suggestResp?.error && !suggestResp?.suggestions?.length ? 'error' : 'done');
+        setStep('serp', serpResp?.error && !serpResp?.peopleAlsoAsk?.length ? 'error' : 'done');
+        setStep('competitive', compKwResp?.error && !compKwResp?.analysis?.keywordGaps?.length ? 'error' : 'done');
         setProgress(100);
 
         // Render results
@@ -959,7 +1062,7 @@ async function startScan() {
 
 // ─── RENDER ALL RESULTS ─────────────────────────────
 function renderResults() {
-    const { lighthouse, siteAudit: audit, pageRank: pr, places, report, domain, businessName, moz, safeBrowsing, ssl, keywordSuggestions } = scanData;
+    const { lighthouse, siteAudit: audit, pageRank: pr, places, report, domain, businessName, moz, safeBrowsing, ssl, keywordSuggestions, googleSuggest, serpKeywords, competitiveKeywords } = scanData;
     const mobile = lighthouse?.mobile || {};
     const desktop = lighthouse?.desktop || {};
     const biz = places?.locations?.[0] || places?.business || {};
@@ -1052,6 +1155,15 @@ function renderResults() {
 
     // ═══ KEYWORD GAP DISCOVERY ═══
     renderKeywordGaps(keywordSuggestions || {});
+
+    // ═══ GOOGLE SEARCH SUGGESTIONS ═══
+    renderGoogleSuggest(googleSuggest || {});
+
+    // ═══ SERP KEYWORD MINING ═══
+    renderSerpKeywords(serpKeywords || {});
+
+    // ═══ COMPETITIVE KEYWORD ANALYSIS ═══
+    renderCompetitiveKeywords(competitiveKeywords || {});
 
     // ═══ FINDINGS ═══
     renderFindings(report || {});
@@ -1832,6 +1944,284 @@ function renderSecurity(audit) {
     document.getElementById('securityContent').innerHTML = html;
 }
 
+// ─── GOOGLE SEARCH SUGGESTIONS ─────────────────────
+function renderGoogleSuggest(data) {
+    const badge = document.getElementById('suggestBadge');
+
+    if (!data.suggestions?.length && !data.expanded?.length) {
+        badge.textContent = 'N/A';
+        document.getElementById('suggestContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">No Google suggestions available</div>';
+        return;
+    }
+
+    const total = data.totalSuggestions || ((data.suggestions?.length || 0) + (data.expanded?.length || 0));
+    badge.textContent = `${total} suggestions`;
+
+    let html = '';
+
+    if (data.query) {
+        html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Search query: "${data.query}"</div>`;
+    }
+
+    // Primary suggestions
+    if (data.suggestions?.length > 0) {
+        html += '<div class="section-label">Top Google Autocomplete Suggestions</div>';
+        html += '<div class="phrase-tags" style="margin-bottom:12px;">';
+        html += data.suggestions.map(s => `<div class="phrase-tag" style="background:rgba(103,58,183,.1);border-color:rgba(103,58,183,.2);color:#9575CD;">${s}</div>`).join('');
+        html += '</div>';
+    }
+
+    // Categorized results
+    if (data.categorized) {
+        const cats = data.categorized;
+
+        if (cats.questions?.length > 0) {
+            html += '<div class="section-label" style="margin-top:16px;">Question-Based Keywords</div>';
+            html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Great for FAQ pages and blog content</div>';
+            html += cats.questions.slice(0, 15).map(q =>
+                `<div class="check-row"><span class="check-icon">❓</span><span class="check-text">${q}</span></div>`
+            ).join('');
+        }
+
+        if (cats.commercial?.length > 0) {
+            html += '<div class="section-label" style="margin-top:16px;">Commercial Intent Keywords</div>';
+            html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">High buying intent — prioritize these for service pages</div>';
+            html += cats.commercial.slice(0, 15).map(k =>
+                `<div class="check-row"><span class="check-icon">💰</span><span class="check-text">${k}</span></div>`
+            ).join('');
+        }
+
+        if (cats.comparisons?.length > 0) {
+            html += '<div class="section-label" style="margin-top:16px;">Comparison Keywords</div>';
+            html += cats.comparisons.slice(0, 10).map(k =>
+                `<div class="check-row"><span class="check-icon">⚖️</span><span class="check-text">${k}</span></div>`
+            ).join('');
+        }
+
+        if (cats.informational?.length > 0) {
+            html += '<div class="section-label" style="margin-top:16px;">Informational Keywords</div>';
+            html += '<div class="phrase-tags">';
+            html += cats.informational.slice(0, 20).map(k => `<div class="phrase-tag">${k}</div>`).join('');
+            html += '</div>';
+        }
+    }
+
+    // Expanded keywords (from alphabet expansion)
+    if (data.expanded?.length > 0 && !data.categorized) {
+        html += '<div class="section-label" style="margin-top:16px;">Expanded Keyword Ideas</div>';
+        html += '<div class="phrase-tags">';
+        html += data.expanded.slice(0, 30).map(s => `<div class="phrase-tag" style="background:rgba(103,58,183,.08);border-color:rgba(103,58,183,.15);color:#B39DDB;">${s}</div>`).join('');
+        html += '</div>';
+    }
+
+    html += `<div class="opportunity-box" style="margin-top:16px"><p><strong>Content strategy tip:</strong> Create dedicated pages for commercial keywords (cost, best, insurance) and blog posts for question keywords. Each targets a different stage of the customer journey.</p></div>`;
+
+    document.getElementById('suggestContent').innerHTML = html;
+}
+
+// ─── SERP KEYWORD MINING ───────────────────────────
+function renderSerpKeywords(data) {
+    const badge = document.getElementById('serpBadge');
+
+    if (!data.peopleAlsoAsk?.length && !data.relatedSearches?.length) {
+        badge.textContent = data.error ? 'Error' : 'N/A';
+        document.getElementById('serpContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">${data.error || 'No SERP data available. Ensure business name and city are provided.'}</div>`;
+        return;
+    }
+
+    const totalPAA = data.totalPAA || data.peopleAlsoAsk?.length || 0;
+    const totalRelated = data.totalRelated || data.relatedSearches?.length || 0;
+    badge.textContent = `${totalPAA + totalRelated} keywords`;
+
+    let html = '';
+
+    if (data.queriesSearched?.length > 0) {
+        html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">SERPs analyzed for: ${data.queriesSearched.map(q => `"${q}"`).join(', ')}</div>`;
+    }
+
+    // Stats grid
+    html += `<div class="content-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#FF9800;">${totalPAA}</div>
+            <div class="content-stat-label">People Also Ask</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#42A5F5;">${totalRelated}</div>
+            <div class="content-stat-label">Related Searches</div>
+        </div>
+    </div>`;
+
+    // People Also Ask — categorized
+    if (data.paaCategories) {
+        const cats = data.paaCategories;
+
+        if (cats.commercial?.length > 0) {
+            html += '<div class="section-label">Commercial Intent Questions</div>';
+            html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Highest-value — these searchers are ready to buy</div>';
+            html += cats.commercial.map(q =>
+                `<div class="check-row"><span class="check-icon">💰</span><span class="check-text">${q}</span></div>`
+            ).join('');
+        }
+
+        if (cats.transactional?.length > 0) {
+            html += '<div class="section-label" style="margin-top:16px;">Action-Oriented Questions</div>';
+            html += cats.transactional.map(q =>
+                `<div class="check-row"><span class="check-icon">🎯</span><span class="check-text">${q}</span></div>`
+            ).join('');
+        }
+
+        if (cats.informational?.length > 0) {
+            html += '<div class="section-label" style="margin-top:16px;">Informational Questions</div>';
+            html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Great for blog posts and educational content</div>';
+            html += cats.informational.slice(0, 15).map(q =>
+                `<div class="check-row"><span class="check-icon">📚</span><span class="check-text">${q}</span></div>`
+            ).join('');
+        }
+
+        if (cats.navigational?.length > 0) {
+            html += '<div class="section-label" style="margin-top:16px;">Location-Based Questions</div>';
+            html += cats.navigational.map(q =>
+                `<div class="check-row"><span class="check-icon">📍</span><span class="check-text">${q}</span></div>`
+            ).join('');
+        }
+    } else if (data.peopleAlsoAsk?.length > 0) {
+        html += '<div class="section-label">People Also Ask</div>';
+        html += data.peopleAlsoAsk.slice(0, 20).map(q =>
+            `<div class="check-row"><span class="check-icon">❓</span><span class="check-text">${q}</span></div>`
+        ).join('');
+    }
+
+    // Related Searches
+    if (data.relatedSearches?.length > 0) {
+        html += '<div class="section-label" style="margin-top:20px;">Related Google Searches</div>';
+        html += '<div class="phrase-tags">';
+        html += data.relatedSearches.map(s => `<div class="phrase-tag" style="background:rgba(255,152,0,.1);border-color:rgba(255,152,0,.2);color:#FFB74D;">${s}</div>`).join('');
+        html += '</div>';
+    }
+
+    // Organic title keywords
+    if (data.organicTitleKeywords?.length > 0) {
+        html += '<div class="section-label" style="margin-top:20px;">Common Words in Top-Ranking Titles</div>';
+        const maxC = data.organicTitleKeywords[0].count;
+        html += data.organicTitleKeywords.slice(0, 15).map(k => {
+            const pct = (k.count / maxC) * 100;
+            return `<div class="kw-bar-row">
+                <div class="kw-word">${k.word}</div>
+                <div class="kw-bar"><div class="kw-bar-fill" style="width:${pct}%;background:linear-gradient(90deg, #FF9800, #FF5722)"></div></div>
+                <div class="kw-count">${k.count}×</div>
+            </div>`;
+        }).join('');
+    }
+
+    html += `<div class="opportunity-box" style="margin-top:16px"><p><strong>SERP strategy:</strong> Answer "People Also Ask" questions on your website to win featured snippets. Google rewards sites that directly answer common user questions with prominent placement above organic results.</p></div>`;
+
+    document.getElementById('serpContent').innerHTML = html;
+}
+
+// ─── COMPETITIVE KEYWORD ANALYSIS ──────────────────
+function renderCompetitiveKeywords(data) {
+    const badge = document.getElementById('competitiveBadge');
+
+    if (!data.analysis || (data.error && !data.analysis?.keywordGaps?.length)) {
+        badge.textContent = data.error ? 'Error' : 'N/A';
+        badge.className = 'panel-badge badge-info';
+        document.getElementById('competitiveContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">${data.error || 'Competitive analysis requires detected competitors with websites.'}</div>`;
+        return;
+    }
+
+    const analysis = data.analysis;
+    const stats = data.stats || {};
+    const score = data.competitiveScore || {};
+
+    badge.textContent = score.score || 'Analyzed';
+    badge.className = `panel-badge ${score.score === 'Strong' ? 'badge-good' : score.score === 'Moderate' ? 'badge-warning' : 'badge-critical'}`;
+
+    let html = '';
+
+    // Stats overview
+    html += `<div class="content-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:var(--accent);">${stats.sharedCount || 0}</div>
+            <div class="content-stat-label">Shared</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#FF5722;">${stats.gapCount || 0}</div>
+            <div class="content-stat-label">Gaps</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#4CAF50;">${stats.uniqueCount || 0}</div>
+            <div class="content-stat-label">Unique to You</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#42A5F5;">${stats.overlapRate || 0}%</div>
+            <div class="content-stat-label">Overlap</div>
+        </div>
+    </div>`;
+
+    // Competitive score
+    html += `<div style="text-align:center;padding:8px 0 16px;">
+        <div style="font-size:14px;color:${score.score === 'Strong' ? 'var(--success)' : score.score === 'Moderate' ? 'var(--warn)' : 'var(--danger)'};">${score.label || ''}</div>
+    </div>`;
+
+    // Competitors analyzed
+    if (data.competitors?.length > 0) {
+        html += '<div class="section-label">Competitors Analyzed</div>';
+        html += data.competitors.map(c =>
+            `<div class="metric-row"><span class="metric-label" style="word-break:break-all;">${c.domain}</span><span class="metric-value">${c.keywordCount} keywords</span></div>`
+        ).join('');
+    }
+
+    // Keyword gaps (highest priority)
+    if (analysis.keywordGaps?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Keyword Gaps — Competitors Have, You Don\'t</div>';
+        html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Prioritize high-priority gaps used by multiple competitors.</div>';
+        html += analysis.keywordGaps.slice(0, 15).map(k => {
+            const priorityColor = k.priority === 'high' ? 'var(--danger)' : 'var(--warn)';
+            const priorityLabel = k.priority === 'high' ? 'HIGH' : 'MED';
+            return `<div class="check-row">
+                <span class="check-icon">🔴</span>
+                <span class="check-text">${k.keyword}</span>
+                <span class="check-status" style="color:${priorityColor};font-size:11px;">${priorityLabel} · ${k.competitorCount} competitor${k.competitorCount > 1 ? 's' : ''}</span>
+            </div>`;
+        }).join('');
+    }
+
+    // Shared keywords
+    if (analysis.sharedKeywords?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Shared Keywords — Already Competing</div>';
+        html += '<div class="phrase-tags">';
+        html += analysis.sharedKeywords.slice(0, 15).map(k =>
+            `<div class="phrase-tag" style="background:rgba(78,205,196,.1);border-color:rgba(78,205,196,.2);color:var(--accent);">${k.keyword}</div>`
+        ).join('');
+        html += '</div>';
+    }
+
+    // Unique to target
+    if (analysis.uniqueToTarget?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Unique to You — Competitive Advantage</div>';
+        html += '<div class="phrase-tags">';
+        html += analysis.uniqueToTarget.slice(0, 10).map(k =>
+            `<div class="phrase-tag" style="background:rgba(76,175,80,.1);border-color:rgba(76,175,80,.2);color:#81C784;">${k.keyword}</div>`
+        ).join('');
+        html += '</div>';
+    }
+
+    // Opportunity keywords
+    if (analysis.opportunities?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Untapped Opportunities</div>';
+        html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Keywords neither you nor competitors are targeting</div>';
+        html += '<div class="phrase-tags">';
+        html += analysis.opportunities.slice(0, 15).map(k =>
+            `<div class="phrase-tag" style="background:rgba(255,87,34,.1);border-color:rgba(255,87,34,.2);color:#FF7043;">${k.keyword}</div>`
+        ).join('');
+        html += '</div>';
+    }
+
+    html += `<div class="opportunity-box" style="margin-top:16px"><p><strong>Competitive strategy:</strong> Focus on high-priority keyword gaps first — these are terms your competitors rank for but you don't. Create dedicated content pages for each gap to capture market share.</p></div>`;
+
+    document.getElementById('competitiveContent').innerHTML = html;
+}
+
 // ─── HELPERS ────────────────────────────────────────
 function checkRowHtml(label, pass, detail, warnType) {
     const icon = pass ? '✅' : (warnType === 'warn' ? '⚠️' : '❌');
@@ -1965,6 +2355,47 @@ function exportReport() {
         text += '\n';
     }
 
+    const suggest = scanData.googleSuggest || {};
+    if (suggest.suggestions?.length > 0) {
+        text += `GOOGLE SEARCH SUGGESTIONS (${suggest.totalSuggestions || suggest.suggestions.length}):\n`;
+        suggest.suggestions.slice(0, 15).forEach(s => { text += `  • ${s}\n`; });
+        if (suggest.categorized?.questions?.length > 0) {
+            text += `  Questions:\n`;
+            suggest.categorized.questions.slice(0, 8).forEach(q => { text += `    ? ${q}\n`; });
+        }
+        if (suggest.categorized?.commercial?.length > 0) {
+            text += `  Commercial:\n`;
+            suggest.categorized.commercial.slice(0, 8).forEach(k => { text += `    $ ${k}\n`; });
+        }
+        text += '\n';
+    }
+
+    const serp = scanData.serpKeywords || {};
+    if (serp.peopleAlsoAsk?.length > 0 || serp.relatedSearches?.length > 0) {
+        text += `SERP KEYWORD MINING:\n`;
+        if (serp.peopleAlsoAsk?.length > 0) {
+            text += `  People Also Ask (${serp.peopleAlsoAsk.length}):\n`;
+            serp.peopleAlsoAsk.slice(0, 10).forEach(q => { text += `    ? ${q}\n`; });
+        }
+        if (serp.relatedSearches?.length > 0) {
+            text += `  Related Searches (${serp.relatedSearches.length}):\n`;
+            serp.relatedSearches.slice(0, 10).forEach(s => { text += `    • ${s}\n`; });
+        }
+        text += '\n';
+    }
+
+    const compKw = scanData.competitiveKeywords || {};
+    if (compKw.analysis?.keywordGaps?.length > 0) {
+        text += `COMPETITIVE KEYWORD ANALYSIS:\n`;
+        text += `  Overlap Rate: ${compKw.stats?.overlapRate || 0}%\n`;
+        text += `  Shared: ${compKw.stats?.sharedCount || 0} · Gaps: ${compKw.stats?.gapCount || 0} · Unique: ${compKw.stats?.uniqueCount || 0}\n`;
+        text += `  Keyword Gaps (${compKw.analysis.keywordGaps.length}):\n`;
+        compKw.analysis.keywordGaps.slice(0, 10).forEach(k => {
+            text += `    [${k.priority?.toUpperCase() || 'MED'}] ${k.keyword} (${k.competitorCount} competitors)\n`;
+        });
+        text += '\n';
+    }
+
     if (report?.findings?.length > 0) {
         text += `KEY FINDINGS:\n`;
         report.findings.forEach(f => {
@@ -1995,7 +2426,7 @@ function resetScan() {
     document.getElementById('inputState').value = '';
     document.getElementById('inputIndustry').selectedIndex = 0;
     // Reset progress steps
-    ['lighthouse','audit','pagerank','places','report','moz','safe','ssl','keywords'].forEach(id => {
+    ['lighthouse','audit','pagerank','places','report','moz','safe','ssl','keywords','suggest','serp','competitive'].forEach(id => {
         const el = document.getElementById('step-' + id);
         if (el) {
             el.className = 'progress-step';
