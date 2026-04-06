@@ -537,6 +537,135 @@ body {
     .comp-name { width: 120px; }
     .score-hero { flex-direction: column; text-align: center; }
 }
+
+/* ═══ PRINT / PDF STYLES ═══ */
+.print-desc { display: none; }
+.print-header { display: none; }
+.print-footer { display: none; }
+
+@media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page { margin: 0.6in 0.5in; size: letter; }
+
+    body { background: #fff !important; color: #1a1a1a !important; font-size: 10.5px; line-height: 1.5; }
+
+    /* Hide interactive elements */
+    #passwordGate, #app > .header, .progress-section, .btn-export, .btn-new-scan, .panel-chevron, #inputSection { display: none !important; }
+
+    /* Print header — branded top bar */
+    .print-header {
+        display: flex !important; align-items: center; justify-content: space-between;
+        padding: 16px 20px; margin-bottom: 20px;
+        background: #0f172a !important; color: #fff !important;
+        border-radius: 8px;
+    }
+    .print-header-logo { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; color: #fff !important; }
+    .print-header-date { font-size: 11px; color: #94a3b8 !important; }
+
+    /* Print footer — shown on each page */
+    .print-footer {
+        display: block !important; position: fixed; bottom: 0; left: 0; right: 0;
+        text-align: center; font-size: 9px; color: #999 !important;
+        padding: 8px 0; border-top: 1px solid #e5e5e5;
+    }
+
+    /* Results header */
+    .results-header { margin-bottom: 16px; }
+    .results-header h2 { color: #0f172a !important; font-size: 22px; font-weight: 800; }
+
+    /* Score hero */
+    .score-hero {
+        background: linear-gradient(135deg, #f0f4ff, #f5f0ff) !important;
+        border: 2px solid #c7d2fe !important; color: #1a1a1a !important;
+        padding: 20px !important; border-radius: 12px !important; margin-bottom: 16px;
+    }
+    .score-number { color: #1a1a1a !important; }
+    .score-grade { color: #fff !important; }
+    .score-headline { color: #374151 !important; font-size: 13px; }
+
+    /* Section descriptions — visible in print */
+    .print-desc {
+        display: block !important;
+        font-size: 10px; line-height: 1.5; color: #4b5563 !important;
+        padding: 8px 14px; margin: 0;
+        background: #f8fafc !important;
+        border-left: 3px solid #6366f1 !important;
+        font-style: italic;
+    }
+
+    /* Panels */
+    .panel {
+        break-inside: avoid; border: 1px solid #e2e8f0 !important;
+        background: #fff !important; margin-bottom: 10px; border-radius: 8px !important;
+        box-shadow: none !important;
+    }
+    .panel-header {
+        background: #f8fafc !important; border-bottom: 1px solid #e2e8f0 !important;
+        padding: 10px 14px !important;
+    }
+    .panel-header-left { display: flex; align-items: center; gap: 8px; }
+    .panel-icon { width: 28px !important; height: 28px !important; font-size: 14px !important; }
+    .panel-title { color: #0f172a !important; font-size: 13px !important; font-weight: 700 !important; }
+    .panel-body { display: block !important; max-height: none !important; overflow: visible !important; }
+    .panel-content { padding: 12px 14px !important; }
+    .panel-badge {
+        border: 1px solid #cbd5e1 !important; color: #334155 !important;
+        font-size: 10px !important; padding: 2px 8px !important; border-radius: 20px !important;
+        background: #f1f5f9 !important;
+    }
+    .badge-good { background: #dcfce7 !important; color: #166534 !important; border-color: #86efac !important; }
+    .badge-warning { background: #fef3c7 !important; color: #92400e !important; border-color: #fcd34d !important; }
+    .badge-critical { background: #fee2e2 !important; color: #991b1b !important; border-color: #fca5a5 !important; }
+    .badge-info { background: #e0f2fe !important; color: #075985 !important; border-color: #7dd3fc !important; }
+
+    /* Data rows */
+    .metric-row { color: #374151 !important; border-color: #f1f5f9 !important; padding: 4px 0 !important; }
+    .metric-label { color: #6b7280 !important; font-size: 10px !important; }
+    .metric-value { color: #111827 !important; font-size: 10px !important; font-weight: 600 !important; }
+    .check-row { padding: 3px 0 !important; }
+    .check-text { color: #374151 !important; font-size: 10px !important; }
+    .finding-row { border-color: #f1f5f9 !important; padding: 6px 0 !important; }
+    .finding-text { color: #1f2937 !important; font-size: 10.5px !important; }
+    .finding-badge { font-size: 9px !important; }
+    .finding-dot { width: 8px !important; height: 8px !important; }
+
+    /* Bar charts */
+    .bar-row { padding: 4px 0 !important; }
+    .bar-label { color: #4b5563 !important; font-size: 10px !important; }
+    .bar-value { color: #111827 !important; font-size: 10px !important; font-weight: 700 !important; }
+    .bar-track { background: #e5e7eb !important; height: 8px !important; border-radius: 4px !important; }
+    .bar-fill { border-radius: 4px !important; }
+
+    /* Section labels & boxes */
+    .section-label { color: #374151 !important; border-color: #e2e8f0 !important; font-size: 11px !important; font-weight: 700 !important; }
+    .opportunity-box {
+        background: #eff6ff !important; border: 1px solid #bfdbfe !important;
+        color: #1e3a5f !important; border-radius: 8px !important; padding: 10px 14px !important;
+        font-size: 10.5px !important;
+    }
+    .opportunity-box strong { color: #1e40af !important; }
+
+    /* Score circle SVG */
+    svg circle { stroke-width: 5 !important; }
+
+    /* Tags */
+    .phrase-tag, .tech-tag { border: 1px solid #d1d5db !important; color: #374151 !important; background: #f9fafb !important; font-size: 9px !important; }
+
+    /* Tables in competitor section */
+    .comp-row { border-color: #e5e7eb !important; }
+    .comp-name { color: #111827 !important; }
+    .comp-score { color: #111827 !important; }
+
+    /* Dual score cards */
+    .dual-card { border-color: #e5e7eb !important; background: #f9fafb !important; }
+    .dual-label { color: #6b7280 !important; }
+    .dual-sub { color: #6b7280 !important; }
+
+    /* Override CSS vars for print */
+    .good, .metric-value.good { color: #166534 !important; }
+    .warning, .metric-value.warning { color: #92400e !important; }
+    .critical, .metric-value.critical { color: #991b1b !important; }
+}
 </style>
 </head>
 <body>
@@ -648,10 +777,16 @@ body {
 
         <!-- Results -->
         <div id="resultsSection">
+            <div class="print-header" id="printHeader">
+                <div class="print-header-logo">SEO Intelligence Report</div>
+                <div class="print-header-date" id="printDate"></div>
+            </div>
+            <div class="print-footer">Confidential — Prepared by EyeCarePro SEO Intelligence | eyecarepro.net</div>
             <div class="results-header">
                 <h2 id="resultsTitle">SEO Report</h2>
                 <div style="display:flex;gap:8px;">
                     <button class="btn-export" onclick="exportReport()">📋 Copy Report</button>
+                    <button class="btn-export" onclick="printReport()" style="background:rgba(78,205,196,.15);border-color:rgba(78,205,196,.3);">📄 Download PDF</button>
                     <button class="btn-new-scan" onclick="resetScan()">+ New Scan</button>
                 </div>
             </div>
@@ -668,6 +803,7 @@ body {
                     </div>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Your overall SEO health broken into five pillars: Page Speed, On-Page SEO, Local/GBP presence, Backlink authority, and Technical foundations. Each pillar is scored 0–100 based on real audit data.</div>
                 <div class="panel-body"><div class="panel-content" id="breakdownContent"></div></div>
             </div>
 
@@ -681,6 +817,7 @@ body {
                     <span class="panel-badge" id="perfBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Measures how fast your website loads for real visitors using Google's Core Web Vitals: Largest Contentful Paint (loading speed), Cumulative Layout Shift (visual stability), and Total Blocking Time (interactivity). Google uses these metrics directly in search rankings — slower sites rank lower.</div>
                 <div class="panel-body"><div class="panel-content" id="performanceContent"></div></div>
             </div>
 
@@ -694,6 +831,7 @@ body {
                     <span class="panel-badge" id="techBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Checks the behind-the-scenes elements that help search engines crawl, index, and understand your site: XML sitemap, robots.txt, canonical tags, structured data markup, meta tags, and heading hierarchy. Missing or misconfigured items can prevent Google from properly listing your pages.</div>
                 <div class="panel-body"><div class="panel-content" id="technicalContent"></div></div>
             </div>
 
@@ -707,6 +845,7 @@ body {
                     <span class="panel-badge" id="contentBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Evaluates the quality and optimization of your page content: title tag length and keyword usage, meta description effectiveness, heading structure, image alt text coverage, word count, and readability score. Well-optimized content is the foundation of organic search visibility.</div>
                 <div class="panel-body"><div class="panel-content" id="contentContent"></div></div>
             </div>
 
@@ -720,6 +859,7 @@ body {
                     <span class="panel-badge badge-info" id="techStackBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Identifies the CMS platform, frameworks, analytics tools, and tracking pixels installed on your website. Knowing your technology stack helps diagnose performance issues and ensures proper tracking is in place for measuring marketing ROI.</div>
                 <div class="panel-body"><div class="panel-content" id="techStackContent"></div></div>
             </div>
 
@@ -733,6 +873,7 @@ body {
                     <span class="panel-badge" id="keywordBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Extracts the most prominent keywords from your page content and analyzes keyword density. This reveals what Google thinks your page is about — and whether it aligns with the search terms your patients are actually using.</div>
                 <div class="panel-body"><div class="panel-content" id="keywordContent"></div></div>
             </div>
 
@@ -746,6 +887,7 @@ body {
                     <span class="panel-badge" id="secBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Audits HTTP security headers that protect your website and visitors from common attacks: Content Security Policy, X-Frame-Options, HSTS, and more. Strong security headers signal trust to both Google and patients visiting your site.</div>
                 <div class="panel-body"><div class="panel-content" id="securityContent"></div></div>
             </div>
 
@@ -759,6 +901,7 @@ body {
                     <span class="panel-badge" id="gbpBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Reviews your Google Business Profile (formerly Google My Business) — the listing that appears in Google Maps and local search results. Checks star rating, review count, business hours, photos, categories, and completeness. A well-optimized GBP is the #1 factor for appearing in the local 3-pack.</div>
                 <div class="panel-body"><div class="panel-content" id="gbpContent"></div></div>
             </div>
 
@@ -772,6 +915,7 @@ body {
                     <span class="panel-badge badge-info" id="compBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Compares your practice against nearby competitors found in Google Maps for the same search area. Shows how your ratings, review counts, and online presence stack up — revealing where you're winning and where competitors have an edge.</div>
                 <div class="panel-body"><div class="panel-content" id="competitorContent"></div></div>
             </div>
 
@@ -785,6 +929,7 @@ body {
                     <span class="panel-badge" id="daBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Measures your website's authority using Moz Domain Authority (0–100) and Open PageRank (0–10). Higher scores mean Google considers your site more trustworthy and is more likely to rank it above competitors. Authority is built by earning quality backlinks from other reputable websites.</div>
                 <div class="panel-body"><div class="panel-content" id="daContent"></div></div>
             </div>
 
@@ -798,6 +943,7 @@ body {
                     <span class="panel-badge" id="sslBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Validates your SSL/TLS certificate and checks for malware or phishing threats via Google Safe Browsing. SSL Labs grades your encryption strength (A+ is best). HTTPS is a confirmed Google ranking factor, and browsers warn visitors away from sites without valid certificates.</div>
                 <div class="panel-body"><div class="panel-content" id="sslContent"></div></div>
             </div>
 
@@ -811,6 +957,7 @@ body {
                     <span class="panel-badge badge-info" id="kwGapBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Identifies high-value keywords your site should be targeting but isn't. These gaps represent untapped search traffic — patients who are actively searching for your services but finding competitors instead. Each keyword gap is a content opportunity.</div>
                 <div class="panel-body"><div class="panel-content" id="kwGapContent"></div></div>
             </div>
 
@@ -824,6 +971,7 @@ body {
                     <span class="panel-badge badge-info" id="suggestBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Shows what Google auto-suggests when patients start typing searches related to your practice. These are real search queries with proven demand — Google only suggests terms that many people actually search for. Use these to create targeted content and FAQ pages.</div>
                 <div class="panel-body"><div class="panel-content" id="suggestContent"></div></div>
             </div>
 
@@ -837,6 +985,7 @@ body {
                     <span class="panel-badge badge-info" id="serpBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Mines Google's "People Also Ask" boxes and related searches for your key terms. These are the exact questions patients ask Google. Answering them on your website is one of the fastest ways to win featured snippets — the highlighted answer boxes that appear above all other results.</div>
                 <div class="panel-body"><div class="panel-content" id="serpContent"></div></div>
             </div>
 
@@ -850,6 +999,7 @@ body {
                     <span class="panel-badge" id="competitiveBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Analyzes keyword overlap between your site and your top competitors. Identifies shared keywords (where you compete head-to-head), keyword gaps (terms competitors rank for that you don't), and unique strengths (terms only you target). This intelligence drives a data-backed content strategy.</div>
                 <div class="panel-body"><div class="panel-content" id="competitiveContent"></div></div>
             </div>
 
@@ -863,6 +1013,7 @@ body {
                     <span class="panel-badge" id="backlinkBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Discovers external websites linking to your domain and checks for toxic or spammy backlinks. Quality backlinks from reputable sites boost your authority, while toxic links from spam sites can hurt rankings. Identifying and disavowing toxic links protects your SEO health.</div>
                 <div class="panel-body"><div class="panel-content" id="backlinkContent"></div></div>
             </div>
 
@@ -876,6 +1027,7 @@ body {
                     <span class="panel-badge" id="brokenLinkBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Crawls every link on your homepage to find broken links (404 errors), redirects, and timeouts. Broken links frustrate patients, waste Google's crawl budget, and signal a poorly maintained site. Fixing them is one of the easiest SEO quick-wins.</div>
                 <div class="panel-body"><div class="panel-content" id="brokenLinkContent"></div></div>
             </div>
 
@@ -889,6 +1041,7 @@ body {
                     <span class="panel-badge" id="validateBadge"></span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">Validates your HTML code for errors and checks structured data (Schema.org) markup that enables rich search results — star ratings, business hours, FAQs, and other enhanced listings in Google. Rich results dramatically increase click-through rates from search results.</div>
                 <div class="panel-body"><div class="panel-content" id="validateContent"></div></div>
             </div>
 
@@ -899,8 +1052,10 @@ body {
                         <div class="panel-icon" style="background:rgba(78,205,196,.15)">🎯</div>
                         <div class="panel-title">Key Findings & Opportunities</div>
                     </div>
+                    <span class="panel-badge badge-info" id="findingsBadge" style="display:none;">✨ AI</span>
                     <div class="panel-chevron">▾</div>
                 </div>
+                <div class="print-desc">AI-generated summary of the most impactful findings from the full audit. Prioritized by potential impact on search visibility and patient acquisition, with the single highest-value opportunity highlighted first.</div>
                 <div class="panel-body"><div class="panel-content" id="findingsContent"></div></div>
             </div>
 
@@ -1288,6 +1443,7 @@ function renderResults() {
         <div class="score-right">
             <div class="score-grade ${badgeClass}">${grade}${score >= 70 ? ' — Good' : score >= 50 ? ' — Needs Work' : typeof score === 'number' ? ' — Critical' : ''}</div>
             <div class="score-headline">${headline}</div>
+            ${report?.source === 'ai' ? '<div style="margin-top:8px;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:linear-gradient(135deg,rgba(78,205,196,.12),rgba(139,92,246,.12));border:1px solid rgba(78,205,196,.25);font-size:11px;color:rgba(255,255,255,.7);letter-spacing:.3px;"><span style="font-size:13px;">✨</span> AI-Powered Analysis</div>' : ''}
         </div>
     `;
 
@@ -1806,7 +1962,10 @@ function renderDA(pr, moz) {
     }
 
     if (moz?.error && !hasMoz) {
-        html += `<div style="font-size:12px;color:var(--text-muted);margin-top:12px;">Moz API: ${moz.error}</div>`;
+        const mozMsg = moz.error.includes('not configured') || moz.error.includes('401')
+            ? 'Moz API credentials not configured — Moz metrics unavailable'
+            : `Moz API: ${moz.error}`;
+        html += `<div style="font-size:12px;color:var(--text-muted);margin-top:12px;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:6px;">ℹ️ ${mozMsg}</div>`;
     }
 
     // ── Competitor PageRank Comparison ──
@@ -1886,6 +2045,9 @@ function renderSSL(ssl, safe) {
         </div>`;
         sslBadge.textContent = 'Scanning...';
         sslBadge.className = 'panel-badge badge-info';
+    } else if (ssl.error && !ssl.hasSSL && ssl.hasSSL !== false) {
+        sslBadge.textContent = 'Check Failed';
+        sslBadge.className = 'panel-badge badge-info';
     } else {
         sslBadge.textContent = ssl.hasSSL ? 'Active' : 'Missing';
         sslBadge.className = `panel-badge ${ssl.hasSSL ? 'badge-warning' : 'badge-critical'}`;
@@ -1914,12 +2076,18 @@ function renderSSL(ssl, safe) {
         });
     }
 
-    // Errors / info
+    // Errors / info — show user-friendly messages
     if (ssl.error && !ssl.grade) {
-        html += `<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">${ssl.error}</div>`;
+        const sslMsg = ssl.error.includes('SSL Labs') || ssl.error.includes('timeout')
+            ? 'SSL Labs analysis timed out — try again in a few minutes'
+            : ssl.hasSSL ? 'HTTPS is active (detailed SSL grading unavailable)' : ssl.error;
+        html += `<div style="font-size:12px;color:var(--text-muted);margin-top:8px;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:6px;">ℹ️ ${sslMsg}</div>`;
     }
     if (safe.error && safe.safe === null) {
-        html += `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Safe Browsing: ${safe.error}</div>`;
+        const safeMsg = safe.error.includes('403') || safe.error.includes('not enabled') || safe.error.includes('not configured')
+            ? 'Google Safe Browsing check unavailable — API not configured'
+            : `Safe Browsing: ${safe.error}`;
+        html += `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:6px;">ℹ️ ${safeMsg}</div>`;
     }
 
     document.getElementById('sslContent').innerHTML = html;
@@ -1978,6 +2146,8 @@ function renderKeywordGaps(kwData) {
 // ─── FINDINGS & OPPORTUNITIES ───────────────────────
 function renderFindings(report) {
     let html = '';
+    const aiBadge = document.getElementById('findingsBadge');
+    if (aiBadge) aiBadge.style.display = report?.source === 'ai' ? '' : 'none';
 
     if (report.topOpportunity) {
         html += `<div class="opportunity-box" style="margin-bottom:16px"><p><strong>Top opportunity:</strong> ${report.topOpportunity}</p></div>`;
@@ -2251,8 +2421,14 @@ function renderSerpKeywords(data) {
     const badge = document.getElementById('serpBadge');
 
     if (!data.peopleAlsoAsk?.length && !data.relatedSearches?.length) {
-        badge.textContent = data.error ? 'Error' : 'N/A';
-        document.getElementById('serpContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">${data.error || 'No SERP data available. Ensure business name and city are provided.'}</div>`;
+        let serpMsg = data.error || 'No SERP data available. Ensure business name and city are provided.';
+        if (data.error && (data.error.includes('timeout') || data.error.includes('timed out') || data.error.includes('TIMEOUT'))) {
+            serpMsg = 'SERP mining timed out — this happens occasionally with heavy search queries. Try running the scan again.';
+        } else if (data.error && data.error.includes('Apify')) {
+            serpMsg = 'SERP mining service temporarily unavailable. Other scan results are unaffected.';
+        }
+        badge.textContent = data.error ? 'Unavailable' : 'N/A';
+        document.getElementById('serpContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">ℹ️ ${serpMsg}</div>`;
         return;
     }
 
@@ -2971,6 +3147,16 @@ function exportReport() {
         btn.textContent = '✅ Copied!';
         setTimeout(() => { btn.textContent = '📋 Copy Report'; }, 2000);
     });
+}
+
+// ─── PRINT / PDF EXPORT ────────────────────────────
+function printReport() {
+    // Set the print date
+    document.getElementById('printDate').textContent = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    // Open all panels so they show in print
+    document.querySelectorAll('.panel').forEach(p => p.classList.add('open'));
+    // Trigger browser print dialog (user selects "Save as PDF")
+    window.print();
 }
 
 // ─── RESET ──────────────────────────────────────────

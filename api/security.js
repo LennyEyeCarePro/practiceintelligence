@@ -13,12 +13,12 @@ export default async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const action = req.query.action || req.query.url ? 'safe-browsing' : 'ssl';
+    // Support legacy ?url= param for safe-browsing (no action specified + url present)
+    const action = req.query.action || (req.query.url ? 'safe-browsing' : null);
 
-    // Support legacy ?url= param for safe-browsing
-    if (action === 'safe-browsing' || req.query.url) return handleSafeBrowsing(req, res);
+    if (action === 'safe-browsing') return handleSafeBrowsing(req, res);
     if (action === 'ssl') return handleSSL(req, res);
-    return res.status(400).json({ error: `Unknown action: ${action}. Use safe-browsing|ssl` });
+    return res.status(400).json({ error: `Missing or unknown action: ${action}. Use ?action=safe-browsing or ?action=ssl` });
 }
 
 // ═══════════════════════════════════════════════════
