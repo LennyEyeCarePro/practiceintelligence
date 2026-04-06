@@ -1,0 +1,2009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEO Intelligence Tool | EyeCarePro Internal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --brand: #0F4C81;
+    --brand-light: #1A6BB5;
+    --brand-dark: #0A3358;
+    --accent: #4ECDC4;
+    --accent-glow: rgba(78,205,196,.25);
+    --warn: #F59E0B;
+    --danger: #EF4444;
+    --success: #10B981;
+    --bg: #0B1929;
+    --bg-light: #132F4C;
+    --surface: #1E3A5F;
+    --surface-alt: #162D4A;
+    --border: #1E3A5F;
+    --text: #E8EDF2;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --shadow: 0 2px 8px rgba(0,0,0,.3);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.4);
+    --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --mono: 'Space Mono', monospace;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ─── PASSWORD GATE ──────────────────────────────── */
+#passwordGate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+.gate-card {
+    background: var(--surface);
+    border: 1px solid rgba(78,205,196,.2);
+    border-radius: var(--radius-lg);
+    padding: 40px 36px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+}
+.gate-icon {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, var(--accent), #2196F3);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 24px;
+}
+.gate-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.gate-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; }
+.gate-input {
+    width: 100%; padding: 12px 16px;
+    font-family: var(--font); font-size: 15px;
+    background: var(--bg); border: 1.5px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    outline: none; transition: border-color .2s;
+    text-align: center; letter-spacing: 2px;
+}
+.gate-input:focus { border-color: var(--accent); }
+.gate-input::placeholder { color: var(--text-muted); letter-spacing: 0; }
+.gate-btn {
+    display: block; width: 100%; margin-top: 16px;
+    padding: 13px 24px; font-family: var(--font);
+    font-size: 15px; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%);
+    border: none; border-radius: 10px; cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+}
+.gate-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(15,76,129,.4); }
+.gate-error { color: var(--danger); font-size: 13px; margin-top: 10px; display: none; }
+
+/* ─── APP LAYOUT ─────────────────────────────────── */
+#app { display: none; }
+.app-wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+}
+
+/* ─── HEADER ─────────────────────────────────────── */
+.app-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0 20px; border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+}
+.app-header-left {
+    display: flex; align-items: center; gap: 12px;
+}
+.app-logo {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), #2196F3);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+}
+.app-title { font-size: 18px; font-weight: 700; }
+.app-badge {
+    font-size: 10px; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--accent);
+    background: rgba(78,205,196,.12); border: 1px solid rgba(78,205,196,.2);
+    border-radius: 20px; padding: 4px 10px;
+}
+
+/* ─── INPUT FORM ─────────────────────────────────── */
+.input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px;
+    margin-bottom: 24px;
+}
+.input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.input-grid .full-width { grid-column: 1 / -1; }
+.form-label {
+    display: block; font-size: 11px; font-weight: 600;
+    color: var(--text-secondary); text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 5px;
+}
+.form-input, .form-select {
+    width: 100%; padding: 11px 14px;
+    font-family: var(--font); font-size: 14px;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    background: var(--bg); color: var(--text);
+    outline: none; transition: border-color .2s;
+}
+.form-input:focus, .form-select:focus { border-color: var(--accent); }
+.form-input::placeholder { color: var(--text-muted); }
+.form-select option { background: var(--bg); color: var(--text); }
+
+.btn-scan {
+    display: block; width: 100%; margin-top: 20px;
+    padding: 14px 24px; font-family: var(--font);
+    font-size: 16px; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, #4ECDC4 0%, #2196F3 100%);
+    border: none; border-radius: 10px; cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    letter-spacing: -0.2px;
+}
+.btn-scan:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(78,205,196,.4); }
+.btn-scan:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+/* ─── PROGRESS ───────────────────────────────────── */
+#progressSection { display: none; margin-bottom: 24px; }
+.progress-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+}
+.progress-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.progress-step {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; font-size: 14px; color: var(--text-muted);
+    transition: color .3s;
+}
+.progress-step.active { color: var(--accent); }
+.progress-step.done { color: var(--success); }
+.progress-step.error { color: var(--danger); }
+.progress-icon { width: 20px; text-align: center; flex-shrink: 0; }
+.progress-bar-wrap {
+    height: 4px; background: var(--bg); border-radius: 2px;
+    margin-top: 16px; overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), #2196F3);
+    border-radius: 2px; transition: width .4s ease; width: 0%;
+}
+
+/* ─── RESULTS ────────────────────────────────────── */
+#resultsSection { display: none; }
+
+.results-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+}
+.results-header h2 { font-size: 22px; font-weight: 700; }
+.btn-new-scan {
+    padding: 8px 16px; font-family: var(--font);
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    background: rgba(78,205,196,.1); border: 1px solid rgba(78,205,196,.2);
+    border-radius: 8px; cursor: pointer; transition: background .2s;
+}
+.btn-new-scan:hover { background: rgba(78,205,196,.2); }
+
+/* Panel system */
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+.panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; cursor: pointer;
+    transition: background .2s;
+}
+.panel-header:hover { background: var(--surface-alt); }
+.panel-header-left { display: flex; align-items: center; gap: 12px; }
+.panel-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+}
+.panel-title { font-size: 15px; font-weight: 700; }
+.panel-badge {
+    font-size: 11px; font-weight: 600; padding: 4px 12px;
+    border-radius: 20px; flex-shrink: 0;
+}
+.badge-good { background: rgba(16,185,129,.15); color: #10B981; }
+.badge-warning { background: rgba(245,158,11,.15); color: #F59E0B; }
+.badge-critical { background: rgba(239,68,68,.15); color: #EF4444; }
+.badge-info { background: rgba(33,150,243,.15); color: #2196F3; }
+.panel-chevron { color: var(--text-muted); transition: transform .2s; font-size: 18px; }
+.panel.open .panel-chevron { transform: rotate(180deg); }
+.panel-body {
+    max-height: 0; overflow: hidden;
+    transition: max-height .3s ease;
+}
+.panel.open .panel-body { max-height: 3000px; }
+.panel-content { padding: 0 20px 20px; }
+
+/* Score hero */
+.score-hero {
+    background: linear-gradient(135deg, #0B2948 0%, #143D65 50%, #1A4F7A 100%);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 24px;
+}
+.score-circle {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+.score-circle svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+.score-number {
+    font-size: 36px; font-weight: 700;
+    font-family: var(--mono);
+    position: relative; z-index: 1;
+}
+.score-right { flex: 1; }
+.score-grade {
+    display: inline-block; border-radius: 20px;
+    padding: 4px 14px; font-size: 12px; font-weight: 600;
+    margin-bottom: 8px;
+}
+.score-headline { font-size: 14px; color: rgba(255,255,255,.8); line-height: 1.5; }
+
+/* Bars */
+.bar-row {
+    display: flex; align-items: center; padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.bar-row:last-child { border-bottom: none; }
+.bar-label { width: 130px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+.bar-track { height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; flex: 1; margin: 0 12px; }
+.bar-fill { height: 6px; border-radius: 3px; transition: width 0.6s ease; }
+.bar-value { font-size: 13px; font-weight: 600; width: 36px; text-align: right; flex-shrink: 0; }
+
+/* Metric rows */
+.metric-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.metric-row:last-child { border-bottom: none; }
+.metric-label { font-size: 13px; color: var(--text-secondary); }
+.metric-value { font-size: 13px; font-weight: 600; }
+.metric-value.good { color: var(--success); }
+.metric-value.warning { color: var(--warn); }
+.metric-value.critical { color: var(--danger); }
+
+/* Check rows */
+.check-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.check-row:last-child { border-bottom: none; }
+.check-icon { font-size: 15px; width: 22px; text-align: center; flex-shrink: 0; }
+.check-text { font-size: 13px; flex: 1; }
+.check-status { font-size: 13px; font-weight: 500; flex-shrink: 0; }
+
+/* Dual score cards */
+.dual-scores {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 12px;
+}
+.dual-card {
+    background: var(--bg); border-radius: 10px;
+    padding: 16px; text-align: center;
+}
+.dual-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.dual-score { font-size: 28px; font-weight: 700; }
+.dual-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* Finding rows */
+.finding-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.finding-row:last-child { border-bottom: none; }
+.finding-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    margin-top: 5px; flex-shrink: 0;
+}
+.finding-dot.critical { background: var(--danger); }
+.finding-dot.warning { background: var(--warn); }
+.finding-dot.good { background: var(--success); }
+.finding-text { font-size: 13px; line-height: 1.6; flex: 1; }
+.finding-badge {
+    display: inline-block; border-radius: 20px; padding: 3px 10px;
+    font-size: 11px; font-weight: 600; flex-shrink: 0; margin-top: 2px;
+}
+
+/* Competitor bars */
+.comp-row {
+    display: flex; align-items: center; padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.comp-row:last-child { border-bottom: none; }
+.comp-name { width: 180px; font-size: 13px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.comp-name.highlight { font-weight: 700; color: var(--accent); }
+.comp-bar { flex: 1; height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; margin: 0 12px; }
+.comp-fill { height: 6px; border-radius: 3px; }
+.comp-score { font-size: 13px; font-weight: 600; width: 70px; text-align: right; flex-shrink: 0; }
+
+/* Rank rows */
+.rank-row {
+    display: flex; align-items: center; padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,.06); gap: 10px;
+}
+.rank-row:last-of-type { border-bottom: none; }
+.rank-keyword { flex: 1; font-size: 13px; }
+.rank-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 36px; height: 28px; border-radius: 6px;
+    font-size: 13px; font-weight: 700; padding: 0 8px; flex-shrink: 0;
+}
+.rank-top3 { background: rgba(16,185,129,.15); color: #10B981; }
+.rank-top10 { background: rgba(245,158,11,.15); color: #F59E0B; }
+.rank-top20 { background: rgba(255,193,7,.15); color: #FFC107; }
+.rank-missing { background: rgba(239,68,68,.15); color: #EF4444; }
+.rank-mappack { background: rgba(33,150,243,.15); color: #2196F3; }
+
+/* GBP table */
+.gbp-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.gbp-row:last-child { border-bottom: none; }
+.gbp-label { font-size: 13px; color: var(--text-secondary); }
+.gbp-value { font-size: 13px; font-weight: 500; text-align: right; }
+.gbp-value.good { color: var(--success); }
+.gbp-value.critical { color: var(--danger); }
+.gbp-value.warning { color: var(--warn); }
+
+.inline-badge {
+    display: inline-block; border-radius: 4px; padding: 2px 8px;
+    font-size: 10px; font-weight: 600; margin-left: 6px;
+}
+
+/* Opportunity box */
+.opportunity-box {
+    background: rgba(78,205,196,.1);
+    border: 1px solid rgba(78,205,196,.2);
+    border-radius: 10px; padding: 16px; margin-top: 12px;
+}
+.opportunity-box p { font-size: 13px; color: var(--accent); line-height: 1.6; margin: 0; }
+
+/* Content analysis enhancements */
+.content-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+    margin-bottom: 16px;
+}
+.content-stat {
+    background: var(--bg); border-radius: 8px;
+    padding: 14px; text-align: center;
+}
+.content-stat-value { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.content-stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Section labels */
+.section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-muted);
+    margin: 16px 0 8px 0;
+}
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Export button */
+.btn-export {
+    padding: 10px 20px; font-family: var(--font);
+    font-size: 13px; font-weight: 600; color: var(--text);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; transition: background .2s;
+}
+.btn-export:hover { background: var(--surface-alt); }
+
+/* Tech tags */
+.tech-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.tech-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+}
+.tech-tag.primary { border-color: var(--accent); color: var(--accent); background: rgba(78,205,196,.08); }
+
+/* Keyword bars */
+.kw-bar-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 0;
+}
+.kw-word { width: 120px; font-size: 13px; font-weight: 500; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kw-bar { flex: 1; height: 8px; background: rgba(255,255,255,.06); border-radius: 4px; overflow: hidden; }
+.kw-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), #2196F3); }
+.kw-count { font-size: 12px; color: var(--text-muted); width: 60px; text-align: right; flex-shrink: 0; }
+
+/* Phrase tags */
+.phrase-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.phrase-tag {
+    padding: 5px 10px; background: rgba(33,150,243,.1);
+    border: 1px solid rgba(33,150,243,.2); border-radius: 6px;
+    font-size: 12px; color: #42A5F5;
+}
+
+/* Readability gauge */
+.readability-gauge {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px; background: var(--bg); border-radius: 10px;
+    margin-bottom: 12px;
+}
+.readability-score-big {
+    font-size: 36px; font-weight: 700; font-family: var(--mono);
+    flex-shrink: 0;
+}
+.readability-info { flex: 1; }
+.readability-level { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.readability-detail { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+/* H2 list */
+.h2-list { list-style: none; padding: 0; }
+.h2-list li {
+    padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: 13px; color: var(--text-secondary);
+}
+.h2-list li:last-child { border-bottom: none; }
+.h2-list li::before { content: 'H2 '; font-weight: 600; color: var(--text-muted); font-size: 10px; margin-right: 6px; }
+
+/* Responsive */
+@media (max-width: 640px) {
+    .input-grid { grid-template-columns: 1fr; }
+    .content-grid { grid-template-columns: 1fr 1fr; }
+    .dual-scores { grid-template-columns: 1fr; }
+    .comp-name { width: 120px; }
+    .score-hero { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ PASSWORD GATE ═══ -->
+<div id="passwordGate">
+    <div class="gate-card">
+        <div class="gate-icon">🔒</div>
+        <div class="gate-title">SEO Intelligence Tool</div>
+        <div class="gate-sub">EyeCarePro internal tool. Enter the access code to continue.</div>
+        <input type="password" class="gate-input" id="gatePw" placeholder="Access Code" autocomplete="off">
+        <button class="gate-btn" onclick="checkPassword()">Unlock</button>
+        <div class="gate-error" id="gateError">Incorrect access code</div>
+    </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="app">
+    <div class="app-wrap">
+
+        <!-- Header -->
+        <div class="app-header">
+            <div class="app-header-left">
+                <div class="app-logo">🔍</div>
+                <div class="app-title">SEO Intelligence</div>
+            </div>
+            <div class="app-badge">INTERNAL TOOL</div>
+        </div>
+
+        <!-- Input Form -->
+        <div class="input-card">
+            <div class="input-grid">
+                <div class="full-width">
+                    <label class="form-label">Website URL *</label>
+                    <input type="text" class="form-input" id="inputUrl" placeholder="e.g. example.com">
+                </div>
+                <div>
+                    <label class="form-label">Business Name</label>
+                    <input type="text" class="form-input" id="inputName" placeholder="e.g. Apex Eye Care">
+                </div>
+                <div>
+                    <label class="form-label">Industry</label>
+                    <select class="form-select" id="inputIndustry">
+                        <option value="">Select industry...</option>
+                        <option value="optometry">Optometry</option>
+                        <option value="ophthalmology">Ophthalmology</option>
+                        <option value="multi_eye">Multi-Specialty Eye Care</option>
+                        <option value="dental">Dental</option>
+                        <option value="chiropractic">Chiropractic</option>
+                        <option value="dermatology">Dermatology</option>
+                        <option value="medical_general">Medical (General)</option>
+                        <option value="legal">Legal / Law Firm</option>
+                        <option value="accounting">Accounting / CPA</option>
+                        <option value="restaurant">Restaurant / Food Service</option>
+                        <option value="real_estate">Real Estate</option>
+                        <option value="home_services">Home Services (HVAC, Plumbing, etc.)</option>
+                        <option value="auto">Automotive</option>
+                        <option value="fitness">Fitness / Wellness</option>
+                        <option value="salon">Salon / Spa / Beauty</option>
+                        <option value="veterinary">Veterinary</option>
+                        <option value="ecommerce">E-Commerce</option>
+                        <option value="saas">SaaS / Technology</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">City</label>
+                    <input type="text" class="form-input" id="inputCity" placeholder="e.g. Fredericksburg">
+                </div>
+                <div>
+                    <label class="form-label">State / Province</label>
+                    <input type="text" class="form-input" id="inputState" placeholder="e.g. VA">
+                </div>
+            </div>
+            <button class="btn-scan" id="btnScan" onclick="startScan()">
+                Run Full SEO Audit
+            </button>
+        </div>
+
+        <!-- Progress -->
+        <div id="progressSection">
+            <div class="progress-card">
+                <div class="progress-title">Scanning...</div>
+                <div id="progressSteps">
+                    <div class="progress-step" id="step-lighthouse"><span class="progress-icon">⏳</span> Lighthouse Performance Audit (Mobile + Desktop)</div>
+                    <div class="progress-step" id="step-audit"><span class="progress-icon">⏳</span> On-Page SEO Site Audit</div>
+                    <div class="progress-step" id="step-pagerank"><span class="progress-icon">⏳</span> Domain Authority Check</div>
+                    <div class="progress-step" id="step-places"><span class="progress-icon">⏳</span> Google Business Profile Discovery</div>
+                    <div class="progress-step" id="step-report"><span class="progress-icon">⏳</span> AI-Powered Analysis</div>
+                    <div class="progress-step" id="step-moz"><span class="progress-icon">⏳</span> Moz Domain Authority</div>
+                    <div class="progress-step" id="step-safe"><span class="progress-icon">⏳</span> Google Safe Browsing Check</div>
+                    <div class="progress-step" id="step-ssl"><span class="progress-icon">⏳</span> SSL Certificate Analysis</div>
+                    <div class="progress-step" id="step-keywords"><span class="progress-icon">⏳</span> Keyword Gap Discovery</div>
+                </div>
+                <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsSection">
+            <div class="results-header">
+                <h2 id="resultsTitle">SEO Report</h2>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-export" onclick="exportReport()">📋 Copy Report</button>
+                    <button class="btn-new-scan" onclick="resetScan()">+ New Scan</button>
+                </div>
+            </div>
+
+            <!-- Score Hero -->
+            <div class="score-hero" id="scoreHero"></div>
+
+            <!-- Pillar Breakdown -->
+            <div class="panel open" id="panelBreakdown">
+                <div class="panel-header" onclick="togglePanel('panelBreakdown')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(33,150,243,.15)">📊</div>
+                        <div class="panel-title">Score Breakdown</div>
+                    </div>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="breakdownContent"></div></div>
+            </div>
+
+            <!-- Performance (Lighthouse) -->
+            <div class="panel open" id="panelPerformance">
+                <div class="panel-header" onclick="togglePanel('panelPerformance')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(78,205,196,.15)">⚡</div>
+                        <div class="panel-title">Performance & Core Web Vitals</div>
+                    </div>
+                    <span class="panel-badge" id="perfBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="performanceContent"></div></div>
+            </div>
+
+            <!-- Technical SEO Deep Dive -->
+            <div class="panel" id="panelTechnical">
+                <div class="panel-header" onclick="togglePanel('panelTechnical')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(156,39,176,.15)">🔧</div>
+                        <div class="panel-title">Technical SEO Deep Dive</div>
+                    </div>
+                    <span class="panel-badge" id="techBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="technicalContent"></div></div>
+            </div>
+
+            <!-- On-Page SEO & Content -->
+            <div class="panel" id="panelContent">
+                <div class="panel-header" onclick="togglePanel('panelContent')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(255,152,0,.15)">📝</div>
+                        <div class="panel-title">Content & On-Page Analysis</div>
+                    </div>
+                    <span class="panel-badge" id="contentBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="contentContent"></div></div>
+            </div>
+
+            <!-- Technology & Platform -->
+            <div class="panel" id="panelTech">
+                <div class="panel-header" onclick="togglePanel('panelTech')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(0,188,212,.15)">🖥️</div>
+                        <div class="panel-title">Technology & Platform</div>
+                    </div>
+                    <span class="panel-badge badge-info" id="techStackBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="techStackContent"></div></div>
+            </div>
+
+            <!-- Keywords & Content Intelligence -->
+            <div class="panel" id="panelKeywords">
+                <div class="panel-header" onclick="togglePanel('panelKeywords')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(233,30,99,.15)">🔑</div>
+                        <div class="panel-title">Keyword & Content Intelligence</div>
+                    </div>
+                    <span class="panel-badge" id="keywordBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="keywordContent"></div></div>
+            </div>
+
+            <!-- Security Headers -->
+            <div class="panel" id="panelSecurity">
+                <div class="panel-header" onclick="togglePanel('panelSecurity')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(76,175,80,.15)">🛡️</div>
+                        <div class="panel-title">Security & Headers</div>
+                    </div>
+                    <span class="panel-badge" id="secBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="securityContent"></div></div>
+            </div>
+
+            <!-- Google Business Profile -->
+            <div class="panel" id="panelGBP">
+                <div class="panel-header" onclick="togglePanel('panelGBP')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(66,133,244,.15)">📍</div>
+                        <div class="panel-title">Google Business Profile</div>
+                    </div>
+                    <span class="panel-badge" id="gbpBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="gbpContent"></div></div>
+            </div>
+
+            <!-- Competitor Comparison -->
+            <div class="panel" id="panelCompetitors">
+                <div class="panel-header" onclick="togglePanel('panelCompetitors')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(244,67,54,.15)">🏆</div>
+                        <div class="panel-title">Competitor Comparison</div>
+                    </div>
+                    <span class="panel-badge badge-info" id="compBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="competitorContent"></div></div>
+            </div>
+
+            <!-- Domain Authority (Open PageRank + Moz) -->
+            <div class="panel" id="panelDA">
+                <div class="panel-header" onclick="togglePanel('panelDA')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(0,150,136,.15)">🏛️</div>
+                        <div class="panel-title">Domain Authority & Backlinks</div>
+                    </div>
+                    <span class="panel-badge" id="daBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="daContent"></div></div>
+            </div>
+
+            <!-- SSL Certificate -->
+            <div class="panel" id="panelSSL">
+                <div class="panel-header" onclick="togglePanel('panelSSL')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(76,175,80,.15)">🔐</div>
+                        <div class="panel-title">SSL Certificate & Safety</div>
+                    </div>
+                    <span class="panel-badge" id="sslBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="sslContent"></div></div>
+            </div>
+
+            <!-- Keyword Gap Discovery -->
+            <div class="panel" id="panelKeywordGaps">
+                <div class="panel-header" onclick="togglePanel('panelKeywordGaps')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(255,87,34,.15)">💡</div>
+                        <div class="panel-title">Keyword Gap & Opportunities</div>
+                    </div>
+                    <span class="panel-badge badge-info" id="kwGapBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="kwGapContent"></div></div>
+            </div>
+
+            <!-- AI Findings -->
+            <div class="panel open" id="panelFindings">
+                <div class="panel-header" onclick="togglePanel('panelFindings')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(78,205,196,.15)">🎯</div>
+                        <div class="panel-title">Key Findings & Opportunities</div>
+                    </div>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="panel-body"><div class="panel-content" id="findingsContent"></div></div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//   SEO INTELLIGENCE TOOL — EyeCarePro Internal
+// ═══════════════════════════════════════════════════════════
+
+const API_BASE = 'https://practiceintelligence-lennys-projects-2067cb84.vercel.app/api';
+const PASSWORD = 'ecp2026';
+
+let scanData = {};
+
+// ─── PASSWORD GATE ──────────────────────────────────
+function checkPassword() {
+    const pw = document.getElementById('gatePw').value;
+    if (pw === PASSWORD) {
+        document.getElementById('passwordGate').style.display = 'none';
+        document.getElementById('app').style.display = '';
+        localStorage.setItem('seo-tool-auth', 'true');
+    } else {
+        document.getElementById('gateError').style.display = '';
+    }
+}
+document.getElementById('gatePw').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkPassword();
+});
+// Auto-unlock if previously authenticated
+if (localStorage.getItem('seo-tool-auth') === 'true') {
+    document.getElementById('passwordGate').style.display = 'none';
+    document.getElementById('app').style.display = '';
+}
+
+// ─── PANEL TOGGLE ───────────────────────────────────
+function togglePanel(id) {
+    document.getElementById(id).classList.toggle('open');
+}
+
+// ─── PROGRESS TRACKING ──────────────────────────────
+function setStep(id, state) {
+    const el = document.getElementById('step-' + id);
+    if (!el) return;
+    el.className = 'progress-step ' + state;
+    const icon = el.querySelector('.progress-icon');
+    if (state === 'active') icon.textContent = '⏳';
+    else if (state === 'done') icon.textContent = '✅';
+    else if (state === 'error') icon.textContent = '❌';
+}
+function setProgress(pct) {
+    document.getElementById('progressBar').style.width = pct + '%';
+}
+
+// ─── MAIN SCAN ──────────────────────────────────────
+async function startScan() {
+    const urlRaw = document.getElementById('inputUrl').value.trim();
+    if (!urlRaw) { alert('Please enter a website URL'); return; }
+
+    const domain = urlRaw.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+    const url = 'https://' + domain;
+    const businessName = document.getElementById('inputName').value.trim();
+    const industry = document.getElementById('inputIndustry').value;
+    const city = document.getElementById('inputCity').value.trim();
+    const state = document.getElementById('inputState').value.trim();
+
+    // Reset
+    scanData = { domain, url, businessName, industry, city, state };
+    document.getElementById('btnScan').disabled = true;
+    document.getElementById('progressSection').style.display = '';
+    document.getElementById('resultsSection').style.display = 'none';
+    setProgress(0);
+
+    try {
+        // Phase 1: Parallel — Lighthouse, Site Audit, PageRank, Places
+        setStep('lighthouse', 'active');
+        setStep('audit', 'active');
+        setStep('pagerank', 'active');
+        setStep('places', 'active');
+        setProgress(10);
+
+        const placesParams = new URLSearchParams();
+        if (businessName) placesParams.set('businessName', businessName);
+        if (city) placesParams.set('city', city);
+        if (domain) placesParams.set('website', domain);
+
+        const [lighthouseResp, auditResp, rankResp, placesResp] = await Promise.all([
+            fetch(API_BASE + '/lighthouse', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url }),
+            }).then(r => r.json()).catch(e => ({ error: e.message })),
+
+            fetch(API_BASE + '/site-audit?url=' + encodeURIComponent(domain))
+                .then(r => r.json()).catch(e => ({ error: e.message })),
+
+            fetch(API_BASE + '/pagerank?domain=' + encodeURIComponent(domain))
+                .then(r => r.json()).catch(e => ({ error: e.message })),
+
+            (businessName || domain)
+                ? fetch(API_BASE + '/places?' + placesParams.toString())
+                    .then(r => r.json()).catch(e => ({ error: e.message }))
+                : Promise.resolve(null),
+        ]);
+
+        scanData.lighthouse = lighthouseResp;
+        scanData.siteAudit = auditResp;
+        scanData.pageRank = rankResp;
+        scanData.places = placesResp;
+
+        setStep('lighthouse', lighthouseResp?.error ? 'error' : 'done');
+        setStep('audit', auditResp?.error && !auditResp?.domain ? 'error' : 'done');
+        setStep('pagerank', rankResp?.error && rankResp?.pageRank === undefined ? 'error' : 'done');
+        setStep('places', placesResp?.error && !placesResp?.locations?.length ? 'error' : 'done');
+        setProgress(60);
+
+        // Phase 2: AI Report
+        setStep('report', 'active');
+        const reportResp = await fetch(API_BASE + '/seo-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: domain,
+                businessName,
+                city,
+                siteAudit: auditResp,
+                lighthouse: lighthouseResp,
+                pageRank: rankResp,
+                places: placesResp,
+            }),
+        }).then(r => r.json()).catch(e => ({ error: e.message }));
+
+        scanData.report = reportResp;
+        setStep('report', reportResp?.error ? 'error' : 'done');
+        setProgress(70);
+
+        // Phase 3: Parallel — Moz DA, Safe Browsing, SSL Labs, Keyword Suggestions
+        setStep('moz', 'active');
+        setStep('safe', 'active');
+        setStep('ssl', 'active');
+        setStep('keywords', 'active');
+
+        const topKws = (auditResp?.topKeywords || []).map(k => k.word);
+
+        const [mozResp, safeResp, sslResp, kwResp] = await Promise.all([
+            fetch(API_BASE + '/moz-da?domain=' + encodeURIComponent(domain))
+                .then(r => r.json()).catch(e => ({ error: e.message })),
+
+            fetch(API_BASE + '/safe-browsing?url=' + encodeURIComponent(domain))
+                .then(r => r.json()).catch(e => ({ error: e.message })),
+
+            fetch(API_BASE + '/ssl-check?domain=' + encodeURIComponent(domain))
+                .then(r => r.json()).catch(e => ({ error: e.message })),
+
+            topKws.length > 0
+                ? fetch(API_BASE + '/keyword-suggest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keywords: topKws, industry, businessName }),
+                }).then(r => r.json()).catch(e => ({ error: e.message }))
+                : Promise.resolve({ keywordGaps: [], longTailIdeas: [] }),
+        ]);
+
+        scanData.moz = mozResp;
+        scanData.safeBrowsing = safeResp;
+        scanData.ssl = sslResp;
+        scanData.keywordSuggestions = kwResp;
+
+        setStep('moz', mozResp?.error && !mozResp?.domainAuthority ? 'error' : 'done');
+        setStep('safe', safeResp?.error && safeResp?.safe === null ? 'error' : 'done');
+        setStep('ssl', sslResp?.error && !sslResp?.grade && !sslResp?.hasSSL ? 'error' : 'done');
+        setStep('keywords', kwResp?.error ? 'error' : 'done');
+        setProgress(100);
+
+        // Render results
+        renderResults();
+
+    } catch (err) {
+        console.error('Scan error:', err);
+        alert('Scan failed: ' + err.message);
+    } finally {
+        document.getElementById('btnScan').disabled = false;
+    }
+}
+
+// ─── RENDER ALL RESULTS ─────────────────────────────
+function renderResults() {
+    const { lighthouse, siteAudit: audit, pageRank: pr, places, report, domain, businessName, moz, safeBrowsing, ssl, keywordSuggestions } = scanData;
+    const mobile = lighthouse?.mobile || {};
+    const desktop = lighthouse?.desktop || {};
+    const biz = places?.locations?.[0] || places?.business || {};
+    const allLocs = places?.locations || (biz.name ? [biz] : []);
+    const competitors = places?.competitors || [];
+
+    // Title
+    document.getElementById('resultsTitle').textContent =
+        (businessName || domain) + ' — SEO Report';
+
+    // ═══ SCORE HERO ═══
+    const score = report?.overallScore ?? '--';
+    const grade = report?.grade || '--';
+    const headline = report?.headline || 'Analysis complete';
+
+    let scoreColor = '#F44336';
+    if (score >= 70) scoreColor = '#4CAF50';
+    else if (score >= 50) scoreColor = '#FF9800';
+
+    const circumference = 2 * Math.PI * 42;
+    const dashoffset = typeof score === 'number' ? circumference - (score / 100) * circumference : circumference;
+
+    let badgeClass = 'badge-critical';
+    if (score >= 70) badgeClass = 'badge-good';
+    else if (score >= 50) badgeClass = 'badge-warning';
+
+    document.getElementById('scoreHero').innerHTML = `
+        <div class="score-circle">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="6"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="${scoreColor}" stroke-width="6"
+                    stroke-dasharray="${circumference}" stroke-dashoffset="${dashoffset}"
+                    stroke-linecap="round"/>
+            </svg>
+            <div class="score-number" style="color:${scoreColor}">${score}</div>
+        </div>
+        <div class="score-right">
+            <div class="score-grade ${badgeClass}">${grade}${score >= 70 ? ' — Good' : score >= 50 ? ' — Needs Work' : typeof score === 'number' ? ' — Critical' : ''}</div>
+            <div class="score-headline">${headline}</div>
+        </div>
+    `;
+
+    // ═══ SCORE BREAKDOWN ═══
+    const pillars = report?.pillarScores || {};
+    const barData = [
+        { label: 'Page Speed', value: pillars.pageSpeed ?? mobile.performance ?? 0 },
+        { label: 'On-Page SEO', value: pillars.onPageSeo ?? mobile.seo ?? 0 },
+        { label: 'Local / GBP', value: pillars.localGbp ?? 0 },
+        { label: 'Backlinks', value: pillars.backlinks ?? 0 },
+        { label: 'Technical', value: pillars.technical ?? 0 },
+    ];
+    document.getElementById('breakdownContent').innerHTML = barData.map(b => {
+        const color = b.value >= 75 ? '#4CAF50' : b.value >= 50 ? '#FF9800' : '#F44336';
+        return `<div class="bar-row">
+            <div class="bar-label">${b.label}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${b.value}%;background:${color}"></div></div>
+            <div class="bar-value" style="color:${color}">${b.value}</div>
+        </div>`;
+    }).join('');
+
+    // ═══ PERFORMANCE & CORE WEB VITALS ═══
+    renderPerformance(mobile, desktop);
+
+    // ═══ TECHNICAL SEO DEEP DIVE ═══
+    renderTechnical(audit || {});
+
+    // ═══ CONTENT & ON-PAGE ═══
+    renderContentAnalysis(audit || {}, mobile);
+
+    // ═══ TECHNOLOGY & PLATFORM ═══
+    renderTechStack(audit || {});
+
+    // ═══ KEYWORDS & CONTENT INTELLIGENCE ═══
+    renderKeywords(audit || {});
+
+    // ═══ SECURITY & HEADERS ═══
+    renderSecurity(audit || {});
+
+    // ═══ GOOGLE BUSINESS PROFILE ═══
+    renderGBP(allLocs);
+
+    // ═══ COMPETITOR COMPARISON ═══
+    renderCompetitors(allLocs, competitors);
+
+    // ═══ DOMAIN AUTHORITY (Open PageRank + Moz) ═══
+    renderDA(pr || {}, moz || {});
+
+    // ═══ SSL CERTIFICATE & SAFETY ═══
+    renderSSL(ssl || {}, safeBrowsing || {});
+
+    // ═══ KEYWORD GAP DISCOVERY ═══
+    renderKeywordGaps(keywordSuggestions || {});
+
+    // ═══ FINDINGS ═══
+    renderFindings(report || {});
+
+    // Show results, hide progress
+    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('resultsSection').style.display = '';
+}
+
+// ─── PERFORMANCE PANEL ──────────────────────────────
+function renderPerformance(mobile, desktop) {
+    const mPerf = mobile.performance ?? '--';
+    const dPerf = desktop.performance ?? '--';
+    const mColor = typeof mPerf === 'number' ? (mPerf >= 75 ? '#4CAF50' : mPerf >= 50 ? '#FF9800' : '#F44336') : '#888';
+    const dColor = typeof dPerf === 'number' ? (dPerf >= 75 ? '#4CAF50' : dPerf >= 50 ? '#FF9800' : '#F44336') : '#888';
+
+    // Badge
+    const avgPerf = typeof mPerf === 'number' ? mPerf : 0;
+    const perfBadge = document.getElementById('perfBadge');
+    perfBadge.textContent = avgPerf >= 75 ? 'Fast' : avgPerf >= 50 ? 'Average' : 'Slow';
+    perfBadge.className = `panel-badge ${avgPerf >= 75 ? 'badge-good' : avgPerf >= 50 ? 'badge-warning' : 'badge-critical'}`;
+
+    let html = `
+        <div class="dual-scores">
+            <div class="dual-card">
+                <div class="dual-label">📱 Mobile</div>
+                <div class="dual-score" style="color:${mColor}">${mPerf}</div>
+                <div class="dual-sub">${mobile.lcp ? 'LCP: ' + mobile.lcp : ''}</div>
+            </div>
+            <div class="dual-card">
+                <div class="dual-label">🖥️ Desktop</div>
+                <div class="dual-score" style="color:${dColor}">${dPerf}</div>
+                <div class="dual-sub">${desktop.lcp ? 'LCP: ' + desktop.lcp : ''}</div>
+            </div>
+        </div>
+    `;
+
+    // Core Web Vitals
+    const vitals = [];
+    if (mobile.lcp) vitals.push({ label: 'Largest Contentful Paint (LCP)', value: mobile.lcp, threshold: [2.5, 4.0] });
+    if (mobile.cls) vitals.push({ label: 'Cumulative Layout Shift (CLS)', value: mobile.cls, threshold: [0.1, 0.25] });
+    if (mobile.tbt) vitals.push({ label: 'Total Blocking Time (TBT)', value: mobile.tbt, threshold: [200, 600] });
+    if (mobile.fcp) vitals.push({ label: 'First Contentful Paint (FCP)', value: mobile.fcp, threshold: [1.8, 3.0] });
+    if (mobile.speedIndex) vitals.push({ label: 'Speed Index', value: mobile.speedIndex });
+    if (mobile.interactive) vitals.push({ label: 'Time to Interactive', value: mobile.interactive });
+    if (mobile.serverResponseTime) vitals.push({ label: 'Server Response Time', value: mobile.serverResponseTime });
+
+    if (vitals.length > 0) {
+        html += '<div class="section-label">Core Web Vitals (Mobile)</div>';
+        html += vitals.map(v => {
+            const numVal = parseFloat(v.value);
+            let cls = '';
+            if (v.threshold && !isNaN(numVal)) {
+                cls = numVal <= v.threshold[0] ? 'good' : numVal <= v.threshold[1] ? 'warning' : 'critical';
+            }
+            return `<div class="metric-row"><span class="metric-label">${v.label}</span><span class="metric-value ${cls}">${v.value}</span></div>`;
+        }).join('');
+    }
+
+    // Field data
+    if (mobile.fieldLcp) {
+        html += '<div class="section-label" style="margin-top:16px;">Real-World Field Data (CrUX)</div>';
+        html += `<div class="metric-row"><span class="metric-label">Field LCP</span><span class="metric-value">${(mobile.fieldLcp / 1000).toFixed(1)}s</span></div>`;
+        if (mobile.fieldCls != null) html += `<div class="metric-row"><span class="metric-label">Field CLS</span><span class="metric-value">${(mobile.fieldCls / 100).toFixed(2)}</span></div>`;
+        if (mobile.fieldInp != null) html += `<div class="metric-row"><span class="metric-label">Field INP</span><span class="metric-value">${mobile.fieldInp}ms</span></div>`;
+        html += `<div class="metric-row"><span class="metric-label">Overall Category</span><span class="metric-value">${mobile.overallCategory || 'N/A'}</span></div>`;
+    }
+
+    // Lighthouse audit flags
+    const auditFlags = [];
+    if (mobile.auditRenderBlocking === 0) auditFlags.push('Render-blocking resources detected');
+    if (mobile.auditOptimizedImages === 0) auditFlags.push('Unoptimized images detected');
+    if (mobile.auditTextCompression === 0) auditFlags.push('Text compression not enabled');
+    if (mobile.auditMinifiedCss === 0) auditFlags.push('Unminified CSS detected');
+    if (mobile.auditMinifiedJs === 0) auditFlags.push('Unminified JavaScript detected');
+    if (mobile.auditCachePolicy === 0) auditFlags.push('Poor caching policy');
+    if (mobile.auditRedirects === 0) auditFlags.push('Excessive redirects');
+
+    if (auditFlags.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Performance Issues Found</div>';
+        html += auditFlags.map(f => `<div class="check-row"><span class="check-icon">⚠️</span><span class="check-text">${f}</span></div>`).join('');
+    }
+
+    // Accessibility & Best Practices scores
+    html += '<div class="section-label" style="margin-top:16px;">Additional Scores</div>';
+    const addlScores = [
+        { label: 'SEO Score', value: mobile.seo },
+        { label: 'Accessibility', value: mobile.accessibility },
+        { label: 'Best Practices', value: mobile.bestPractices },
+    ];
+    html += addlScores.filter(s => s.value != null).map(s => {
+        const c = s.value >= 75 ? 'good' : s.value >= 50 ? 'warning' : 'critical';
+        return `<div class="metric-row"><span class="metric-label">${s.label}</span><span class="metric-value ${c}">${s.value}/100</span></div>`;
+    }).join('');
+
+    document.getElementById('performanceContent').innerHTML = html;
+}
+
+// ─── TECHNICAL SEO DEEP DIVE ────────────────────────
+function renderTechnical(audit) {
+    if (!audit.domain) {
+        document.getElementById('technicalContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Site audit data unavailable</div>';
+        document.getElementById('techBadge').textContent = 'N/A';
+        return;
+    }
+
+    let issues = 0;
+    const checks = [];
+
+    checks.push(checkRowHtml('SSL Certificate', audit.ssl, audit.ssl ? 'HTTPS active' : 'Not secure'));
+    if (!audit.ssl) issues++;
+
+    checks.push(checkRowHtml('Sitemap.xml', audit.hasSitemap, audit.hasSitemap ? `${audit.sitemapUrlCount} URLs` : 'Missing'));
+    if (!audit.hasSitemap) issues++;
+
+    checks.push(checkRowHtml('Robots.txt', audit.hasRobots && !audit.blocksGooglebot,
+        audit.hasRobots ? (audit.blocksGooglebot ? 'Blocks Googlebot!' : 'OK') : 'Missing',
+        audit.blocksGooglebot ? 'fail' : ''));
+    if (!audit.hasRobots || audit.blocksGooglebot) issues++;
+
+    checks.push(checkRowHtml('Schema Markup', audit.hasLocalBusinessSchema,
+        audit.hasLocalBusinessSchema ? 'LocalBusiness' : audit.hasSchemaMarkup ? 'Generic only' : 'Missing',
+        audit.hasSchemaMarkup && !audit.hasLocalBusinessSchema ? 'warn' : ''));
+    if (!audit.hasSchemaMarkup) issues++;
+
+    checks.push(checkRowHtml('Canonical Tag', audit.hasCanonical, audit.hasCanonical ? 'Present' : 'Missing'));
+    if (!audit.hasCanonical) issues++;
+
+    checks.push(checkRowHtml('Viewport Meta', audit.hasViewport, audit.hasViewport ? 'Present' : 'Missing'));
+    if (!audit.hasViewport) issues++;
+
+    checks.push(checkRowHtml('Doctype', audit.doctype, audit.doctype ? 'Valid' : 'Missing'));
+
+    checks.push(checkRowHtml('Indexable', audit.isIndexable, audit.isIndexable ? 'Yes' : 'Noindex set',
+        !audit.isIndexable ? 'fail' : ''));
+    if (!audit.isIndexable) issues++;
+
+    checks.push(checkRowHtml('Favicon', audit.hasFavicon, audit.hasFavicon ? 'Present' : 'Missing'));
+    checks.push(checkRowHtml('Hreflang', audit.hasHreflang, audit.hasHreflang ? 'Present' : 'Not set'));
+
+    if (audit.schemaTypes?.length > 0) {
+        checks.push(`<div class="metric-row"><span class="metric-label">Schema Types Found</span><span class="metric-value">${audit.schemaTypes.join(', ')}</span></div>`);
+    }
+
+    const techBadge = document.getElementById('techBadge');
+    techBadge.textContent = issues === 0 ? 'All Clear' : issues <= 2 ? 'Minor Issues' : 'Needs Work';
+    techBadge.className = `panel-badge ${issues === 0 ? 'badge-good' : issues <= 2 ? 'badge-warning' : 'badge-critical'}`;
+
+    document.getElementById('technicalContent').innerHTML = checks.join('');
+}
+
+// ─── CONTENT & ON-PAGE ANALYSIS ─────────────────────
+function renderContentAnalysis(audit, mobile) {
+    if (!audit.domain) {
+        document.getElementById('contentContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Site audit data unavailable</div>';
+        document.getElementById('contentBadge').textContent = 'N/A';
+        return;
+    }
+
+    let issues = 0;
+    let html = '';
+
+    // Content stats grid
+    html += `<div class="content-grid">
+        <div class="content-stat">
+            <div class="content-stat-value">${audit.wordCount || 0}</div>
+            <div class="content-stat-label">Words</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value">${audit.h2Count || 0}</div>
+            <div class="content-stat-label">H2 Tags</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value">${audit.totalImages || 0}</div>
+            <div class="content-stat-label">Images</div>
+        </div>
+    </div>`;
+
+    // On-page checks
+    html += '<div class="section-label">Meta Tags & Structure</div>';
+
+    html += checkRowHtml('Title Tag',
+        audit.titleTag && audit.titleLength >= 30 && audit.titleLength <= 70,
+        audit.titleTag ? `${audit.titleLength} chars${audit.titleLength < 30 ? ' (too short)' : audit.titleLength > 70 ? ' (too long)' : ' (good)'}` : 'Missing',
+        audit.titleTag && (audit.titleLength < 30 || audit.titleLength > 70) ? 'warn' : '');
+    if (!audit.titleTag) issues++;
+
+    if (audit.titleTag) {
+        html += `<div style="padding:4px 0 10px 32px;font-size:12px;color:var(--text-muted);word-break:break-all;">"${audit.titleTag}"</div>`;
+    }
+
+    html += checkRowHtml('Meta Description',
+        audit.metaDescription && audit.metaDescriptionLength >= 120 && audit.metaDescriptionLength <= 170,
+        audit.metaDescription ? `${audit.metaDescriptionLength} chars${audit.metaDescriptionLength < 120 ? ' (too short)' : audit.metaDescriptionLength > 170 ? ' (too long)' : ' (good)'}` : 'Missing',
+        audit.metaDescription && (audit.metaDescriptionLength < 120 || audit.metaDescriptionLength > 170) ? 'warn' : '');
+    if (!audit.metaDescription) issues++;
+
+    if (audit.metaDescription) {
+        html += `<div style="padding:4px 0 10px 32px;font-size:12px;color:var(--text-muted);word-break:break-all;">"${audit.metaDescription.slice(0, 160)}${audit.metaDescription.length > 160 ? '...' : ''}"</div>`;
+    }
+
+    html += checkRowHtml('H1 Tag', audit.h1 && audit.h1Count === 1,
+        audit.h1 ? `${audit.h1Count} found${audit.h1Count > 1 ? ' (should be 1)' : ''}` : 'Missing',
+        audit.h1Count > 1 ? 'warn' : '');
+    if (!audit.h1) issues++;
+
+    if (audit.h1) {
+        html += `<div style="padding:4px 0 10px 32px;font-size:12px;color:var(--text-muted);word-break:break-all;">"${audit.h1}"</div>`;
+    }
+
+    html += checkRowHtml('Image Alt Text', audit.altTextCoverage >= 80,
+        `${audit.altTextCoverage || 0}% coverage (${audit.imagesWithAlt || 0}/${audit.totalImages || 0})`,
+        audit.altTextCoverage >= 50 && audit.altTextCoverage < 80 ? 'warn' : '');
+    if (audit.altTextCoverage < 50) issues++;
+
+    // Open Graph
+    html += '<div class="section-label" style="margin-top:16px;">Social & Sharing</div>';
+    html += checkRowHtml('Open Graph Title', audit.hasOgTitle, audit.hasOgTitle ? 'Present' : 'Missing');
+    html += checkRowHtml('OG Description', audit.hasOgDescription, audit.hasOgDescription ? 'Present' : 'Missing');
+    html += checkRowHtml('OG Image', audit.hasOgImage, audit.hasOgImage ? 'Present' : 'Missing');
+
+    // Social links
+    html += '<div class="section-label" style="margin-top:16px;">Social Links Found</div>';
+    html += checkRowHtml('Facebook', audit.hasFacebook, audit.hasFacebook ? 'Found' : 'Not found');
+    html += checkRowHtml('Instagram', audit.hasInstagram, audit.hasInstagram ? 'Found' : 'Not found');
+    html += checkRowHtml('YouTube', audit.hasYouTube, audit.hasYouTube ? 'Found' : 'Not found');
+    html += checkRowHtml('LinkedIn', audit.hasLinkedIn, audit.hasLinkedIn ? 'Found' : 'Not found');
+
+    // Booking / CTA
+    html += '<div class="section-label" style="margin-top:16px;">Conversion Signals</div>';
+    html += checkRowHtml('Booking CTA', audit.hasOnlineBooking || audit.hasBookingCTA,
+        audit.hasOnlineBooking ? 'Online booking present' : audit.hasBookingCTA ? 'Basic booking link' : 'No booking CTA found');
+    html += checkRowHtml('Phone Number', audit.hasPhone, audit.hasPhone ? 'Found on page' : 'Not found');
+    html += checkRowHtml('Address', audit.hasAddress, audit.hasAddress ? 'Found on page' : 'Not found');
+
+    // Content quality insights
+    if (audit.wordCount < 300) {
+        html += `<div class="opportunity-box" style="margin-top:16px"><p><strong>Thin content detected:</strong> Only ${audit.wordCount} words on the homepage. Google favors pages with 500+ words of relevant content. Consider adding more descriptive text about your services.</p></div>`;
+    }
+
+    const contentBadge = document.getElementById('contentBadge');
+    contentBadge.textContent = issues === 0 ? 'Optimized' : issues <= 2 ? 'Opportunities' : 'Needs Work';
+    contentBadge.className = `panel-badge ${issues === 0 ? 'badge-good' : issues <= 2 ? 'badge-warning' : 'badge-critical'}`;
+
+    document.getElementById('contentContent').innerHTML = html;
+}
+
+// ─── GOOGLE BUSINESS PROFILE ────────────────────────
+function renderGBP(allLocs) {
+    const gbpBadge = document.getElementById('gbpBadge');
+
+    if (allLocs.length === 0) {
+        gbpBadge.textContent = 'Not Found';
+        gbpBadge.className = 'panel-badge badge-critical';
+        document.getElementById('gbpContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Google Business Profile not found. For local businesses, this is a critical gap.</div>';
+        return;
+    }
+
+    let html = '';
+    if (allLocs.length > 1) {
+        html += `<div style="background:rgba(33,150,243,.1);padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:13px;color:#42A5F5;font-weight:500">${allLocs.length} GBP Locations Found</div>`;
+    }
+
+    allLocs.forEach((loc, idx) => {
+        if (allLocs.length > 1) {
+            html += `<div style="font-weight:600;font-size:14px;color:var(--accent);padding:${idx > 0 ? '16px' : '4px'} 0 8px 0;border-top:${idx > 0 ? '1px solid var(--border)' : 'none'}">📍 Location ${idx + 1}${loc.address ? ' — ' + loc.address.split(',')[0] : ''}</div>`;
+        }
+
+        const ratingColor = loc.rating >= 4.5 ? 'good' : loc.rating >= 4.0 ? 'warning' : 'critical';
+        const reviewColor = loc.reviewCount >= 50 ? 'good' : loc.reviewCount > 0 ? 'warning' : 'critical';
+
+        html += gbpRowHtml('Business Name', loc.name || 'N/A');
+        html += gbpRowHtml('Rating', loc.rating ? `${loc.rating}★` : 'Not found', ratingColor);
+        html += gbpRowHtml('Reviews', loc.reviewCount !== undefined ? `${loc.reviewCount} reviews` : 'N/A', reviewColor);
+        html += gbpRowHtml('Photos', loc.photoCount !== undefined ? `${loc.photoCount} photos` : 'N/A',
+            loc.photoCount >= 10 ? 'good' : loc.photoCount > 0 ? '' : 'critical');
+        html += gbpRowHtml('Hours Set', loc.hasHours ? 'Yes' : 'Missing', loc.hasHours ? 'good' : 'critical');
+        html += gbpRowHtml('Category', loc.primaryCategory || 'Unknown');
+        html += gbpRowHtml('Status', loc.businessStatus === 'OPERATIONAL' ? 'Active' : loc.businessStatus || 'Unknown',
+            loc.businessStatus === 'OPERATIONAL' ? 'good' : 'warning');
+        if (loc.address) html += gbpRowHtml('Address', loc.address);
+        if (loc.phone) html += gbpRowHtml('Phone', loc.phone);
+        if (loc.website) html += gbpRowHtml('Website', loc.website);
+
+        if (loc.recentReview) {
+            html += `<div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Most Recent Review (${loc.recentReview.rating}★ · ${loc.recentReview.time})</div>
+                <div style="font-size:13px;color:var(--text);line-height:1.5;">"${loc.recentReview.text}"</div>
+            </div>`;
+        }
+    });
+
+    const primary = allLocs[0];
+    const rating = primary.rating || 0;
+    const reviews = primary.reviewCount || 0;
+    gbpBadge.textContent = rating >= 4.5 && reviews >= 50 ? 'Strong' : rating >= 4.0 ? 'Opportunities' : 'Needs Attention';
+    gbpBadge.className = `panel-badge ${rating >= 4.5 && reviews >= 50 ? 'badge-good' : rating >= 4.0 ? 'badge-warning' : 'badge-critical'}`;
+
+    document.getElementById('gbpContent').innerHTML = html;
+}
+
+// ─── COMPETITOR COMPARISON ──────────────────────────
+function renderCompetitors(allLocs, competitors) {
+    const compBadge = document.getElementById('compBadge');
+
+    if (competitors.length === 0) {
+        compBadge.textContent = 'No Data';
+        document.getElementById('competitorContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">No competitor data available. Ensure a business name and city are provided.</div>';
+        return;
+    }
+
+    compBadge.textContent = `${competitors.length} found`;
+
+    const primary = allLocs[0] || {};
+    const allEntries = [
+        { name: primary.name || scanData.businessName || 'Target', rating: primary.rating || 0, reviewCount: primary.reviewCount || 0, isThis: true },
+        ...competitors,
+    ];
+
+    // Sort by review count for the review chart
+    const byReviews = [...allEntries].sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+    const maxReviews = Math.max(...byReviews.map(c => c.reviewCount || 0), 1);
+
+    let html = '<div class="section-label">Review Volume Comparison</div>';
+    html += byReviews.map(c => {
+        const pct = ((c.reviewCount || 0) / maxReviews) * 100;
+        const barColor = c.isThis ? '#4ECDC4' : '#42A5F5';
+        return `<div class="comp-row">
+            <div class="comp-name ${c.isThis ? 'highlight' : ''}">${c.isThis ? '★ ' : ''}${c.name}</div>
+            <div class="comp-bar"><div class="comp-fill" style="width:${pct}%;background:${barColor}"></div></div>
+            <div class="comp-score">${c.reviewCount || 0} reviews</div>
+        </div>`;
+    }).join('');
+
+    // Rating comparison
+    const byRating = [...allEntries].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    html += '<div class="section-label" style="margin-top:16px;">Rating Comparison</div>';
+    html += byRating.map(c => {
+        const pct = c.rating ? (c.rating / 5) * 100 : 0;
+        const barColor = c.isThis ? '#4ECDC4' : '#42A5F5';
+        return `<div class="comp-row">
+            <div class="comp-name ${c.isThis ? 'highlight' : ''}">${c.isThis ? '★ ' : ''}${c.name}</div>
+            <div class="comp-bar"><div class="comp-fill" style="width:${pct}%;background:${barColor}"></div></div>
+            <div class="comp-score">${c.rating ? c.rating + '★' : 'N/A'}</div>
+        </div>`;
+    }).join('');
+
+    // Competitive insights
+    const ourReviews = primary.reviewCount || 0;
+    const avgCompReviews = Math.round(competitors.reduce((s, c) => s + (c.reviewCount || 0), 0) / competitors.length);
+    const ourRating = primary.rating || 0;
+    const avgCompRating = (competitors.reduce((s, c) => s + (c.rating || 0), 0) / competitors.length).toFixed(1);
+
+    html += '<div class="section-label" style="margin-top:16px;">Competitive Summary</div>';
+    html += `<div class="metric-row"><span class="metric-label">Your Reviews vs Avg Competitor</span><span class="metric-value ${ourReviews >= avgCompReviews ? 'good' : 'warning'}">${ourReviews} vs ${avgCompReviews}</span></div>`;
+    html += `<div class="metric-row"><span class="metric-label">Your Rating vs Avg Competitor</span><span class="metric-value ${ourRating >= avgCompRating ? 'good' : 'warning'}">${ourRating || 'N/A'}★ vs ${avgCompRating}★</span></div>`;
+
+    if (ourReviews < avgCompReviews) {
+        html += `<div class="opportunity-box"><p><strong>Review gap:</strong> You're ${avgCompReviews - ourReviews} reviews behind the competitor average. A consistent review strategy could significantly boost local visibility.</p></div>`;
+    }
+
+    html += `<div style="font-size:11px;color:var(--text-muted);margin-top:12px;">Based on Google Maps results within 5 miles</div>`;
+
+    document.getElementById('competitorContent').innerHTML = html;
+}
+
+// ─── DOMAIN AUTHORITY (Open PageRank + Moz) ────────
+function renderDA(pr, moz) {
+    const daBadge = document.getElementById('daBadge');
+    const hasPR = pr.pageRank != null;
+    const hasMoz = moz.domainAuthority != null;
+
+    if (!hasPR && !hasMoz) {
+        daBadge.textContent = 'N/A';
+        document.getElementById('daContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Domain authority data unavailable</div>';
+        return;
+    }
+
+    // Use Moz DA as primary if available, else PageRank
+    const primaryScore = hasMoz ? moz.domainAuthority : (pr.pageRank * 10);
+    const primaryMax = hasMoz ? 100 : 10;
+    const primaryLabel = hasMoz ? moz.daLabel : pr.label;
+
+    daBadge.textContent = primaryLabel || 'Unknown';
+    daBadge.className = `panel-badge ${primaryScore >= 40 ? 'badge-good' : primaryScore >= 20 ? 'badge-warning' : 'badge-critical'}`;
+
+    let html = '';
+
+    // Dual score display if both available
+    if (hasMoz && hasPR) {
+        html += '<div class="dual-scores">';
+        const mozColor = moz.domainAuthority >= 40 ? '#4CAF50' : moz.domainAuthority >= 20 ? '#FF9800' : '#F44336';
+        const prColor = pr.pageRank >= 5 ? '#4CAF50' : pr.pageRank >= 3 ? '#FF9800' : '#F44336';
+        html += `<div class="dual-card">
+            <div class="dual-label">Moz DA</div>
+            <div class="dual-score" style="color:${mozColor}">${moz.domainAuthority}<span style="font-size:14px;color:var(--text-muted)">/100</span></div>
+            <div class="dual-sub">${moz.daLabel}</div>
+        </div>`;
+        html += `<div class="dual-card">
+            <div class="dual-label">Open PageRank</div>
+            <div class="dual-score" style="color:${prColor}">${pr.pageRank}<span style="font-size:14px;color:var(--text-muted)">/10</span></div>
+            <div class="dual-sub">${pr.label}</div>
+        </div>`;
+        html += '</div>';
+    } else if (hasMoz) {
+        const mozColor = moz.domainAuthority >= 40 ? '#4CAF50' : moz.domainAuthority >= 20 ? '#FF9800' : '#F44336';
+        html += `<div style="text-align:center;padding:16px 0;">
+            <div style="font-size:48px;font-weight:700;font-family:var(--mono);color:${mozColor}">${moz.domainAuthority}<span style="font-size:24px;color:var(--text-muted)">/100</span></div>
+            <div style="font-size:14px;color:var(--text-secondary);margin-top:4px;">Moz Domain Authority</div>
+        </div>`;
+    } else {
+        const prColor = pr.pageRank >= 5 ? '#4CAF50' : pr.pageRank >= 3 ? '#FF9800' : '#F44336';
+        html += `<div style="text-align:center;padding:16px 0;">
+            <div style="font-size:48px;font-weight:700;font-family:var(--mono);color:${prColor}">${pr.pageRank}<span style="font-size:24px;color:var(--text-muted)">/10</span></div>
+            <div style="font-size:14px;color:var(--text-secondary);margin-top:4px;">Open PageRank</div>
+        </div>`;
+    }
+
+    // Moz metrics
+    if (hasMoz) {
+        html += '<div class="section-label">Moz Metrics</div>';
+        html += `<div class="bar-row"><div class="bar-label">Domain Authority</div><div class="bar-track"><div class="bar-fill" style="width:${moz.domainAuthority}%;background:${moz.domainAuthority >= 40 ? '#4CAF50' : moz.domainAuthority >= 20 ? '#FF9800' : '#F44336'}"></div></div><div class="bar-value">${moz.domainAuthority}</div></div>`;
+
+        if (moz.pageAuthority != null) {
+            html += `<div class="bar-row"><div class="bar-label">Page Authority</div><div class="bar-track"><div class="bar-fill" style="width:${moz.pageAuthority}%;background:${moz.pageAuthority >= 40 ? '#4CAF50' : moz.pageAuthority >= 20 ? '#FF9800' : '#F44336'}"></div></div><div class="bar-value">${moz.pageAuthority}</div></div>`;
+        }
+        if (moz.spamScore != null) {
+            const spamColor = moz.spamScore <= 30 ? 'good' : moz.spamScore <= 60 ? 'warning' : 'critical';
+            html += `<div class="metric-row"><span class="metric-label">Spam Score</span><span class="metric-value ${spamColor}">${moz.spamScore}% — ${moz.spamLabel}</span></div>`;
+        }
+        if (moz.linkingDomains != null) {
+            html += `<div class="metric-row"><span class="metric-label">Linking Root Domains</span><span class="metric-value">${moz.linkingDomains.toLocaleString()}</span></div>`;
+        }
+        if (moz.externalLinks != null) {
+            html += `<div class="metric-row"><span class="metric-label">External Backlinks</span><span class="metric-value">${moz.externalLinks.toLocaleString()}</span></div>`;
+        }
+    }
+
+    // PageRank metrics
+    if (hasPR) {
+        html += `<div class="section-label" style="margin-top:${hasMoz ? '16px' : '0'};">Open PageRank</div>`;
+        html += `<div class="bar-row"><div class="bar-label">PageRank</div><div class="bar-track"><div class="bar-fill" style="width:${pr.pageRank * 10}%;background:${pr.pageRank >= 5 ? '#4CAF50' : pr.pageRank >= 3 ? '#FF9800' : '#F44336'}"></div></div><div class="bar-value">${pr.pageRank}/10</div></div>`;
+        if (pr.rank) html += `<div class="metric-row"><span class="metric-label">Global Rank</span><span class="metric-value">#${pr.rank.toLocaleString()}</span></div>`;
+        if (pr.pageRankDecimal) html += `<div class="metric-row"><span class="metric-label">Decimal Score</span><span class="metric-value">${pr.pageRankDecimal}</span></div>`;
+    }
+
+    if (moz?.error && !hasMoz) {
+        html += `<div style="font-size:12px;color:var(--text-muted);margin-top:12px;">Moz API: ${moz.error}</div>`;
+    }
+
+    document.getElementById('daContent').innerHTML = html;
+}
+
+// ─── SSL CERTIFICATE & SAFETY ───────────────────────
+function renderSSL(ssl, safe) {
+    const sslBadge = document.getElementById('sslBadge');
+    let html = '';
+
+    // Safe Browsing status (most important — show first)
+    if (safe.safe === true) {
+        html += `<div style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;margin-bottom:16px;">
+            <div style="font-size:28px;">✅</div>
+            <div>
+                <div style="font-size:15px;font-weight:700;color:var(--success);">Site is Clean</div>
+                <div style="font-size:12px;color:var(--text-secondary);">No malware, phishing, or unwanted software detected by Google Safe Browsing</div>
+            </div>
+        </div>`;
+    } else if (safe.safe === false) {
+        html += `<div style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:10px;margin-bottom:16px;">
+            <div style="font-size:28px;">🚨</div>
+            <div>
+                <div style="font-size:15px;font-weight:700;color:var(--danger);">THREAT DETECTED</div>
+                <div style="font-size:12px;color:var(--danger);">${safe.summary}</div>
+                ${safe.threats?.map(t => `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">• ${t.label}</div>`).join('') || ''}
+            </div>
+        </div>`;
+    }
+
+    // SSL Grade
+    if (ssl.grade) {
+        const gradeColor = ssl.grade.startsWith('A') ? '#4CAF50' : ssl.grade === 'B' ? '#FF9800' : '#F44336';
+        html += `<div style="text-align:center;padding:16px 0;">
+            <div style="font-size:56px;font-weight:800;font-family:var(--mono);color:${gradeColor}">${ssl.grade}</div>
+            <div style="font-size:14px;color:var(--text-secondary);margin-top:4px;">SSL Labs Grade — ${ssl.gradeLabel}</div>
+        </div>`;
+
+        sslBadge.textContent = ssl.grade + (safe.safe === false ? ' ⚠️' : '');
+        sslBadge.className = `panel-badge ${ssl.grade.startsWith('A') && safe.safe !== false ? 'badge-good' : ssl.grade === 'B' ? 'badge-warning' : 'badge-critical'}`;
+    } else if (ssl.scanning) {
+        html += `<div style="text-align:center;padding:16px 0;color:var(--text-muted);">
+            <div class="spinner" style="width:24px;height:24px;border-width:3px;margin:0 auto 8px;"></div>
+            SSL scan in progress — may take 30-90 seconds
+        </div>`;
+        sslBadge.textContent = 'Scanning...';
+        sslBadge.className = 'panel-badge badge-info';
+    } else {
+        sslBadge.textContent = ssl.hasSSL ? 'Active' : 'Missing';
+        sslBadge.className = `panel-badge ${ssl.hasSSL ? 'badge-warning' : 'badge-critical'}`;
+    }
+
+    // Certificate details
+    if (ssl.grade || ssl.hasSSL) {
+        html += '<div class="section-label">Certificate Details</div>';
+        if (ssl.certSubject) html += `<div class="metric-row"><span class="metric-label">Subject</span><span class="metric-value">${ssl.certSubject}</span></div>`;
+        if (ssl.certIssuer) html += `<div class="metric-row"><span class="metric-label">Issuer</span><span class="metric-value">${ssl.certIssuer.replace(/^.*?CN=/, '')}</span></div>`;
+        if (ssl.certExpiry) {
+            const expiryColor = ssl.certExpired ? 'critical' : ssl.certDaysLeft < 30 ? 'warning' : 'good';
+            html += `<div class="metric-row"><span class="metric-label">Expires</span><span class="metric-value ${expiryColor}">${ssl.certExpiry}${ssl.certDaysLeft != null ? ` (${ssl.certDaysLeft} days)` : ''}</span></div>`;
+        }
+        if (ssl.protocols?.length > 0) {
+            html += `<div class="metric-row"><span class="metric-label">Protocols</span><span class="metric-value">${ssl.protocols.join(', ')}</span></div>`;
+        }
+        html += `<div class="metric-row"><span class="metric-label">HSTS</span><span class="metric-value ${ssl.supportsHSTS ? 'good' : 'warning'}">${ssl.supportsHSTS ? 'Enabled' : 'Not set'}</span></div>`;
+    }
+
+    // Vulnerabilities
+    if (ssl.hasVulnerabilities) {
+        html += '<div class="section-label" style="margin-top:16px;">Vulnerabilities</div>';
+        ssl.vulnerabilities.forEach(v => {
+            html += `<div class="check-row"><span class="check-icon">🚨</span><span class="check-text" style="color:var(--danger)">${v}</span></div>`;
+        });
+    }
+
+    // Errors / info
+    if (ssl.error && !ssl.grade) {
+        html += `<div style="font-size:12px;color:var(--text-muted);margin-top:8px;">${ssl.error}</div>`;
+    }
+    if (safe.error && safe.safe === null) {
+        html += `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Safe Browsing: ${safe.error}</div>`;
+    }
+
+    document.getElementById('sslContent').innerHTML = html;
+}
+
+// ─── KEYWORD GAP DISCOVERY ──────────────────────────
+function renderKeywordGaps(kwData) {
+    const badge = document.getElementById('kwGapBadge');
+
+    if (!kwData.keywordGaps?.length && !kwData.longTailIdeas?.length) {
+        badge.textContent = 'N/A';
+        document.getElementById('kwGapContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">No keyword suggestions available. Ensure the site audit completed successfully.</div>';
+        return;
+    }
+
+    const total = (kwData.keywordGaps?.length || 0) + (kwData.longTailIdeas?.length || 0);
+    badge.textContent = `${total} ideas`;
+
+    let html = '';
+
+    // Seed terms used
+    if (kwData.seedTerms?.length > 0) {
+        html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Based on page keywords: ${kwData.seedTerms.join(', ')}</div>`;
+    }
+
+    // Keyword gaps (single words — what the site COULD rank for)
+    if (kwData.keywordGaps?.length > 0) {
+        html += '<div class="section-label">Keyword Gaps — Missing Topics</div>';
+        html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">These related terms don\'t appear on the page but are semantically connected to the site\'s content.</div>';
+
+        const maxRelevance = kwData.keywordGaps[0]?.relevance || 1;
+        html += kwData.keywordGaps.map(k => {
+            const pct = Math.max(10, (k.relevance / maxRelevance) * 100);
+            return `<div class="kw-bar-row">
+                <div class="kw-word">${k.keyword}</div>
+                <div class="kw-bar"><div class="kw-bar-fill" style="width:${pct}%;background:linear-gradient(90deg, #FF5722, #FF9800)"></div></div>
+                <div class="kw-count" style="width:80px;">${k.source === 'industry' ? '🏷️ industry' : '🔗 related'}</div>
+            </div>`;
+        }).join('');
+    }
+
+    // Long-tail ideas (2-word phrases)
+    if (kwData.longTailIdeas?.length > 0) {
+        html += '<div class="section-label" style="margin-top:20px;">Long-Tail Phrase Ideas</div>';
+        html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Two-word phrases that could drive targeted traffic. Consider creating content around these.</div>';
+        html += '<div class="phrase-tags">';
+        html += kwData.longTailIdeas.map(p => `<div class="phrase-tag" style="background:rgba(255,87,34,.1);border-color:rgba(255,87,34,.2);color:#FF7043;">"${p.phrase}"</div>`).join('');
+        html += '</div>';
+    }
+
+    html += `<div class="opportunity-box" style="margin-top:16px"><p><strong>How to use these:</strong> Create dedicated pages or blog posts targeting these keyword gaps. Each new page is an additional opportunity to rank in Google for relevant searches in your area.</p></div>`;
+
+    document.getElementById('kwGapContent').innerHTML = html;
+}
+
+// ─── FINDINGS & OPPORTUNITIES ───────────────────────
+function renderFindings(report) {
+    let html = '';
+
+    if (report.topOpportunity) {
+        html += `<div class="opportunity-box" style="margin-bottom:16px"><p><strong>Top opportunity:</strong> ${report.topOpportunity}</p></div>`;
+    }
+
+    const findings = report.findings || [];
+    if (findings.length > 0) {
+        html += findings.map(f => `
+            <div class="finding-row">
+                <div class="finding-dot ${f.severity}"></div>
+                <div class="finding-text">${f.detail}</div>
+                <div class="finding-badge ${f.severity === 'critical' ? 'badge-critical' : f.severity === 'warning' ? 'badge-warning' : 'badge-good'}">${f.severity === 'critical' ? 'Critical' : f.severity === 'warning' ? 'Opportunity' : 'Good'}</div>
+            </div>
+        `).join('');
+    } else {
+        html += '<div style="color:var(--text-muted);padding:12px 0;">No AI-generated findings available</div>';
+    }
+
+    document.getElementById('findingsContent').innerHTML = html;
+}
+
+// ─── TECHNOLOGY & PLATFORM ──────────────────────────
+function renderTechStack(audit) {
+    const techBadge = document.getElementById('techStackBadge');
+    const techs = audit.technology || [];
+
+    if (!audit.domain || techs.length === 0) {
+        techBadge.textContent = 'Unknown';
+        document.getElementById('techStackContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Could not detect technology stack</div>';
+        return;
+    }
+
+    techBadge.textContent = techs[0] || 'Detected';
+    techBadge.className = 'panel-badge badge-info';
+
+    let html = '<div class="section-label">Platform & Frameworks</div>';
+    html += '<div class="tech-tags">';
+    html += techs.map((t, i) => `<div class="tech-tag ${i === 0 ? 'primary' : ''}">${t}</div>`).join('');
+    html += '</div>';
+
+    // Analytics & tracking
+    html += '<div class="section-label" style="margin-top:16px;">Analytics & Tracking</div>';
+    html += checkRowHtml('Google Analytics / GTM', audit.hasGoogleAnalytics, audit.hasGoogleTagManager ? 'GTM detected' : audit.hasGoogleAnalytics ? 'GA detected' : 'Not found');
+    html += checkRowHtml('Facebook Pixel', audit.hasFacebookPixel, audit.hasFacebookPixel ? 'Detected' : 'Not found');
+    html += checkRowHtml('Hotjar / Heatmaps', audit.hasHotjar, audit.hasHotjar ? 'Detected' : 'Not found');
+    html += checkRowHtml('Live Chat', audit.hasLiveChat, audit.hasLiveChat ? 'Detected' : 'Not found');
+    html += checkRowHtml('ADA / Accessibility Overlay', audit.hasADA, audit.hasADA ? 'Detected' : 'Not found');
+
+    // Page weight indicators
+    html += '<div class="section-label" style="margin-top:16px;">Page Composition</div>';
+    html += `<div class="metric-row"><span class="metric-label">External JS Files</span><span class="metric-value ${audit.externalJsCount > 15 ? 'warning' : ''}">${audit.externalJsCount || 0}</span></div>`;
+    html += `<div class="metric-row"><span class="metric-label">External CSS Files</span><span class="metric-value">${audit.externalCssCount || 0}</span></div>`;
+    html += `<div class="metric-row"><span class="metric-label">Inline Styles</span><span class="metric-value ${audit.inlineStyleCount > 50 ? 'warning' : ''}">${audit.inlineStyleCount || 0}</span></div>`;
+    html += `<div class="metric-row"><span class="metric-label">Inline Scripts</span><span class="metric-value">${audit.inlineScriptCount || 0}</span></div>`;
+    html += `<div class="metric-row"><span class="metric-label">Lazy Loading</span><span class="metric-value ${audit.hasLazyLoading ? 'good' : ''}">${audit.hasLazyLoading ? 'Enabled' : 'Not detected'}</span></div>`;
+
+    // Link analysis
+    html += '<div class="section-label" style="margin-top:16px;">Link Structure</div>';
+    html += `<div class="metric-row"><span class="metric-label">Internal Links</span><span class="metric-value">${audit.internalLinkCount || 0}</span></div>`;
+    html += `<div class="metric-row"><span class="metric-label">External Links</span><span class="metric-value">${audit.externalLinkCount || 0}</span></div>`;
+    html += `<div class="metric-row"><span class="metric-label">Unique External Domains</span><span class="metric-value">${audit.uniqueExternalDomains || 0}</span></div>`;
+
+    if (audit.topExternalDomains?.length > 0) {
+        html += '<div style="margin-top:8px;font-size:12px;color:var(--text-muted);">Links to: ' +
+            audit.topExternalDomains.slice(0, 6).join(', ') + '</div>';
+    }
+
+    document.getElementById('techStackContent').innerHTML = html;
+}
+
+// ─── KEYWORD & CONTENT INTELLIGENCE ─────────────────
+function renderKeywords(audit) {
+    const kwBadge = document.getElementById('keywordBadge');
+
+    if (!audit.domain || !audit.topKeywords?.length) {
+        kwBadge.textContent = 'N/A';
+        document.getElementById('keywordContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Content analysis unavailable</div>';
+        return;
+    }
+
+    kwBadge.textContent = `${audit.topKeywords.length} keywords`;
+    kwBadge.className = 'panel-badge badge-info';
+
+    let html = '';
+
+    // Readability gauge
+    const rScore = audit.readabilityScore || 0;
+    const rColor = rScore >= 60 ? 'var(--success)' : rScore >= 40 ? 'var(--warn)' : 'var(--danger)';
+    html += `<div class="readability-gauge">
+        <div class="readability-score-big" style="color:${rColor}">${rScore}</div>
+        <div class="readability-info">
+            <div class="readability-level">${audit.readabilityLevel || 'Unknown'}</div>
+            <div class="readability-detail">
+                ${audit.avgWordsPerSentence || 0} words/sentence · ${audit.sentenceCount || 0} sentences · ${audit.wordCount || 0} total words
+                <br>Recommended for most audiences: 60-70 (8th-9th grade level)
+            </div>
+        </div>
+    </div>`;
+
+    // Top keywords
+    html += '<div class="section-label">Top Keywords by Frequency</div>';
+    const maxCount = audit.topKeywords[0]?.count || 1;
+    html += audit.topKeywords.map(k => {
+        const pct = (k.count / maxCount) * 100;
+        return `<div class="kw-bar-row">
+            <div class="kw-word">${k.word}</div>
+            <div class="kw-bar"><div class="kw-bar-fill" style="width:${pct}%"></div></div>
+            <div class="kw-count">${k.count}× (${k.density}%)</div>
+        </div>`;
+    }).join('');
+
+    // Key phrases (bigrams)
+    if (audit.topPhrases?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Top 2-Word Phrases</div>';
+        html += '<div class="phrase-tags">';
+        html += audit.topPhrases.map(p => `<div class="phrase-tag">"${p.phrase}" ×${p.count}</div>`).join('');
+        html += '</div>';
+    }
+
+    // H2 headings found
+    if (audit.h2Texts?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">Page Headings (H2)</div>';
+        html += '<ul class="h2-list">';
+        html += audit.h2Texts.map(h => `<li>${h}</li>`).join('');
+        html += '</ul>';
+    }
+
+    // Content depth stats
+    html += '<div class="section-label" style="margin-top:16px;">Content Structure</div>';
+    html += `<div class="metric-row"><span class="metric-label">Heading Tags</span><span class="metric-value">H1: ${audit.h1Count || 0} · H2: ${audit.h2Count || 0} · H3: ${audit.h3Count || 0} · H4: ${audit.h4Count || 0}</span></div>`;
+
+    // Duplicate meta warnings
+    if (audit.duplicateTitles) {
+        html += `<div class="opportunity-box" style="margin-top:12px;border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08)"><p style="color:var(--danger)"><strong>Duplicate title tags detected!</strong> Multiple &lt;title&gt; tags confuse search engines. Fix immediately.</p></div>`;
+    }
+    if (audit.duplicateDescriptions) {
+        html += `<div class="opportunity-box" style="margin-top:8px;border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08)"><p style="color:var(--danger)"><strong>Duplicate meta descriptions detected!</strong> Only one meta description should exist per page.</p></div>`;
+    }
+
+    document.getElementById('keywordContent').innerHTML = html;
+}
+
+// ─── SECURITY & HEADERS ─────────────────────────────
+function renderSecurity(audit) {
+    const secBadge = document.getElementById('secBadge');
+
+    if (!audit.domain || !audit.securityHeaders) {
+        secBadge.textContent = 'N/A';
+        document.getElementById('securityContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Security data unavailable</div>';
+        return;
+    }
+
+    const sh = audit.securityHeaders;
+    const score = audit.securityScore || 0;
+
+    secBadge.textContent = score >= 4 ? 'Strong' : score >= 2 ? 'Partial' : 'Weak';
+    secBadge.className = `panel-badge ${score >= 4 ? 'badge-good' : score >= 2 ? 'badge-warning' : 'badge-critical'}`;
+
+    let html = `<div style="text-align:center;padding:12px 0 16px;">
+        <div style="font-size:36px;font-weight:700;font-family:var(--mono);color:${score >= 4 ? 'var(--success)' : score >= 2 ? 'var(--warn)' : 'var(--danger)'}">${score}<span style="font-size:18px;color:var(--text-muted)">/5</span></div>
+        <div style="font-size:13px;color:var(--text-secondary);">Security Headers Score</div>
+    </div>`;
+
+    html += checkRowHtml('Content-Security-Policy', sh.contentSecurityPolicy, sh.contentSecurityPolicy ? 'Present' : 'Missing');
+    html += checkRowHtml('X-Frame-Options', !!sh.xFrameOptions, sh.xFrameOptions || 'Missing');
+    html += checkRowHtml('X-Content-Type-Options', sh.xContentTypeOptions === 'nosniff', sh.xContentTypeOptions || 'Missing');
+    html += checkRowHtml('Strict-Transport-Security (HSTS)', sh.strictTransportSecurity, sh.strictTransportSecurity ? 'Enabled' : 'Missing');
+    html += checkRowHtml('Referrer-Policy', !!sh.referrerPolicy, sh.referrerPolicy || 'Missing');
+    html += checkRowHtml('Permissions-Policy', sh.permissionsPolicy, sh.permissionsPolicy ? 'Present' : 'Missing');
+
+    html += checkRowHtml('SSL / HTTPS', audit.ssl, audit.ssl ? 'Active' : 'Not secure');
+
+    if (audit.hasRedirect) {
+        html += '<div class="section-label" style="margin-top:16px;">Redirect Chain</div>';
+        audit.redirectChain.forEach(r => {
+            html += `<div class="metric-row"><span class="metric-label" style="word-break:break-all;">${r.from}</span><span class="metric-value">→</span></div>`;
+            html += `<div style="padding:4px 0 8px 0;font-size:12px;color:var(--accent);word-break:break-all;">${r.to}</div>`;
+        });
+    }
+
+    // Twitter cards (fits well here in the "sharing/social" context)
+    html += '<div class="section-label" style="margin-top:16px;">Social Sharing Tags</div>';
+    html += checkRowHtml('Twitter Card', audit.hasTwitterCard, audit.twitterCardType || (audit.hasTwitterCard ? 'Present' : 'Missing'));
+    html += checkRowHtml('Twitter Title', audit.hasTwitterTitle, audit.hasTwitterTitle ? 'Present' : 'Missing');
+    html += checkRowHtml('Twitter Image', audit.hasTwitterImage, audit.hasTwitterImage ? 'Present' : 'Missing');
+
+    if (score < 3) {
+        html += `<div class="opportunity-box" style="margin-top:16px"><p><strong>Security headers are weak.</strong> Missing headers like CSP and HSTS leave the site vulnerable to attacks and may impact trust signals for search engines.</p></div>`;
+    }
+
+    document.getElementById('securityContent').innerHTML = html;
+}
+
+// ─── HELPERS ────────────────────────────────────────
+function checkRowHtml(label, pass, detail, warnType) {
+    const icon = pass ? '✅' : (warnType === 'warn' ? '⚠️' : '❌');
+    const color = pass ? 'var(--success)' : (warnType === 'warn' ? 'var(--warn)' : 'var(--danger)');
+    return `<div class="check-row">
+        <span class="check-icon">${icon}</span>
+        <span class="check-text">${label}</span>
+        <span class="check-status" style="color:${color}">${detail}</span>
+    </div>`;
+}
+
+function gbpRowHtml(label, value, status) {
+    let cls = '';
+    if (status === 'good') cls = 'good';
+    else if (status === 'critical') cls = 'critical';
+    else if (status === 'warning') cls = 'warning';
+    return `<div class="gbp-row"><div class="gbp-label">${label}</div><div class="gbp-value ${cls}">${value}</div></div>`;
+}
+
+// ─── EXPORT ─────────────────────────────────────────
+function exportReport() {
+    const { domain, businessName, report, lighthouse, siteAudit: audit, pageRank: pr, places } = scanData;
+    const mobile = lighthouse?.mobile || {};
+    const biz = places?.locations?.[0] || places?.business || {};
+
+    let text = `SEO INTELLIGENCE REPORT\n`;
+    text += `${'═'.repeat(50)}\n`;
+    text += `Entity: ${businessName || domain}\n`;
+    text += `URL: ${domain}\n`;
+    text += `Date: ${new Date().toLocaleDateString()}\n\n`;
+
+    if (report) {
+        text += `OVERALL SCORE: ${report.overallScore}/100 (Grade: ${report.grade})\n`;
+        text += `${report.headline}\n\n`;
+
+        if (report.pillarScores) {
+            text += `PILLAR SCORES:\n`;
+            const p = report.pillarScores;
+            text += `  Page Speed:  ${p.pageSpeed}/100\n`;
+            text += `  On-Page SEO: ${p.onPageSeo}/100\n`;
+            text += `  Local/GBP:   ${p.localGbp}/100\n`;
+            text += `  Backlinks:   ${p.backlinks}/100\n`;
+            text += `  Technical:   ${p.technical}/100\n\n`;
+        }
+    }
+
+    text += `PERFORMANCE:\n`;
+    text += `  Mobile:  ${mobile.performance ?? 'N/A'}/100\n`;
+    text += `  Desktop: ${lighthouse?.desktop?.performance ?? 'N/A'}/100\n`;
+    if (mobile.lcp) text += `  LCP: ${mobile.lcp}\n`;
+    if (mobile.cls) text += `  CLS: ${mobile.cls}\n`;
+    text += '\n';
+
+    if (audit?.domain) {
+        text += `ON-PAGE SEO:\n`;
+        text += `  SSL: ${audit.ssl ? 'Yes' : 'No'}\n`;
+        text += `  Title: "${audit.titleTag || 'Missing'}" (${audit.titleLength || 0} chars)\n`;
+        text += `  Meta Desc: ${audit.metaDescription ? `"${audit.metaDescription.slice(0,80)}..." (${audit.metaDescriptionLength} chars)` : 'Missing'}\n`;
+        text += `  H1: "${audit.h1 || 'Missing'}" (${audit.h1Count || 0} H1 tags)\n`;
+        text += `  Schema: ${audit.hasLocalBusinessSchema ? 'LocalBusiness' : audit.hasSchemaMarkup ? 'Generic' : 'None'}\n`;
+        text += `  Sitemap: ${audit.hasSitemap ? `Yes (${audit.sitemapUrlCount} URLs)` : 'Missing'}\n`;
+        text += `  Alt Text: ${audit.altTextCoverage || 0}% coverage\n`;
+        text += `  Word Count: ${audit.wordCount || 'N/A'}\n\n`;
+    }
+
+    if (biz.name) {
+        text += `GOOGLE BUSINESS PROFILE:\n`;
+        text += `  Name: ${biz.name}\n`;
+        text += `  Rating: ${biz.rating || 'N/A'} (${biz.reviewCount || 0} reviews)\n`;
+        text += `  Category: ${biz.primaryCategory || 'Unknown'}\n\n`;
+    }
+
+    if (pr?.pageRank != null) {
+        text += `DOMAIN AUTHORITY: ${pr.pageRank}/10 (${pr.label})\n\n`;
+    }
+
+    if (audit?.technology?.length > 0) {
+        text += `TECHNOLOGY: ${audit.technology.join(', ')}\n\n`;
+    }
+
+    if (audit?.readabilityScore != null) {
+        text += `READABILITY: ${audit.readabilityScore}/100 (${audit.readabilityLevel})\n`;
+        text += `  ${audit.wordCount} words · ${audit.sentenceCount} sentences · ${audit.avgWordsPerSentence} words/sentence\n\n`;
+    }
+
+    if (audit?.topKeywords?.length > 0) {
+        text += `TOP KEYWORDS:\n`;
+        audit.topKeywords.slice(0, 10).forEach(k => {
+            text += `  ${k.word}: ${k.count}× (${k.density}%)\n`;
+        });
+        text += '\n';
+    }
+
+    if (audit?.securityScore != null) {
+        text += `SECURITY HEADERS: ${audit.securityScore}/5\n\n`;
+    }
+
+    const moz = scanData.moz || {};
+    if (moz.domainAuthority != null) {
+        text += `MOZ DOMAIN AUTHORITY: ${moz.domainAuthority}/100 (${moz.daLabel})\n`;
+        if (moz.pageAuthority != null) text += `  Page Authority: ${moz.pageAuthority}/100\n`;
+        if (moz.spamScore != null) text += `  Spam Score: ${moz.spamScore}% (${moz.spamLabel})\n`;
+        if (moz.linkingDomains != null) text += `  Linking Domains: ${moz.linkingDomains.toLocaleString()}\n`;
+        if (moz.externalLinks != null) text += `  External Backlinks: ${moz.externalLinks.toLocaleString()}\n`;
+        text += '\n';
+    }
+
+    const safe = scanData.safeBrowsing || {};
+    if (safe.safe != null) {
+        text += `SAFE BROWSING: ${safe.safe ? 'CLEAN ✓' : 'THREATS DETECTED ⚠'}\n`;
+        if (!safe.safe && safe.threats?.length) {
+            safe.threats.forEach(t => { text += `  ⚠ ${t.label}\n`; });
+        }
+        text += '\n';
+    }
+
+    const ssl = scanData.ssl || {};
+    if (ssl.grade) {
+        text += `SSL GRADE: ${ssl.grade} (${ssl.gradeLabel})\n`;
+        if (ssl.certExpiry) text += `  Expires: ${ssl.certExpiry} (${ssl.certDaysLeft} days)\n`;
+        if (ssl.protocols?.length) text += `  Protocols: ${ssl.protocols.join(', ')}\n`;
+        text += '\n';
+    }
+
+    const kwData = scanData.keywordSuggestions || {};
+    if (kwData.keywordGaps?.length > 0) {
+        text += `KEYWORD GAPS (${kwData.keywordGaps.length} found):\n`;
+        kwData.keywordGaps.slice(0, 10).forEach(k => {
+            text += `  • ${k.keyword} (${k.source})\n`;
+        });
+        text += '\n';
+    }
+
+    if (report?.findings?.length > 0) {
+        text += `KEY FINDINGS:\n`;
+        report.findings.forEach(f => {
+            text += `  [${f.severity.toUpperCase()}] ${f.detail}\n`;
+        });
+        text += '\n';
+    }
+
+    if (report?.topOpportunity) {
+        text += `TOP OPPORTUNITY:\n  ${report.topOpportunity}\n`;
+    }
+
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.btn-export');
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = '📋 Copy Report'; }, 2000);
+    });
+}
+
+// ─── RESET ──────────────────────────────────────────
+function resetScan() {
+    scanData = {};
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('inputUrl').value = '';
+    document.getElementById('inputName').value = '';
+    document.getElementById('inputCity').value = '';
+    document.getElementById('inputState').value = '';
+    document.getElementById('inputIndustry').selectedIndex = 0;
+    // Reset progress steps
+    ['lighthouse','audit','pagerank','places','report','moz','safe','ssl','keywords'].forEach(id => {
+        const el = document.getElementById('step-' + id);
+        if (el) {
+            el.className = 'progress-step';
+            el.querySelector('.progress-icon').textContent = '⏳';
+        }
+    });
+    setProgress(0);
+}
+</script>
+</body>
+</html>

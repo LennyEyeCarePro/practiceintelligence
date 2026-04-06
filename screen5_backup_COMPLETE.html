@@ -1,0 +1,1015 @@
+<!-- ═══════════════════════════════════════════════════════════
+     SCREEN 5 — BACKUP (saved before gap-selling redesign)
+     Date: 2026-04-05
+     Contains: HTML, CSS, and JS for the original results screen
+     ═══════════════════════════════════════════════════════════ -->
+
+<!-- ═══ CSS (lines 896-1094 of index.html) ═══ -->
+<style>
+.results-hero {
+    text-align: center;
+    padding: 28px 20px;
+    background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 50%, var(--brand-light) 100%);
+    border-radius: var(--radius-lg);
+    color: #fff;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.results-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(0,201,167,.15) 0%, transparent 60%);
+}
+
+.results-hero > * { position: relative; }
+
+.results-score-big {
+    font-family: var(--mono);
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.results-score-label {
+    font-size: 13px;
+    font-weight: 500;
+    opacity: .8;
+    margin-bottom: 10px;
+}
+
+.results-score-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    padding: 0 12px;
+}
+
+.score-sub-item {
+    text-align: center;
+    min-width: 70px;
+}
+
+.score-sub-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,.15);
+    margin-bottom: 4px;
+    overflow: hidden;
+}
+
+.score-sub-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width .6s ease;
+}
+
+.score-sub-label {
+    font-size: 10px;
+    opacity: .7;
+    letter-spacing: .3px;
+}
+
+.score-sub-value {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.results-tier-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.results-section {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+}
+
+.results-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--brand-dark);
+    margin-bottom: 12px;
+}
+
+.narrative-body {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-primary);
+}
+.narrative-body p {
+    margin-bottom: 12px;
+}
+.narrative-body p:last-child {
+    margin-bottom: 0;
+}
+.narrative-body strong {
+    color: var(--brand-dark);
+}
+.narrative-body em {
+    color: var(--text-secondary);
+}
+
+.results-insight {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--surface-alt);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.results-insight:last-child { border-bottom: none; }
+
+.insight-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+.insight-icon-red { background: #FEE2E2; }
+.insight-icon-amber { background: #FEF3C7; }
+.insight-icon-green { background: #D1FAE5; }
+.insight-icon-blue { background: #DBEAFE; }
+
+.insight-text strong { color: var(--text); }
+.insight-text { color: var(--text-secondary); }
+
+.results-cta {
+    text-align: center;
+    padding: 28px 20px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    margin-top: 8px;
+}
+
+.results-cta-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--brand-dark);
+    margin-bottom: 4px;
+}
+
+.results-cta-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.btn-cta-calendly {
+    display: inline-block;
+    padding: 14px 32px;
+    font-family: var(--font);
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), #00A389);
+    border-radius: 10px;
+    text-decoration: none;
+    transition: transform .15s, box-shadow .15s;
+}
+
+.btn-cta-calendly:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0,201,167,.35);
+}
+
+.results-footer {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+</style>
+
+<!-- ═══ HTML (lines 1625-1736 of index.html) ═══ -->
+    <!-- ══════════════════════════════════════════════════════
+         SCREEN 5 — PERSONALIZED RESULTS
+         ══════════════════════════════════════════════════════ -->
+    <div id="screen5" class="screen">
+
+        <button class="btn-back" onclick="goBack(5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+
+        <!-- ═══ SECTION 1: THE GROWTH SCORE ═══ -->
+        <div class="results-hero" id="resultsHero">
+            <div class="results-score-big" id="resultsScoreBig">--</div>
+            <div class="results-score-label">Practice Growth Score <span style="font-weight:400;opacity:.7">out of 100</span></div>
+            <div class="results-score-breakdown" id="resultsScoreBreakdown"></div>
+            <div class="results-tier-badge" id="resultsTierBadge"></div>
+        </div>
+
+        <!-- ═══ SECTION 2: THE REVENUE GAP ═══ -->
+        <div class="results-section" id="resultsRevenueGap">
+            <div class="results-section-title" style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:18px;">💰</span> Estimated Monthly Revenue Gap
+            </div>
+            <div id="revenueGapContent">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+
+        <!-- ═══ SECTION 3: CORE AUDIT — THE MALIGNANCIES ═══ -->
+        <div class="results-section" id="resultsCoreAudit">
+            <div class="results-section-title" style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:18px;">🔍</span> What We Found
+            </div>
+
+            <!-- 3A: Local Visibility (GBP + Map Pack + Competitors) -->
+            <div class="audit-panel" id="auditLocalVisibility">
+                <div class="audit-panel-header">
+                    <span class="audit-panel-icon">📍</span>
+                    <span class="audit-panel-title">Local Visibility</span>
+                    <span class="audit-panel-badge" id="localVisibilityBadge"></span>
+                </div>
+                <div class="audit-panel-body" id="localVisibilityBody">
+                    <!-- GBP summary, competitor chart, map pack status -->
+                </div>
+            </div>
+
+            <!-- 3B: SEO Health (Mobile speed, core web vitals) -->
+            <div class="audit-panel" id="auditSeoHealth">
+                <div class="audit-panel-header">
+                    <span class="audit-panel-icon">⚡</span>
+                    <span class="audit-panel-title">Website & SEO Health</span>
+                    <span class="audit-panel-badge" id="seoHealthBadge"></span>
+                </div>
+                <div class="audit-panel-body" id="seoHealthBody">
+                    <!-- Mobile speed, search rankings -->
+                </div>
+            </div>
+
+            <!-- 3C: Patient Conversion / UX -->
+            <div class="audit-panel" id="auditPatientConversion">
+                <div class="audit-panel-header">
+                    <span class="audit-panel-icon">🎯</span>
+                    <span class="audit-panel-title">Patient Conversion</span>
+                    <span class="audit-panel-badge" id="patientConversionBadge"></span>
+                </div>
+                <div class="audit-panel-body" id="patientConversionBody">
+                    <!-- Scheduling, missing services, site experience -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ SECTION 3.5: STRATEGIC REFLECTION ═══ -->
+        <div class="results-section" id="resultsReflection" style="display:none;">
+        </div>
+
+        <!-- Hidden SEO data containers (for internal data capture / Sheets — not shown to client) -->
+        <div id="seoIntelligenceSection" style="display:none;">
+            <div class="seo-card" id="seoScoreHero" style="display:none;">
+                <div class="seo-hero-row">
+                    <div class="seo-hero-score" id="seoOverallScore">--</div>
+                    <div class="seo-hero-right">
+                        <div class="seo-badge" id="seoGradeBadge">—</div>
+                        <div class="seo-hero-headline" id="seoHeadline"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="seo-card" id="seoBreakdownBars" style="display:none;"></div>
+            <div class="seo-card" id="seoMobileDesktop" style="display:none;"></div>
+            <div class="seo-card" id="seoGbpCard" style="display:none;"></div>
+            <div class="seo-card" id="seoChecklist" style="display:none;"></div>
+            <div class="seo-card" id="seoSearchRankings" style="display:none;">
+                <div style="padding:12px 0;color:#888;font-size:14px;text-align:center">
+                    <div class="seo-rankings-loading" style="display:none" id="rankingsLoading">
+                        <div style="font-size:13px;color:#378ADD;font-weight:500">Checking Google rankings...</div>
+                        <div style="font-size:12px;color:#aaa;margin-top:4px">This may take up to 90 seconds</div>
+                    </div>
+                    <div id="rankingsContent">Search ranking data will appear here</div>
+                </div>
+            </div>
+            <div class="seo-card" id="seoCompetitors" style="display:none;"></div>
+            <div class="seo-card" id="seoFindings" style="display:none;"></div>
+            <div id="seoOpportunityBox" style="display:none;"></div>
+        </div>
+
+        <!-- ═══ SECTION 4: THE PATH FORWARD ═══ -->
+        <div class="results-cta">
+            <div class="results-cta-text" id="ctaTitle">Ready to close these gaps?</div>
+            <div class="results-cta-sub" id="ctaSub">Book a free 30-minute strategy session and we'll walk through your results together.</div>
+            <a class="btn-cta-calendly" href="https://calendly.com/eyecarepro-business-development/30-min-consultation-with-eyecarepro" target="_blank" id="calendlyLink">Book Your Strategy Session</a>
+        </div>
+
+        <div class="results-footer">
+            &copy; 2026 EyeCarePro &bull; <a href="https://www.eyecarepro.net" target="_blank" style="color:var(--text-muted)">eyecarepro.net</a>
+        </div>
+    </div>
+
+<!-- ═══ JS (lines 3112-3800 of index.html) ═══ -->
+<script>
+// ─── SCREEN 5 — RESULTS ────────────────────────────────────
+function showResults() {
+    userAnswers.freetext = document.getElementById('q4Freetext').value.trim();
+
+    // Apply user corrections before rendering
+    applyUserCorrections(dossier);
+
+    const d = dossier;
+    const isECP = d.digital?.isEyeCarePro;
+    const score = d.scores?.overall || 0;
+    const name = d.practice?.name || 'Your practice';
+
+    // ═══ SECTION 1: THE GROWTH SCORE ═══
+    const heroEl = document.getElementById('resultsHero');
+    if (isECP) {
+        heroEl.innerHTML = `
+            <div style="font-size:20px;font-weight:700;color:var(--brand-blue);margin-bottom:6px">Practice Growth Assessment</div>
+            <div style="font-size:14px;color:var(--text-secondary)">${name} — Account Review</div>
+        `;
+    } else {
+        document.getElementById('resultsScoreBig').textContent = score;
+        document.getElementById('resultsTierBadge').textContent = d.recommendedTier || 'Schedule a call';
+
+        // Sub-score breakdown
+        const subScores = [
+            { label: 'Digital Presence', value: d.scores?.digitalPresence || 0, weight: '25%' },
+            { label: 'Content', value: d.scores?.contentQuality || 0, weight: '20%' },
+            { label: 'Patient Exp', value: d.scores?.patientExperience || 0, weight: '30%' },
+            { label: 'Marketing', value: d.scores?.marketingMaturity || 0, weight: '25%' },
+        ];
+        const breakdownEl = document.getElementById('resultsScoreBreakdown');
+        breakdownEl.innerHTML = subScores.map(s => {
+            const color = s.value >= 70 ? '#4ade80' : s.value >= 40 ? '#facc15' : '#f87171';
+            return `<div class="score-sub-item">
+                <div class="score-sub-value" style="color:${color}">${s.value}</div>
+                <div class="score-sub-bar"><div class="score-sub-fill" style="width:${s.value}%;background:${color}"></div></div>
+                <div class="score-sub-label">${s.label} (${s.weight})</div>
+            </div>`;
+        }).join('');
+    }
+
+    // ═══ SECTION 2: THE REVENUE GAP ═══
+    renderRevenueGap(d);
+
+    // ═══ SECTION 3: CORE AUDIT (pre-fill from dossier data, SEO data fills in when ready) ═══
+    renderCoreAuditFromDossier(d);
+
+    // If SEO data is already loaded (fired early), render the audit panels now
+    if (seoReportData) {
+        renderClientAuditPanels(seoReportData);
+    }
+
+    // ═══ SECTION 3.5: STRATEGIC REFLECTION ═══
+    const reflectionEl = document.getElementById('resultsReflection');
+    const reflectionQ = generateReflection(d);
+    if (reflectionQ) {
+        reflectionEl.style.display = '';
+        reflectionEl.innerHTML = `
+            <div style="background:var(--surface-alt);border-radius:12px;padding:20px 24px;border-left:4px solid var(--brand);">
+                <div style="font-size:13px;font-weight:600;color:var(--brand);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">A Question Worth Considering</div>
+                <div style="font-size:15px;color:var(--text);line-height:1.6;font-style:italic">${reflectionQ}</div>
+            </div>
+        `;
+    } else {
+        reflectionEl.style.display = 'none';
+    }
+
+    // ═══ SECTION 4: THE PATH FORWARD (CTA) ═══
+    const ctaTitle = document.getElementById('ctaTitle');
+    const ctaSub = document.getElementById('ctaSub');
+    if (isECP) {
+        ctaTitle.textContent = 'Let\'s optimize your program together';
+        ctaSub.textContent = 'Book a quick review with your growth team and we\'ll walk through these opportunities.';
+    } else if (d.digital?.isCompetitorClient) {
+        ctaTitle.textContent = 'Ready to see what a strategic partner looks like?';
+        ctaSub.textContent = 'Book a free 30-minute consultation. We\'ll walk through your results and show you what\'s possible.';
+    } else if (isOphthalmologyPractice(d)) {
+        const tier = d.recommendedTier || '';
+        if (tier.includes('Platinum')) {
+            ctaTitle.textContent = 'Ready to own your market?';
+            ctaSub.textContent = 'Book a complimentary consultation. We\'ll discuss how EyeMDPRO Platinum builds the brand presence that multi-location and aesthetics-driven practices need.';
+        } else if (tier.includes('Gold')) {
+            ctaTitle.textContent = 'Let\'s talk about driving surgical volume';
+            ctaSub.textContent = 'Book a complimentary consultation. We\'ll show you how EyeMDPRO Gold helps LASIK and refractive practices turn online visibility into self-pay consultations.';
+        } else {
+            ctaTitle.textContent = 'Let\'s strengthen your referral presence';
+            ctaSub.textContent = 'Book a complimentary consultation. We\'ll discuss how EyeMDPRO Silver builds the medical-grade online presence that earns referring doctor confidence.';
+        }
+    } else {
+        ctaTitle.textContent = 'Let\'s discuss what we found';
+        ctaSub.textContent = 'Book a free 30-minute strategy session and we\'ll walk through your results together.';
+    }
+
+    showScreen(5);
+    submitToSheets();
+
+    // SEO Intelligence now fires early (in onApifyComplete), so by the time
+    // the user reaches this screen, data is usually already loaded.
+    // Only fire here as a safety fallback if it hasn't started yet.
+    if (!seoReportData) {
+        const seoUrl = userAnswers.url || dossier?.meta?.url || '';
+        if (seoUrl && !dossier?.digital?.isEyeCarePro) {
+            runSeoIntelligence(seoUrl);
+        }
+    }
+}
+
+// ─── SECTION 2: Revenue Gap ─────────────────────────────────
+function renderRevenueGap(d) {
+    const container = document.getElementById('revenueGapContent');
+    const isECP = d.digital?.isEyeCarePro;
+    const providerCount = d.doctors?.length || 1;
+    const serviceMarketing = d.services?.serviceMarketing || [];
+    const undermarketed = d.services?.undermarketed || [];
+
+    // ─── New approach: Revenue opportunity based on MARKETING QUALITY of existing services ───
+    // Not "you're missing these services" but "you could earn more by promoting what you already do"
+    const opportunities = [];
+    let monthlyLow = 0;
+    let monthlyHigh = 0;
+
+    // Revenue estimates for undermarketed services (services they offer but don't promote well)
+    const revenueMap = {
+        'dry eye': { low: 1500, high: 5000, advice: 'Dedicated landing pages with symptom quizzes and treatment details drive 3x more bookings' },
+        'lasik': { low: 4000, high: 15000, advice: 'LASIK pages with pricing transparency, candidacy tools, and testimonials convert at 2-4x' },
+        'cataract': { low: 3000, high: 12000, advice: 'Cataract pages with IOL comparison tools and patient stories build surgical confidence' },
+        'premium': { low: 5000, high: 20000, advice: 'Dedicated premium IOL pages help patients understand value beyond insurance coverage' },
+        'myopia': { low: 1200, high: 4000, advice: 'Parent-focused content with FAQ and comparison charts drives myopia management consults' },
+        'lipiflow': { low: 1000, high: 3500, advice: 'Treatment-specific pages with before/after results and process explanations boost conversions' },
+        'optilight': { low: 1000, high: 3500, advice: 'IPL treatment pages with patient results perform best when they address candidacy and recovery' },
+        'glaucoma': { low: 2000, high: 8000, advice: 'Educational glaucoma pages that explain treatment options help retain patients long-term' },
+        'retina': { low: 2000, high: 8000, advice: 'Retina service pages with condition-specific content attract referral traffic' },
+        'contact': { low: 800, high: 2500, advice: 'Specialty contact lens pages attract patients willing to pay premium for scleral or ortho-k' },
+        'vision therapy': { low: 800, high: 3000, advice: 'Vision therapy pages targeting parents and athletes expand your patient base beyond routine care' },
+        'oculoplastic': { low: 2000, high: 10000, advice: 'Cosmetic and functional eyelid pages with gallery images convert high-value patients' },
+    };
+
+    for (const svc of undermarketed) {
+        const svcLower = svc.toLowerCase();
+        for (const [key, rev] of Object.entries(revenueMap)) {
+            if (svcLower.includes(key)) {
+                monthlyLow += rev.low;
+                monthlyHigh += rev.high;
+                opportunities.push({ label: svc, ...rev, type: 'undermarketed' });
+                break;
+            }
+        }
+    }
+
+    // Infrastructure gaps still matter
+    if (!d.digital?.scheduling?.hasOnlineScheduling) {
+        monthlyLow += 2000; monthlyHigh += 6000;
+        opportunities.push({ label: 'Online Scheduling', low: 2000, high: 6000, type: 'infrastructure', advice: 'Practices with real-time online scheduling see 25-40% more appointment requests' });
+    }
+
+    // Scale by providers
+    const scale = Math.min(providerCount, 4);
+    const scaleFactor = 0.5 + scale * 0.25;
+    monthlyLow = Math.round(monthlyLow * scaleFactor);
+    monthlyHigh = Math.round(monthlyHigh * scaleFactor);
+
+    // ─── Service Marketing Summary (always shown) ───
+    const strongCount = serviceMarketing.filter(s => s.marketingQuality === 'strong').length;
+    const modCount = serviceMarketing.filter(s => s.marketingQuality === 'moderate').length;
+    const minCount = serviceMarketing.filter(s => s.marketingQuality === 'minimal').length;
+    const totalDetected = serviceMarketing.length;
+
+    let summaryHtml = '';
+    if (totalDetected > 0) {
+        summaryHtml = `<div style="margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">Your Service Marketing</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                ${strongCount > 0 ? `<div style="flex:1;min-width:80px;text-align:center;padding:8px;border-radius:8px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.2);"><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:#4ade80;">${strongCount}</div><div style="font-size:10px;color:var(--text-muted);">Well Promoted</div></div>` : ''}
+                ${modCount > 0 ? `<div style="flex:1;min-width:80px;text-align:center;padding:8px;border-radius:8px;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.15);"><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:#facc15;">${modCount}</div><div style="font-size:10px;color:var(--text-muted);">Moderate</div></div>` : ''}
+                ${minCount > 0 ? `<div style="flex:1;min-width:80px;text-align:center;padding:8px;border-radius:8px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.15);"><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:#f87171;">${minCount}</div><div style="font-size:10px;color:var(--text-muted);">Undermarketed</div></div>` : ''}
+            </div>
+        </div>`;
+    }
+
+    if (monthlyLow === 0 && monthlyHigh === 0) {
+        container.innerHTML = summaryHtml + `
+            <div style="text-align:center;padding:12px 0;font-size:14px;color:var(--text-secondary);">
+                ${isECP
+                    ? 'Your program covers the fundamentals well. The next level of growth comes from <strong>optimization</strong> — conversion rates, advanced SEO, and ensuring every page works as hard as your clinical team.'
+                    : 'Your services are well promoted online. A deeper analysis during a strategy call can identify specific conversion optimization opportunities.'}
+            </div>
+        `;
+        return;
+    }
+
+    // Build opportunity rows — focused on better marketing of existing services
+    const oppRows = opportunities.map(o => {
+        const scaledLow = Math.round(o.low * scaleFactor);
+        const scaledHigh = Math.round(o.high * scaleFactor);
+        const icon = o.type === 'undermarketed' ? '📈' : '⚙️';
+        return `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:13px;font-weight:500;">${icon} ${o.label}</span>
+                <span style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--brand-light,#60a5fa);">+$${scaledLow.toLocaleString()} – $${scaledHigh.toLocaleString()}/mo</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;padding-left:22px;">${o.advice}</div>
+        </div>`;
+    }).join('');
+
+    let html = summaryHtml + `
+        <div class="revenue-gap-big">
+            <div class="revenue-gap-amount">$${monthlyLow.toLocaleString()} – $${monthlyHigh.toLocaleString()}</div>
+            <div class="revenue-gap-label">Estimated monthly revenue from better marketing your services</div>
+        </div>
+        <div style="margin:12px 0 8px;padding:12px 16px;background:rgba(0,0,0,.15);border-radius:8px;">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:8px;">Growth Opportunities</div>
+            ${oppRows}
+            <div style="padding:8px 0 0;margin-top:4px;font-size:11px;color:var(--text-muted);">
+                Scaled for ${providerCount} provider${providerCount !== 1 ? 's' : ''} · Based on industry benchmarks for similar practices
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+// ─── SECTION 3: Core Audit pre-fill from dossier (before SEO data) ───
+function renderCoreAuditFromDossier(d) {
+    const lh = lighthouseData || {};
+    const isECP = d.digital?.isEyeCarePro;
+    const hasScheduling = d.digital?.scheduling?.hasOnlineScheduling;
+    const missingHV = d.services?.missingHighValue || [];
+
+    // 3A: Local Visibility — show placeholder until SEO data arrives
+    const localBody = document.getElementById('localVisibilityBody');
+    const localBadge = document.getElementById('localVisibilityBadge');
+    localBody.innerHTML = `<div style="color:#888;font-size:13px;padding:8px 0;">
+        <div class="spinner" style="display:inline-block;width:14px;height:14px;border-width:2px;margin-right:6px;vertical-align:middle;"></div>
+        Loading Google Business Profile data...
+    </div>`;
+    localBadge.textContent = '';
+
+    // 3B: SEO Health — show Lighthouse data immediately if available
+    const seoBody = document.getElementById('seoHealthBody');
+    const seoBadge = document.getElementById('seoHealthBadge');
+    let seoHtml = '';
+
+    if (lh.performance !== undefined) {
+        const perfColor = lh.performance >= 75 ? 'good' : lh.performance >= 50 ? 'warning' : 'critical';
+        seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Mobile Speed</span><span class="audit-metric-value ${perfColor}">${lh.performance}/100</span></div>`;
+        if (lh.lcp) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Content Load Time</span><span class="audit-metric-value">${lh.lcp}</span></div>`;
+        if (lh.seo !== undefined) {
+            const seoScoreColor = lh.seo >= 80 ? 'good' : lh.seo >= 60 ? 'warning' : 'critical';
+            seoHtml += `<div class="audit-metric"><span class="audit-metric-label">SEO Score</span><span class="audit-metric-value ${seoScoreColor}">${lh.seo}/100</span></div>`;
+        }
+
+        // Badge
+        const avgScore = Math.round(((lh.performance || 0) + (lh.seo || 0)) / 2);
+        seoBadge.textContent = avgScore >= 75 ? 'Healthy' : avgScore >= 50 ? 'Needs Work' : 'Critical';
+        seoBadge.className = `audit-panel-badge ${avgScore >= 75 ? 'audit-badge-good' : avgScore >= 50 ? 'audit-badge-warning' : 'audit-badge-critical'}`;
+    } else {
+        seoHtml = `<div style="color:#888;font-size:13px;padding:8px 0;">
+            <div class="spinner" style="display:inline-block;width:14px;height:14px;border-width:2px;margin-right:6px;vertical-align:middle;"></div>
+            Analyzing website performance...
+        </div>`;
+        seoBadge.textContent = '';
+    }
+
+    // Note: search rankings placeholder is added by renderClientAuditPanels() when SEO data arrives
+    seoBody.innerHTML = seoHtml;
+
+    // 3C: Patient Conversion
+    const convBody = document.getElementById('patientConversionBody');
+    const convBadge = document.getElementById('patientConversionBadge');
+    let convHtml = '';
+    let convIssues = 0;
+
+    // Online scheduling
+    convHtml += `<div class="audit-metric">
+        <span class="audit-metric-label">Online Scheduling</span>
+        <span class="audit-metric-value ${hasScheduling ? 'good' : 'critical'}">${hasScheduling ? (d.digital?.scheduling?.platform?.name || 'Available') : 'Not Found'}</span>
+    </div>`;
+    if (!hasScheduling) convIssues++;
+
+    // Services visibility
+    if (missingHV.length > 0) {
+        convHtml += `<div class="audit-metric">
+            <span class="audit-metric-label">Services to Highlight Online</span>
+            <span class="audit-metric-value warning">${missingHV.length} opportunities</span>
+        </div>`;
+        convIssues++;
+    }
+
+    // Social presence
+    const socialCount = d.social?.platformCount || 0;
+    convHtml += `<div class="audit-metric">
+        <span class="audit-metric-label">Social Media Presence</span>
+        <span class="audit-metric-value ${socialCount >= 2 ? 'good' : socialCount > 0 ? 'warning' : 'critical'}">${socialCount > 0 ? socialCount + ' platforms' : 'Not Found'}</span>
+    </div>`;
+    if (socialCount === 0) convIssues++;
+
+    // Content / blog
+    convHtml += `<div class="audit-metric">
+        <span class="audit-metric-label">Content Strategy</span>
+        <span class="audit-metric-value ${d.content?.blogExists ? 'good' : 'warning'}">${d.content?.blogExists ? 'Blog Active' : 'No Blog Found'}</span>
+    </div>`;
+    if (!d.content?.blogExists) convIssues++;
+
+    // Insight text
+    if (convIssues >= 2) {
+        convHtml += `<div class="audit-insight">Patients today expect to book online, research services, and find you on social media. Closing these gaps could significantly increase new patient volume.</div>`;
+    }
+
+    convBadge.textContent = convIssues === 0 ? 'Strong' : convIssues <= 2 ? 'Opportunities' : 'Gaps Found';
+    convBadge.className = `audit-panel-badge ${convIssues === 0 ? 'audit-badge-good' : convIssues <= 2 ? 'audit-badge-warning' : 'audit-badge-critical'}`;
+    convBody.innerHTML = convHtml;
+}
+
+// ─── Render client-facing audit panels from SEO Intelligence data ───
+function renderClientAuditPanels(data) {
+    const biz = data.places?.locations?.[0] || data.places?.business || {};
+    const allLocs = data.places?.locations || (biz.name ? [biz] : []);
+    const competitors = data.places?.competitors || [];
+    const mobile = data.lighthouse?.mobile || lighthouseData || {};
+    const desktop = data.lighthouse?.desktop || {};
+    const audit = data.siteAudit || {};
+    const report = data.report || {};
+
+    // ═══ 3A: LOCAL VISIBILITY ═══
+    const localBody = document.getElementById('localVisibilityBody');
+    const localBadge = document.getElementById('localVisibilityBadge');
+    let localHtml = '';
+
+    if (allLocs.length > 0) {
+        // Multi-location summary
+        if (allLocs.length > 1) {
+            localHtml += `<div style="background:#E8F0FE;padding:6px 10px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#1A73E8;font-weight:500;">${allLocs.length} Google Business Profiles Found</div>`;
+        }
+
+        // Show key metrics for primary location (or all if multi)
+        allLocs.forEach((loc, idx) => {
+            if (allLocs.length > 1) {
+                localHtml += `<div style="font-weight:600;font-size:12px;color:var(--brand);padding:${idx > 0 ? '10px' : '0'} 0 6px 0;">${loc.address ? loc.address.split(',')[0] : 'Location ' + (idx+1)}</div>`;
+            }
+            const ratingColor = loc.rating >= 4.5 ? 'good' : loc.rating >= 4.0 ? 'warning' : 'critical';
+            const reviewColor = loc.reviewCount >= 50 ? 'good' : loc.reviewCount > 0 ? 'warning' : 'critical';
+            localHtml += `<div class="audit-metric"><span class="audit-metric-label">Rating</span><span class="audit-metric-value ${ratingColor}">${loc.rating ? loc.rating + '★' : 'Not found'}</span></div>`;
+            localHtml += `<div class="audit-metric"><span class="audit-metric-label">Reviews</span><span class="audit-metric-value ${reviewColor}">${loc.reviewCount !== undefined ? loc.reviewCount + ' reviews' : 'N/A'}</span></div>`;
+            if (!loc.hasHours) {
+                localHtml += `<div class="audit-metric"><span class="audit-metric-label">Business Hours</span><span class="audit-metric-value critical">Missing</span></div>`;
+            }
+        });
+
+        // Competitor comparison chart
+        if (competitors.length > 0) {
+            localHtml += `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+                <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">How You Compare</div>`;
+
+            const primaryLoc = allLocs[0];
+            const allEntries = [
+                { name: primaryLoc.name || 'Your Practice', rating: primaryLoc.rating || 0, reviewCount: primaryLoc.reviewCount || 0, isThis: true },
+                ...competitors,
+            ].sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
+
+            const maxReviews = Math.max(...allEntries.map(c => c.reviewCount || 0), 1);
+
+            localHtml += allEntries.map(c => {
+                const pct = ((c.reviewCount || 0) / maxReviews) * 100;
+                const barColor = c.isThis ? '#4CAF50' : '#378ADD';
+                return `<div class="audit-comp-row">
+                    <div class="audit-comp-name ${c.isThis ? 'highlight' : ''}">${c.isThis ? '★ ' : ''}${c.name}</div>
+                    <div class="audit-comp-bar"><div class="audit-comp-fill" style="width:${pct}%;background:${barColor}"></div></div>
+                    <div class="audit-comp-score">${c.rating ? c.rating + '★' : 'N/A'} · ${c.reviewCount || 0}</div>
+                </div>`;
+            }).join('');
+            localHtml += `<div style="font-size:11px;color:#aaa;margin-top:6px;">Rating · Review count within 5 miles</div></div>`;
+        }
+
+        // Badge
+        const primaryRating = allLocs[0]?.rating || 0;
+        const primaryReviews = allLocs[0]?.reviewCount || 0;
+        const competitorAvgReviews = competitors.length > 0
+            ? Math.round(competitors.reduce((sum, c) => sum + (c.reviewCount || 0), 0) / competitors.length)
+            : 0;
+
+        let localStatus = 'good';
+        if (primaryRating < 4.0 || primaryReviews < 20) localStatus = 'critical';
+        else if (primaryRating < 4.5 || primaryReviews < competitorAvgReviews) localStatus = 'warning';
+
+        localBadge.textContent = localStatus === 'good' ? 'Strong' : localStatus === 'warning' ? 'Opportunities' : 'Needs Attention';
+        localBadge.className = `audit-panel-badge audit-badge-${localStatus}`;
+
+        // Insight
+        if (primaryReviews < competitorAvgReviews && competitorAvgReviews > 0) {
+            localHtml += `<div class="audit-insight">Your closest competitors average ${competitorAvgReviews} reviews. A consistent review strategy could significantly boost your local search visibility.</div>`;
+        } else if (primaryReviews > competitorAvgReviews && competitorAvgReviews > 0) {
+            localHtml += `<div class="audit-insight">You're outpacing local competitors on review volume — that's a competitive advantage. Maintaining this momentum keeps you at the top of local search results.</div>`;
+        }
+    } else {
+        localHtml = `<div style="color:#888;font-size:13px;padding:8px 0;">Google Business Profile not found. This is a critical gap — patients searching for eye care in your area won't find you in Google Maps.</div>`;
+        localBadge.textContent = 'Critical';
+        localBadge.className = 'audit-panel-badge audit-badge-critical';
+    }
+
+    localBody.innerHTML = localHtml;
+
+    // ═══ 3B: SEO HEALTH — update with full data ═══
+    const seoBody = document.getElementById('seoHealthBody');
+    const seoBadge = document.getElementById('seoHealthBadge');
+    let seoHtml = '';
+
+    const mPerf = mobile.performance ?? '--';
+    const dPerf = desktop.performance ?? '--';
+    const mPerfColor = typeof mPerf === 'number' ? (mPerf >= 75 ? 'good' : mPerf >= 50 ? 'warning' : 'critical') : '';
+    const dPerfColor = typeof dPerf === 'number' ? (dPerf >= 75 ? 'good' : dPerf >= 50 ? 'warning' : 'critical') : '';
+
+    seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Mobile Speed</span><span class="audit-metric-value ${mPerfColor}">${mPerf}${typeof mPerf === 'number' ? '/100' : ''}</span></div>`;
+    seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Desktop Speed</span><span class="audit-metric-value ${dPerfColor}">${dPerf}${typeof dPerf === 'number' ? '/100' : ''}</span></div>`;
+    if (mobile.lcp) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Content Load Time (Mobile)</span><span class="audit-metric-value">${mobile.lcp}</span></div>`;
+    if (mobile.seo !== undefined) {
+        const seoScoreColor = mobile.seo >= 80 ? 'good' : mobile.seo >= 60 ? 'warning' : 'critical';
+        seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Google SEO Score</span><span class="audit-metric-value ${seoScoreColor}">${mobile.seo}/100</span></div>`;
+    }
+
+    // Key site audit items (simplified — client doesn't need the full checklist)
+    if (audit.domain) {
+        if (!audit.ssl) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">SSL Security</span><span class="audit-metric-value critical">Not Secure</span></div>`;
+        if (!audit.hasLocalBusinessSchema) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Google Schema Markup</span><span class="audit-metric-value warning">Missing</span></div>`;
+        if (!audit.hasSitemap) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Sitemap</span><span class="audit-metric-value warning">Not Found</span></div>`;
+    }
+
+    // Badge
+    const avgPerf = typeof mPerf === 'number' ? mPerf : 0;
+    const avgSeo = mobile.seo || 0;
+    const combinedSeo = Math.round((avgPerf + avgSeo) / 2);
+    seoBadge.textContent = combinedSeo >= 75 ? 'Healthy' : combinedSeo >= 50 ? 'Needs Work' : 'Critical';
+    seoBadge.className = `audit-panel-badge ${combinedSeo >= 75 ? 'audit-badge-good' : combinedSeo >= 50 ? 'audit-badge-warning' : 'audit-badge-critical'}`;
+
+    // Insight
+    if (typeof mPerf === 'number' && mPerf < 50) {
+        seoHtml += `<div class="audit-insight">Mobile speed is critically low. With over 60% of patients searching from phones, slow load times mean lost appointments. Every second of delay costs roughly 7% of conversions.</div>`;
+    } else if (typeof mPerf === 'number' && mPerf < 75) {
+        seoHtml += `<div class="audit-insight">Your mobile speed is average. Optimizing it could improve both your Google ranking and patient conversion rate.</div>`;
+    }
+
+    // Placeholder for search rankings (filled async)
+    seoHtml += `<div id="clientSearchRankings" style="margin-top:10px;display:none;"></div>`;
+    seoBody.innerHTML = seoHtml;
+}
+
+function generateReflection(d) {
+    const isECP = d.digital?.isEyeCarePro;
+    const name = d.practice?.name || 'your practice';
+    const missingHV = d.services?.missingHighValue || [];
+    const type = d.practice?.type || 'default';
+    const userGoal = userAnswers.goal || '';
+    const userPain = userAnswers.pain || '';
+    const providerCount = d.doctors?.length || 1;
+    const locCount = d.locations?.count || 1;
+
+    // Pick the most resonant reflection based on context
+    if (isECP) {
+        if (missingHV.length >= 2) {
+            return `Here's something worth thinking about: your EyeCarePro program handles the digital foundation well, and there are ${missingHV.length} additional services that could benefit from stronger online promotion. What would it look like if every service ${name} provides was easy for patients to find and understand?`;
+        }
+        return `Your website is built on a solid platform. But here's what we'd love to explore with you: is it working as hard as your clinical team? Is it bringing in the right patients, for the right services, at the right time?`;
+    }
+
+    if (type === 'ophthalmology' || type === 'multi_specialty') {
+        if (missingHV.some(s => s.toLowerCase().includes('premium'))) {
+            return `Here's a question we think is worth sitting with: what would it look like if even a small percentage more of your cataract patients chose premium IOLs — because they understood their options before the consultation? What would that mean for ${name} this year?`;
+        }
+        if (providerCount >= 3) {
+            return `With ${providerCount} providers${locCount > 1 ? ' across ' + locCount + ' locations' : ''}, ${name} clearly has the clinical capacity. The interesting question is: is your digital presence filling that capacity with the patients who need what you uniquely offer?`;
+        }
+    }
+
+    if (userGoal.toLowerCase().includes('specialty') || userGoal.toLowerCase().includes('dry eye') || userGoal.toLowerCase().includes('myopia')) {
+        return `Specialty services are where the highest per-patient revenue lives — but only when patients can find your expertise. What would it look like for ${name} if the patients searching for those services in your area landed on your site instead of a competitor's?`;
+    }
+
+    if (userGoal.toLowerCase().includes('patient') || userGoal.toLowerCase().includes('volume')) {
+        return `Here's what we'd ask: is the goal simply more patients, or more of the <em>right</em> patients for the services that matter most to your bottom line? What does the ideal new patient look like for ${name}?`;
+    }
+
+    if (d.digital?.isCompetitorClient) {
+        return `You're already investing in marketing — which is smart. The question worth exploring: is that investment returning what ${name} deserves? If the opportunities in this report haven't been raised by your current partner, it might be worth a conversation about what a more proactive approach looks like.`;
+    }
+
+    // Default
+    return `If ${name} could capture even a fraction of the opportunities identified here — what would that look like over the next 12 months? That's the kind of conversation we'd love to have with you.`;
+}
+
+function generateInsights(d) {
+    const insights = [];
+    const lh = lighthouseData;
+    const isECP = d.digital?.isEyeCarePro;
+    const type = d.practice?.type || 'default';
+    const isOphth = isOphthalmologyPractice(d);
+    const locCount = d.locations?.count || 1;
+    const providerCount = d.doctors?.length || 0;
+    const missingHV = d.services?.missingHighValue || [];
+    const hasScheduling = d.digital?.scheduling?.hasOnlineScheduling;
+
+    // ── Service Insights (practice-type-aware, posed as questions) ──
+
+    if (isOphth) {
+        // OPHTHALMOLOGY-SPECIFIC service insights
+        if (missingHV.some(s => s.toLowerCase().includes('premium') || s.toLowerCase().includes('iol'))) {
+            insights.push({
+                icon: '🔬', iconClass: 'insight-icon-amber', priority: 10,
+                title: 'Premium IOL Education — Are Patients Aware of Their Options?',
+                text: `We didn't find dedicated premium IOL content on your website. Many cataract patients don't know multifocal, toric, or EDOF lenses are available to them. <strong>Practices that educate patients before the consultation see significantly higher premium conversion rates.</strong> Is this something you'd like to highlight?`,
+            });
+        }
+
+        if (missingHV.some(s => /retina|macular|amd|dme/i.test(s.toLowerCase()))) {
+            insights.push({
+                icon: '👁️', iconClass: 'insight-icon-amber', priority: 9,
+                title: 'Retinal Services — Are Patients Finding Your Expertise?',
+                text: `Retinal conditions like AMD and diabetic macular edema require specialized care that patients actively search for. We didn't see dedicated retinal pages on your site — is this a service line you're looking to grow, or is the website not reflecting what you already do?`,
+            });
+        }
+
+        if (missingHV.some(s => /glaucoma/i.test(s.toLowerCase()))) {
+            insights.push({
+                icon: '🔵', iconClass: 'insight-icon-amber', priority: 9,
+                title: 'Glaucoma — Surgical and Medical Visibility',
+                text: `MIGS, SLT, and medical glaucoma management are high-value services that patients search for by name. We didn't find strong glaucoma content on your site. Is this a core offering that could use more visibility, or something you refer out?`,
+            });
+        }
+
+        if (missingHV.some(s => /oculoplastic|eyelid|blepharoplasty/i.test(s.toLowerCase()))) {
+            insights.push({
+                icon: '✨', iconClass: 'insight-icon-amber', priority: 8,
+                title: 'Oculoplastics — A Growing Cash-Pay Opportunity',
+                text: `Eyelid surgery and oculoplastics have strong patient demand, often as cash-pay procedures. We didn't see this on your site — do you offer oculoplastics, or is this a referral area? Practices with dedicated pages capture patients searching for cosmetic and functional eyelid services.`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('lasik') || s.toLowerCase().includes('refractive'))) {
+            insights.push({
+                icon: '⚡', iconClass: 'insight-icon-amber', priority: 8,
+                title: 'LASIK / Refractive Surgery — Are You Capturing This Demand?',
+                text: `Refractive surgery patients are actively researching online before choosing a surgeon. We didn't find LASIK-specific content on your site. If you perform refractive procedures, a dedicated landing page with surgeon credentials is one of the highest-converting assets you can have.`,
+            });
+        }
+
+        // Dry eye is relevant for both ophthalmology and optometry
+        if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) {
+            insights.push({
+                icon: '💧', iconClass: 'insight-icon-amber', priority: 7,
+                title: 'Dry Eye — Is This on Your Website?',
+                text: `We noticed dry eye treatment isn't prominently featured on your site. Dry eye is one of the most searched eye care conditions and generates strong recurring revenue. Do you offer dry eye services in-practice, or is this an area you're considering adding?`,
+            });
+        }
+
+    } else {
+        // OPTOMETRY-SPECIFIC service insights
+        if (missingHV.some(s => s.toLowerCase().includes('dry eye'))) {
+            insights.push({
+                icon: '💧', iconClass: 'insight-icon-amber', priority: 10,
+                title: 'Dry Eye — Is This a Service You Offer?',
+                text: `We noticed dry eye treatment isn't visible on your website. It's one of the most searched conditions and generates <strong>$${INDUSTRY.specialty.dryEye.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.dryEye.perPatientYear[1].toLocaleString()} per patient per year</strong> in recurring revenue. Do you offer dry eye services, or is this something you're considering adding?`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('myopia'))) {
+            insights.push({
+                icon: '👁️', iconClass: 'insight-icon-amber', priority: 9,
+                title: 'Myopia Management — Do You Offer This in Practice?',
+                text: `We didn't find myopia management on your website. Parents are increasingly searching for these services, and practices with dedicated programs see <strong>$${INDUSTRY.specialty.myopia.perPatientYear[0].toLocaleString()}–$${INDUSTRY.specialty.myopia.perPatientYear[1].toLocaleString()} per enrolled child annually</strong>. Is this something you offer but haven't added to the site yet, or an area you're exploring?`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('scleral'))) {
+            insights.push({
+                icon: '🔵', iconClass: 'insight-icon-amber', priority: 8,
+                title: 'Scleral Lenses — A Specialty Worth Highlighting',
+                text: `We noticed scleral lens services aren't on your website. If you fit scleral lenses, a dedicated page helps patients with complex needs find your expertise — these patients are actively searching and are among the highest-value in optometry.`,
+            });
+        }
+
+        if (missingHV.some(s => s.toLowerCase().includes('vision therapy'))) {
+            insights.push({
+                icon: '🧠', iconClass: 'insight-icon-amber', priority: 7,
+                title: 'Vision Therapy — Is This Part of Your Practice?',
+                text: `Vision therapy isn't visible on your site. If you offer it, a dedicated page captures referrals from pediatricians and schools. If not, it may be worth considering — VT practices often see strong patient loyalty and referral networks.`,
+            });
+        }
+    }
+
+    // ── Digital Infrastructure (relevant for all practice types) ──
+
+    if (!hasScheduling) {
+        insights.push({
+            icon: '📅', iconClass: 'insight-icon-red', priority: 8,
+            title: `Online Scheduling Could Be Bringing In More Patients`,
+            text: `<strong>${Math.round(INDUSTRY.benchmarks.patientsPreferOnlineBooking * 100)}% of patients prefer to book online</strong>, and most searches happen after hours. Practices with real-time scheduling see ${Math.round(INDUSTRY.benchmarks.onlineBookingLift[0] * 100)}–${Math.round(INDUSTRY.benchmarks.onlineBookingLift[1] * 100)}% more new patient appointments. Is this something you've considered?`,
+        });
+    }
+
+    if (!isECP && lh && lh.performance < 50) {
+        insights.push({
+            icon: '🐌', iconClass: 'insight-icon-red', priority: 7,
+            title: `How Fast Does Your Website Load for Patients?`,
+            text: `We measured a performance score of ${lh.performance}/100. Here's why that matters: every second of load delay costs roughly <strong>${Math.round(INDUSTRY.benchmarks.conversionLossPerSecond * 100)}% of potential conversions</strong>. ${lh.lcp ? `Your main content takes ${lh.lcp} to appear. ` : ''}Have you noticed patients mentioning difficulty with the site, or high bounce rates in your analytics?`,
+        });
+    } else if (!isECP && lh && lh.performance < 70) {
+        insights.push({
+            icon: '⚡', iconClass: 'insight-icon-amber', priority: 5,
+            title: `Site Speed: Could It Be Faster? (${lh.performance}/100)`,
+            text: `Your site isn't slow, but it's not giving you a competitive edge either. Have you explored performance optimization? It can improve both Google ranking and conversion rate.`,
+        });
+    }
+
+    if (d.social?.platformCount === 0) {
+        insights.push({
+            icon: '📱', iconClass: 'insight-icon-red', priority: 7,
+            title: 'We Didn\'t Find Social Media — Is That Intentional?',
+            text: `We couldn't detect social media profiles linked to your practice. Patients — especially younger demographics — often check social media before choosing a provider. Is this something you've considered, or is social handled separately?`,
+        });
+    } else if (!d.social?.hasInstagram && (type === 'optical' || d.optical?.hasOptical)) {
+        insights.push({
+            icon: '📸', iconClass: 'insight-icon-amber', priority: 6,
+            title: 'Have You Explored Instagram for Your Optical?',
+            text: `Instagram is the #1 discovery platform for eyewear, and you have an optical department. Have you considered showcasing your frame selection there? Practices that do often see it become a meaningful traffic source.`,
+        });
+    }
+
+    if (!d.content?.blogExists) {
+        insights.push({
+            icon: '✍️', iconClass: 'insight-icon-amber', priority: 6,
+            title: 'Have You Considered a Content Strategy?',
+            text: `Practices with active content see up to <strong>${Math.round(INDUSTRY.benchmarks.blogTrafficLift * 100)}% more organic search traffic</strong>. Each article targeting a local keyword becomes a permanent patient-acquisition asset. Has content marketing been part of your strategy?`,
+        });
+    }
+
+    if (providerCount >= 4 && d.content?.totalWordCount < 2000) {
+        insights.push({
+            icon: '👥', iconClass: 'insight-icon-amber', priority: 5,
+            title: `${providerCount} Providers — Do They Each Have a Strong Online Presence?`,
+            text: `With ${providerCount} providers, each doctor's name is a potential search asset. Do they each have individual pages with bios, specialties, and credentials? That kind of content dramatically improves local SEO.`,
+        });
+    }
+
+    if (locCount >= 3) {
+        insights.push({
+            icon: '🏢', iconClass: 'insight-icon-blue', priority: 5,
+            title: `${locCount} Locations — Does Each One Have Its Own Digital Footprint?`,
+            text: `With ${locCount} locations, is each office optimized individually? Location-specific landing pages, Google Business Profiles, and localized content help each office compete in its own market. It's often one of the highest-impact changes a multi-location practice can make.`,
+        });
+    }
+
+    if (!isECP && lh && lh.seo < 70) {
+        insights.push({
+            icon: '🔍', iconClass: 'insight-icon-red', priority: 6,
+            title: `Are Technical SEO Issues Holding You Back?`,
+            text: `Your SEO score of ${lh.seo}/100 suggests there may be structural issues — missing meta descriptions, heading hierarchy, or schema markup — that could be limiting your Google visibility. Have you had an SEO audit recently?`,
+        });
+    }
+
+    // ── ECP Client: Exploration Opportunities ──
+    if (isECP) {
+        if (!hasScheduling) {
+            insights.push({
+                icon: '🚀', iconClass: 'insight-icon-blue', priority: 8,
+                title: 'Have You Looked Into Adding Online Scheduling?',
+                text: `Your EyeCarePro site is attracting visitors — but without real-time scheduling, some of those visitors may not convert. Have you explored adding online booking to capture the patients your site is already bringing in?`,
+            });
+        }
+        if (missingHV.length >= 2) {
+            insights.push({
+                icon: '📈', iconClass: 'insight-icon-blue', priority: 7,
+                title: 'Could Your Website Better Showcase What You Offer?',
+                text: `We identified ${missingHV.length} services that could benefit from stronger online promotion. Dedicated landing pages for these services often become high-converting entry points — capturing patients who are actively searching. It's worth exploring whether your digital presence fully reflects what's happening in your exam rooms.`,
+            });
+        }
+    }
+
+    // ── Competitor Client Insight ──
+    if (d.digital?.isCompetitorClient) {
+        insights.unshift({
+            icon: '🔄', iconClass: 'insight-icon-amber', priority: 10,
+            title: `Currently with ${d.digital.competitorName || d.digital.marketingVendor?.name} — How's It Going?`,
+            text: `The opportunities we've identified suggest there may be room to do more. Have you discussed these gaps with your current partner? A strategic marketing program should be proactively addressing these for you.`,
+        });
+    }
+
+    // Sort by priority (highest first) and return top 6
+    insights.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    return insights.slice(0, 6);
+}
+
+</script>
