@@ -101,7 +101,7 @@ Scoring weights: Page Speed 25%, On-Page SEO 20%, Google Business Profile 25%, D
 Base everything strictly on the real data provided. Do not invent numbers.`;
 
         const geminiResp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${GEMINI_KEY}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
