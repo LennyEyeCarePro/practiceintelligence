@@ -1016,7 +1016,7 @@ async function startScan() {
     // Reset
     scanData = { domain, url, businessName, industry, city, state };
     document.getElementById('btnScan').disabled = true;
-    document.getElementById('progressSection').style.display = '';
+    document.getElementById('progressSection').style.display = 'block';
     document.getElementById('resultsSection').style.display = 'none';
     setProgress(0);
     startTimer();
@@ -1365,7 +1365,7 @@ function renderResults() {
 
     // Show results, hide progress
     document.getElementById('progressSection').style.display = 'none';
-    document.getElementById('resultsSection').style.display = '';
+    document.getElementById('resultsSection').style.display = 'block';
 }
 
 // ─── PERFORMANCE PANEL ──────────────────────────────
