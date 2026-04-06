@@ -1019,17 +1019,17 @@ async function startScan() {
         const topKws = (auditResp?.topKeywords || []).map(k => k.word);
 
         const [mozResp, safeResp, sslResp, kwResp] = await Promise.all([
-            fetch(API_BASE + '/moz-da?domain=' + encodeURIComponent(domain))
+            fetch(API_BASE + '/pagerank?action=moz&domain=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message })),
 
-            fetch(API_BASE + '/safe-browsing?url=' + encodeURIComponent(domain))
+            fetch(API_BASE + '/security?action=safe-browsing&url=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message })),
 
-            fetch(API_BASE + '/ssl-check?domain=' + encodeURIComponent(domain))
+            fetch(API_BASE + '/security?action=ssl&domain=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message })),
 
             topKws.length > 0
-                ? fetch(API_BASE + '/keyword-suggest', {
+                ? fetch(API_BASE + '/keyword-research?action=gaps', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ keywords: topKws, industry, businessName }),
@@ -1071,13 +1071,13 @@ async function startScan() {
         const suggestQuery = topKws.length > 0 ? topKws[0] : (businessName || domain);
 
         const [suggestResp, serpResp, compKwResp] = await Promise.all([
-            fetch(API_BASE + '/google-suggest?q=' + encodeURIComponent(suggestQuery)
+            fetch(API_BASE + '/keyword-research?action=suggest&q=' + encodeURIComponent(suggestQuery)
                 + (city ? '&city=' + encodeURIComponent(city + (state ? ' ' + state : '')) : '')
                 + '&expand=true')
                 .then(r => r.json()).catch(e => ({ error: e.message, suggestions: [], expanded: [] })),
 
             serpKeywords.length > 0
-                ? fetch(API_BASE + '/serp-keywords', {
+                ? fetch(API_BASE + '/keyword-research?action=serp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ keywords: serpKeywords, maxPages: 1 }),
@@ -1085,7 +1085,7 @@ async function startScan() {
                 : Promise.resolve({ peopleAlsoAsk: [], relatedSearches: [] }),
 
             topKws.length > 0 && competitorDomains.length > 0
-                ? fetch(API_BASE + '/competitive-keywords', {
+                ? fetch(API_BASE + '/keyword-research?action=competitive', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1115,10 +1115,10 @@ async function startScan() {
         setStep('validate', 'active');
 
         const [backlinkResp, brokenResp, validateResp] = await Promise.all([
-            fetch(API_BASE + '/backlinks?domain=' + encodeURIComponent(domain))
+            fetch(API_BASE + '/link-audit?action=backlinks&domain=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message, backlinks: [], stats: {} })),
 
-            fetch(API_BASE + '/broken-links?url=' + encodeURIComponent(domain))
+            fetch(API_BASE + '/link-audit?action=broken-links&url=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message, stats: {} })),
 
             fetch(API_BASE + '/html-validate?url=' + encodeURIComponent(domain))
