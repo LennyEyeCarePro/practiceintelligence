@@ -970,6 +970,24 @@ async function startScan() {
         setStep('audit', auditResp?.error && !auditResp?.domain ? 'error' : 'done');
         setStep('pagerank', rankResp?.error && rankResp?.pageRank === undefined ? 'error' : 'done');
         setStep('places', placesResp?.error && !placesResp?.locations?.length ? 'error' : 'done');
+
+        // Quick follow-up: re-fetch PageRank with competitor domains for comparison (1 API call)
+        const compDomains = (placesResp?.competitors || [])
+            .filter(c => c.website)
+            .map(c => c.website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, ''));
+        if (compDomains.length > 0) {
+            try {
+                const prCompResp = await fetch(
+                    API_BASE + '/pagerank?domain=' + encodeURIComponent(domain)
+                    + '&competitors=' + encodeURIComponent(compDomains.join(','))
+                ).then(r => r.json());
+                // Merge competitor data into existing pageRank result
+                if (prCompResp.competitors) {
+                    scanData.pageRank = { ...scanData.pageRank, competitors: prCompResp.competitors };
+                }
+            } catch (_) {}
+        }
+
         setProgress(60);
 
         // Phase 2: AI Report
@@ -1688,6 +1706,38 @@ function renderDA(pr, moz) {
 
     if (moz?.error && !hasMoz) {
         html += `<div style="font-size:12px;color:var(--text-muted);margin-top:12px;">Moz API: ${moz.error}</div>`;
+    }
+
+    // ── Competitor PageRank Comparison ──
+    if (pr.competitors?.length > 0) {
+        html += '<div class="section-label" style="margin-top:20px;">Competitor PageRank Comparison</div>';
+
+        const allEntries = [
+            { domain: scanData.domain || pr.domain || 'Target', pageRank: pr.pageRank, label: pr.label, isTarget: true },
+            ...pr.competitors,
+        ].sort((a, b) => (b.pageRank ?? -1) - (a.pageRank ?? -1));
+
+        html += allEntries.map(c => {
+            const score = c.pageRank ?? 0;
+            const pct = Math.max(5, score * 10);
+            const barColor = c.isTarget ? '#4ECDC4' : '#42A5F5';
+            const nameClass = c.isTarget ? 'highlight' : '';
+            const shortDomain = c.domain.length > 22 ? c.domain.slice(0, 20) + '...' : c.domain;
+            return `<div class="comp-row">
+                <div class="comp-name ${nameClass}" title="${c.domain}">${c.isTarget ? '★ ' : ''}${shortDomain}</div>
+                <div class="comp-bar"><div class="comp-fill" style="width:${pct}%;background:${barColor}"></div></div>
+                <div class="comp-score">${c.pageRank ?? 'N/A'}/10</div>
+            </div>`;
+        }).join('');
+
+        // Summary insight
+        const targetPR = pr.pageRank ?? 0;
+        const compAvg = pr.competitors.filter(c => c.pageRank != null).reduce((s, c) => s + c.pageRank, 0) / (pr.competitors.filter(c => c.pageRank != null).length || 1);
+        if (targetPR < compAvg) {
+            html += `<div class="opportunity-box" style="margin-top:12px"><p><strong>Authority gap:</strong> Your PageRank (${targetPR}) is below the competitor average (${compAvg.toFixed(1)}). Focus on earning quality backlinks from local directories, industry associations, and content partnerships to close the gap.</p></div>`;
+        } else if (targetPR > 0) {
+            html += `<div class="opportunity-box" style="margin-top:12px"><p><strong>Authority advantage:</strong> Your PageRank (${targetPR}) is at or above the competitor average (${compAvg.toFixed(1)}). Maintain this edge by continuing to earn quality backlinks.</p></div>`;
+        }
     }
 
     document.getElementById('daContent').innerHTML = html;
@@ -2653,7 +2703,14 @@ function exportReport() {
     }
 
     if (pr?.pageRank != null) {
-        text += `DOMAIN AUTHORITY: ${pr.pageRank}/10 (${pr.label})\n\n`;
+        text += `DOMAIN AUTHORITY: ${pr.pageRank}/10 (${pr.label})\n`;
+        if (pr.competitors?.length > 0) {
+            text += `  Competitor PageRank:\n`;
+            pr.competitors.forEach(c => {
+                text += `    ${c.domain}: ${c.pageRank ?? 'N/A'}/10 (${c.label})\n`;
+            });
+        }
+        text += '\n';
     }
 
     if (audit?.technology?.length > 0) {
