@@ -16,10 +16,10 @@ export default async function handler(req, res) {
     const { url, businessName, city, siteAudit, lighthouse, pageRank, places } = req.body || {};
     if (!url) return res.status(400).json({ error: 'Missing url' });
 
-    const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+    const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
-    // If no Anthropic key, return a rule-based interpretation
-    if (!ANTHROPIC_KEY) {
+    // If no Gemini key, return a rule-based interpretation
+    if (!GEMINI_KEY) {
         return res.json(generateRuleBasedReport(url, { siteAudit, lighthouse, pageRank, places }));
     }
 
@@ -31,8 +31,6 @@ export default async function handler(req, res) {
         const pr = pageRank || {};
         const biz = places?.business || {};
         const competitors = places?.competitors || [];
-
-        const practiceType = biz.primaryCategory || 'eye care practice';
 
         const prompt = `You are an SEO analyst specializing in optometry and ophthalmology practices. You provide actionable, data-backed insights.
 
@@ -102,31 +100,33 @@ Generate a response in this exact JSON format. Do not include any text outside t
 Scoring weights: Page Speed 25%, On-Page SEO 20%, Google Business Profile 25%, Domain Authority 15%, Technical 15%.
 Base everything strictly on the real data provided. Do not invent numbers.`;
 
-        const anthropicResp = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': ANTHROPIC_KEY,
-                'anthropic-version': '2023-06-01',
-            },
-            body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 1024,
-                messages: [{ role: 'user', content: prompt }],
-            }),
-            signal: AbortSignal.timeout(15000),
-        });
+        const geminiResp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        temperature: 0.3,
+                        maxOutputTokens: 1024,
+                        responseMimeType: 'application/json',
+                    },
+                }),
+                signal: AbortSignal.timeout(20000),
+            }
+        );
 
-        if (!anthropicResp.ok) {
-            const errText = await anthropicResp.text();
-            console.error('Anthropic API error:', errText);
+        if (!geminiResp.ok) {
+            const errText = await geminiResp.text();
+            console.error('Gemini API error:', errText);
             return res.json(generateRuleBasedReport(url, { siteAudit, lighthouse, pageRank, places }));
         }
 
-        const anthropicData = await anthropicResp.json();
-        const aiText = anthropicData.content?.[0]?.text || '';
+        const geminiData = await geminiResp.json();
+        const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-        // Parse JSON from Claude's response
+        // Parse JSON from Gemini's response
         const jsonMatch = aiText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             const aiReport = JSON.parse(jsonMatch[0]);
