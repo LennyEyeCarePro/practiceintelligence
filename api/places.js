@@ -119,17 +119,34 @@ export default async function handler(req, res) {
 
         debugLog.push({ step: 'pre_filter', totalFound: allPlaces.length, names: allPlaces.slice(0,5).map(p => p.name) });
 
-        // ── Step 2: Filter to only places that belong to this practice ──
-        const matchedPlaces = filterToMatchingBusiness(allPlaces, businessName, website);
-        debugLog.push({ step: 'post_filter', matchedCount: matchedPlaces.length });
+        // ── Step 2a: Name-based fuzzy filter (first pass, high recall) ──
+        const nameMatchedPlaces = filterToMatchingBusiness(allPlaces, businessName, website);
+        debugLog.push({ step: 'post_name_filter', matchedCount: nameMatchedPlaces.length });
 
-        // If filter removed everything, use only the top result (not all 5 — filter was likely correct to exclude them)
-        const finalPlaces = matchedPlaces.length > 0 ? matchedPlaces : allPlaces.slice(0, 1);
+        // If filter removed everything, fall back to the top search result only
+        const candidates = nameMatchedPlaces.length > 0 ? nameMatchedPlaces : allPlaces.slice(0, 1);
 
-        // ── Step 3: Get Place Details for each matched location (parallel, max 10) ──
-        const detailPromises = finalPlaces.slice(0, 10).map(p => getPlaceDetails(p.place_id, API_KEY));
+        // ── Step 3: Get Place Details for each candidate (parallel, max 10) ──
+        // We fetch details FIRST so we have the website field for the second-pass filter.
+        const detailPromises = candidates.slice(0, 10).map(p => getPlaceDetails(p.place_id, API_KEY));
         const detailResults = await Promise.all(detailPromises);
-        const locations = detailResults.filter(Boolean);
+        let locations = detailResults.filter(Boolean);
+
+        // ── Step 2b: Website domain filter (second pass, high precision) ──
+        // If the user provided a website and ANY candidate's GBP website matches,
+        // keep ONLY the matching ones. This eliminates false positives where the
+        // practice name collides with unrelated businesses (e.g. Cochrane surname/town).
+        if (website) {
+            const userDomain = normalizeDomain(website);
+            const websiteMatched = locations.filter(loc => loc.website && normalizeDomain(loc.website) === userDomain);
+            debugLog.push({ step: 'website_filter', userDomain, websiteMatchedCount: websiteMatched.length, candidateWebsites: locations.map(l => ({ name: l.name, website: l.website })) });
+
+            if (websiteMatched.length > 0) {
+                // Strong signal: lock in to only the website-verified locations
+                locations = websiteMatched;
+            }
+            // Otherwise fall through to name-based candidates (lower confidence)
+        }
 
         if (locations.length === 0) {
             return res.json({ error: 'Could not get business details', business: null, locations: [], competitors: [] });
@@ -216,7 +233,7 @@ function filterToMatchingBusiness(places, businessName, website) {
     if (!businessName) return places.slice(0, 5); // If no name, just return top results
 
     const normName = normalizeName(businessName);
-    const domain = website ? website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').toLowerCase() : null;
+    const domain = website ? normalizeDomain(website) : null;
 
     // Extract distinctive words (3+ chars, skip common eye care filler words)
     const skipWords = new Set(['the','and','of','for','in','at','eye','care','clinic','center',
@@ -236,9 +253,10 @@ function filterToMatchingBusiness(places, businessName, website) {
         let reasons = [];
 
         // STRONGEST: Website domain match — unambiguous same practice
-        if (domain && p.website) {
-            const pDomain = p.website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').toLowerCase();
-            if (pDomain === domain) { score += 100; reasons.push('domain'); }
+        // Note: Text Search results rarely include `website`; real domain matching
+        // happens in the second-pass filter after Place Details is fetched.
+        if (domain && p.website && normalizeDomain(p.website) === domain) {
+            score += 100; reasons.push('domain');
         }
 
         // STRONG: Full business name appears in place name (e.g. "Cochrane Eye Care" ⊂ "Cochrane Eye Care - Downtown")
@@ -284,6 +302,22 @@ function normalizeName(name) {
     return name.toLowerCase()
         .replace(/[^a-z0-9\s]/g, '') // strip punctuation
         .replace(/\s+/g, ' ')        // collapse whitespace
+        .trim();
+}
+
+/**
+ * Normalize a URL/domain to a comparable form.
+ * Strips protocol, www, trailing paths/slashes, port, query.
+ * "https://www.example.com/about" → "example.com"
+ */
+function normalizeDomain(url) {
+    if (!url) return '';
+    return url.toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/:\d+/, '')
+        .split('/')[0]
+        .split('?')[0]
         .trim();
 }
 
