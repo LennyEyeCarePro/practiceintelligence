@@ -2685,6 +2685,11 @@ function confirmStep(stepNum) {
         document.getElementById('pip3').classList.add('done');
         document.getElementById('pip3').innerHTML = '✓<span class="step-pip-label">Digital</span>';
 
+        // All 3 steps confirmed — fold the client's free-text corrections back into
+        // the AI analysis. This is cheap (only re-hits /api/seo-report, not the full
+        // scan) and runs in the background while the full story renders.
+        rerunAiReportWithCorrections();
+
         // All 3 steps confirmed — show the full story
         setTimeout(() => {
             renderFullStory();
@@ -3814,6 +3819,23 @@ function renderCoreAuditFromDossier(d) {
     convBody.innerHTML = convHtml;
 }
 
+// ─── GBP Website Verification helpers (mirror /api/places.js) ───
+function normalizeGbpDomain(url) {
+    if (!url) return '';
+    return url.toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/:\d+/, '')
+        .split('/')[0]
+        .split('?')[0]
+        .trim();
+}
+function gbpVerifyStatus(loc, userDomain) {
+    if (!userDomain) return null;
+    if (!loc.website) return 'missing';
+    return normalizeGbpDomain(loc.website) === userDomain ? 'verified' : 'mismatch';
+}
+
 // ─── Render client-facing audit panels from SEO Intelligence data ───
 function renderClientAuditPanels(data) {
     const biz = data.places?.locations?.[0] || data.places?.business || {};
@@ -3824,21 +3846,58 @@ function renderClientAuditPanels(data) {
     const audit = data.siteAudit || {};
     const report = data.report || {};
 
+    // User's scanned domain — used to verify GBP listings belong to this practice
+    const userDomain = normalizeGbpDomain(
+        audit.domain || dossier?.practice?.url || dossier?.meta?.url || dossier?.meta?.domain || ''
+    );
+
     // ═══ 3A: LOCAL VISIBILITY ═══
     const localBody = document.getElementById('localVisibilityBody');
     const localBadge = document.getElementById('localVisibilityBadge');
     let localHtml = '';
 
     if (allLocs.length > 0) {
+        // Compute verification stats across all locations
+        const statuses = allLocs.map(l => gbpVerifyStatus(l, userDomain));
+        const mismatchCount = statuses.filter(s => s === 'mismatch').length;
+        const missingCount = statuses.filter(s => s === 'missing').length;
+        const verifiedCount = statuses.filter(s => s === 'verified').length;
+
         // Multi-location summary
         if (allLocs.length > 1) {
             localHtml += `<div style="background:#E8F0FE;padding:6px 10px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#1A73E8;font-weight:500;">${allLocs.length} Google Business Profiles Found</div>`;
         }
 
+        // Verification summary banner — drives a clear action item for the client
+        if (userDomain && (mismatchCount > 0 || missingCount > 0)) {
+            const issues = [];
+            if (mismatchCount > 0) issues.push(`${mismatchCount} listing${mismatchCount > 1 ? 's link' : ' links'} to a different website`);
+            if (missingCount > 0) issues.push(`${missingCount} listing${missingCount > 1 ? 's have' : ' has'} no website set`);
+            localHtml += `<div style="background:#FFF4E5;border:1px solid #FFB74D;padding:8px 10px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#E65100;">
+                <strong>⚠ Website Verification Issue</strong><br>
+                <span style="color:#5D4037;font-weight:400;">${issues.join(' · ')}. Your Google Business Profile should link to <strong>${userDomain}</strong>.</span>
+            </div>`;
+        } else if (userDomain && verifiedCount === allLocs.length && verifiedCount > 0) {
+            localHtml += `<div style="background:#E8F5E9;border:1px solid #81C784;padding:6px 10px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#2E7D32;">
+                <strong>✓ All GBP listings verified</strong> <span style="color:#555;font-weight:400;">— linked to ${userDomain}</span>
+            </div>`;
+        }
+
         // Show key metrics for primary location (or all if multi)
         allLocs.forEach((loc, idx) => {
+            const status = statuses[idx];
+            const verifyChip = status === 'verified'
+                ? '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;background:#E8F5E9;color:#2E7D32;font-size:9px;font-weight:700;letter-spacing:.3px;border:1px solid #A5D6A7;">✓ VERIFIED</span>'
+                : status === 'mismatch'
+                ? '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;background:#FFF4E5;color:#E65100;font-size:9px;font-weight:700;letter-spacing:.3px;border:1px solid #FFB74D;">⚠ UNVERIFIED</span>'
+                : status === 'missing'
+                ? '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;background:#EEE;color:#757575;font-size:9px;font-weight:700;letter-spacing:.3px;border:1px solid #BDBDBD;">NO WEBSITE</span>'
+                : '';
+
             if (allLocs.length > 1) {
-                localHtml += `<div style="font-weight:600;font-size:12px;color:var(--brand);padding:${idx > 0 ? '10px' : '0'} 0 6px 0;">${loc.address ? loc.address.split(',')[0] : 'Location ' + (idx+1)}</div>`;
+                localHtml += `<div style="font-weight:600;font-size:12px;color:var(--brand);padding:${idx > 0 ? '10px' : '0'} 0 6px 0;">${loc.address ? loc.address.split(',')[0] : 'Location ' + (idx+1)}${verifyChip}</div>`;
+            } else if (verifyChip) {
+                localHtml += `<div style="padding:0 0 6px 0;">${verifyChip}</div>`;
             }
             const ratingColor = loc.rating >= 4.5 ? 'good' : loc.rating >= 4.0 ? 'warning' : 'critical';
             const reviewColor = loc.reviewCount >= 50 ? 'good' : loc.reviewCount > 0 ? 'warning' : 'critical';
@@ -4441,12 +4500,72 @@ function submitToHubSpot(gap) {
 // ═══════════════════════════════════════════════════════════
 
 /**
+ * Build a client-context object from the free-text corrections and answers
+ * so the AI report can weight them as authoritative over scraped data.
+ */
+function getUserCorrectionsForReport() {
+    if (!userAnswers) return null;
+    const corrections = {
+        practiceCorrections: userAnswers.step1Corrections || '',
+        serviceCorrections: userAnswers.step2Corrections || '',
+        digitalCorrections: userAnswers.step3Corrections || '',
+        growthGoal: userAnswers.goal || '',
+        biggestPain: userAnswers.pain || '',
+        freetext: userAnswers.freetext || '',
+    };
+    // Try to extract a corrected business name from Step 1 if the client typed one.
+    const nameMatch = corrections.practiceCorrections.match(
+        /(?:actually called|our name is|we(?:'| a)re|it(?:'| i)s|called)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:[.,\n]|$)/i
+    );
+    if (nameMatch && nameMatch[1]) corrections.correctedBusinessName = nameMatch[1].trim();
+
+    const hasAny = Object.values(corrections).some(v => v && v.trim());
+    return hasAny ? corrections : null;
+}
+
+/**
+ * Re-run the AI report with user corrections folded in.
+ * Called AFTER step 3 is confirmed, when we know all corrections are captured.
+ * Cheap — only hits /api/seo-report (Gemini), not the full data pipeline.
+ */
+async function rerunAiReportWithCorrections() {
+    if (!seoReportData) return;
+    const corrections = getUserCorrectionsForReport();
+    if (!corrections) return;
+
+    try {
+        const reportResp = await fetch('/api/seo-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: seoReportData.siteAudit?.domain || userAnswers.url || '',
+                businessName: corrections.correctedBusinessName || dossier?.practice?.name || '',
+                city: extractCityFromDossier(),
+                siteAudit: seoReportData.siteAudit,
+                lighthouse: seoReportData.lighthouse,
+                pageRank: seoReportData.pageRank,
+                places: seoReportData.places,
+                userCorrections: corrections,
+            }),
+        }).then(r => r.json());
+        if (reportResp && !reportResp.error) {
+            seoReportData.report = reportResp;
+            renderClientAuditPanels(seoReportData);
+        }
+    } catch (err) {
+        console.warn('AI report refinement failed:', err);
+    }
+}
+
+/**
  * Kick off SEO data collection in the background.
  * Called after the user confirms Step 3 (Digital Presence) or when results load.
  */
 async function runSeoIntelligence(url) {
     const domain = url.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-    const businessName = dossier?.practice?.name || '';
+    const corrections = getUserCorrectionsForReport();
+    // Prefer client-corrected business name over the scraped one
+    const businessName = corrections?.correctedBusinessName || dossier?.practice?.name || '';
     const city = extractCityFromDossier();
     const practicePhone = dossier?.practice?.phone || '';
 
@@ -4475,6 +4594,8 @@ async function runSeoIntelligence(url) {
         results.lighthouse = lighthouseFullData;
 
         // Phase 2: Send everything to the AI interpretation layer
+        // Include any client corrections captured so far — Gemini will weight them
+        // as authoritative over scraped data.
         const reportResp = await fetch('/api/seo-report', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4486,6 +4607,7 @@ async function runSeoIntelligence(url) {
                 lighthouse: results.lighthouse,
                 pageRank: results.pageRank,
                 places: results.places,
+                userCorrections: getUserCorrectionsForReport(),
             }),
         }).then(r => r.json()).catch(() => null);
 
