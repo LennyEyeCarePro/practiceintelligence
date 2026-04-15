@@ -13,8 +13,26 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-    const { url, businessName, city, siteAudit, lighthouse, pageRank, places } = req.body || {};
+    const { url, businessName, city, siteAudit, lighthouse, pageRank, places, userCorrections } = req.body || {};
     if (!url) return res.status(400).json({ error: 'Missing url' });
+
+    // Build a single "CLIENT-PROVIDED CONTEXT" block from free-text corrections.
+    // The client knows their practice better than any scraper — this takes priority over scraped data.
+    function buildClientContext(c) {
+        if (!c) return '';
+        const parts = [];
+        if (c.practiceCorrections) parts.push(`• Practice profile corrections (trusted — client clarified what the scrape got wrong): "${c.practiceCorrections}"`);
+        if (c.serviceCorrections) parts.push(`• Services we missed / client offers (trusted over scraped list): "${c.serviceCorrections}"`);
+        if (c.digitalCorrections) parts.push(`• Digital/marketing context the client shared: "${c.digitalCorrections}"`);
+        if (c.growthGoal) parts.push(`• Client's #1 stated growth goal: "${c.growthGoal}"`);
+        if (c.biggestPain) parts.push(`• Client's biggest frustration right now: "${c.biggestPain}"`);
+        if (c.freetext) parts.push(`• Additional notes from the client: "${c.freetext}"`);
+        if (c.correctedBusinessName) parts.push(`• Correct business name (use this, not the scraped one): "${c.correctedBusinessName}"`);
+        if (parts.length === 0) return '';
+        return `\n\nCLIENT-PROVIDED CONTEXT (authoritative — the client knows their own practice):\n${parts.join('\n')}\n\nRules for using this context:\n1. When scraped data contradicts the client's corrections, TRUST THE CLIENT.\n2. Reference specific client-provided details in findings where relevant (e.g. "You mentioned offering dry eye treatment — ensure this is prominent on your homepage").\n3. Tailor the topOpportunity toward the client's stated growth goal and biggest pain point.\n4. Do not claim a service is "missing" if the client said they offer it — instead frame it as a visibility issue ("you offer this but it's not visible on your site/GBP").`;
+    }
+
+    const clientContext = buildClientContext(userCorrections);
 
     const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
@@ -73,7 +91,7 @@ ON-PAGE SEO:
 - Open Graph: ${[audit.hasOgTitle && 'title', audit.hasOgDescription && 'desc', audit.hasOgImage && 'image'].filter(Boolean).join(', ') || 'None'}
 - Word count: ${audit.wordCount || 'N/A'}
 
-DOMAIN AUTHORITY: ${pr.pageRank ?? 'N/A'}/10 (${pr.label || 'Unknown'})
+DOMAIN AUTHORITY: ${pr.pageRank ?? 'N/A'}/10 (${pr.label || 'Unknown'})${clientContext}
 
 Generate a response in this exact JSON format. Do not include any text outside the JSON:
 {

@@ -2710,6 +2710,11 @@ function confirmStep(stepNum) {
         document.getElementById('pip3').classList.add('done');
         document.getElementById('pip3').innerHTML = '✓<span class="step-pip-label">Digital</span>';
 
+        // All 3 steps confirmed — fold the client's free-text corrections back into
+        // the AI analysis. This is cheap (only re-hits /api/seo-report, not the full
+        // scan) and runs in the background while the full story renders.
+        rerunAiReportWithCorrections();
+
         // All 3 steps confirmed — show the full story
         setTimeout(() => {
             renderFullStory();
@@ -4520,12 +4525,77 @@ function submitToHubSpot(gap) {
 // ═══════════════════════════════════════════════════════════
 
 /**
+ * Build a client-context object from the free-text corrections and answers
+ * so the AI report can weight them as authoritative over scraped data.
+ */
+function getUserCorrectionsForReport() {
+    if (!userAnswers) return null;
+    const corrections = {
+        practiceCorrections: userAnswers.step1Corrections || '',
+        serviceCorrections: userAnswers.step2Corrections || '',
+        digitalCorrections: userAnswers.step3Corrections || '',
+        growthGoal: userAnswers.goal || '',
+        biggestPain: userAnswers.pain || '',
+        freetext: userAnswers.freetext || '',
+    };
+    // Try to extract a corrected business name from Step 1 if the client typed one.
+    // Heuristic: look for "actually called", "our name is", "it's", "we're", or a line containing
+    // the URL's domain + a proper-noun pattern. Otherwise leave blank (Gemini gets the raw text).
+    const s1 = corrections.practiceCorrections.toLowerCase();
+    const nameMatch = corrections.practiceCorrections.match(
+        /(?:actually called|our name is|we(?:'| a)re|it(?:'| i)s|called)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:[.,\n]|$)/i
+    );
+    if (nameMatch && nameMatch[1]) corrections.correctedBusinessName = nameMatch[1].trim();
+
+    // Drop empty properties
+    const hasAny = Object.values(corrections).some(v => v && v.trim());
+    return hasAny ? corrections : null;
+}
+
+/**
+ * Re-run the AI report with user corrections folded in.
+ * Called AFTER step 3 is confirmed, when we know all corrections are captured.
+ * Cheap — only hits /api/seo-report (Gemini), not the full data pipeline.
+ */
+async function rerunAiReportWithCorrections() {
+    if (!seoReportData) return; // No prior scan to refine
+    const corrections = getUserCorrectionsForReport();
+    if (!corrections) return; // Nothing new to add
+
+    try {
+        const reportResp = await fetch('/api/seo-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: seoReportData.siteAudit?.domain || userAnswers.url || '',
+                businessName: corrections.correctedBusinessName || dossier?.practice?.name || '',
+                city: extractCityFromDossier(),
+                siteAudit: seoReportData.siteAudit,
+                lighthouse: seoReportData.lighthouse,
+                pageRank: seoReportData.pageRank,
+                places: seoReportData.places,
+                userCorrections: corrections,
+            }),
+        }).then(r => r.json());
+        if (reportResp && !reportResp.error) {
+            seoReportData.report = reportResp;
+            // Re-render if panels are visible
+            renderClientAuditPanels(seoReportData);
+        }
+    } catch (err) {
+        console.warn('AI report refinement failed:', err);
+    }
+}
+
+/**
  * Kick off SEO data collection in the background.
  * Called after the user confirms Step 3 (Digital Presence) or when results load.
  */
 async function runSeoIntelligence(url) {
     const domain = url.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-    const businessName = dossier?.practice?.name || '';
+    const corrections = getUserCorrectionsForReport();
+    // Prefer client-corrected business name over the scraped one
+    const businessName = corrections?.correctedBusinessName || dossier?.practice?.name || '';
     const city = extractCityFromDossier();
     const practicePhone = dossier?.practice?.phone || '';
 
@@ -4554,6 +4624,8 @@ async function runSeoIntelligence(url) {
         results.lighthouse = lighthouseFullData;
 
         // Phase 2: Send everything to the AI interpretation layer
+        // Include any client corrections captured so far — Gemini will weight them
+        // as authoritative over scraped data.
         const reportResp = await fetch('/api/seo-report', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4565,6 +4637,7 @@ async function runSeoIntelligence(url) {
                 lighthouse: results.lighthouse,
                 pageRank: results.pageRank,
                 places: results.places,
+                userCorrections: getUserCorrectionsForReport(),
             }),
         }).then(r => r.json()).catch(() => null);
 
