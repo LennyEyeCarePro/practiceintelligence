@@ -1763,6 +1763,31 @@ function renderContentAnalysis(audit, mobile) {
 }
 
 // ─── GOOGLE BUSINESS PROFILE ────────────────────────
+/**
+ * Normalize a URL/domain to a comparable form ("example.com").
+ * Mirrors the normalizeDomain helper in /api/places.js.
+ */
+function normalizeDomain(url) {
+    if (!url) return '';
+    return url.toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/:\d+/, '')
+        .split('/')[0]
+        .split('?')[0]
+        .trim();
+}
+
+/**
+ * Compare a GBP listing's website to the user's scanned domain.
+ * Returns 'verified' (exact match), 'mismatch' (different site), or 'missing' (no GBP website set).
+ */
+function gbpWebsiteStatus(loc, userDomain) {
+    if (!userDomain) return null;
+    if (!loc.website) return 'missing';
+    return normalizeDomain(loc.website) === userDomain ? 'verified' : 'mismatch';
+}
+
 function renderGBP(allLocs) {
     const gbpBadge = document.getElementById('gbpBadge');
 
@@ -1773,14 +1798,48 @@ function renderGBP(allLocs) {
         return;
     }
 
+    const userDomain = normalizeDomain(scanData.domain || scanData.url || '');
+
+    // Compute verification stats for summary banner
+    const statuses = allLocs.map(l => gbpWebsiteStatus(l, userDomain));
+    const verifiedCount = statuses.filter(s => s === 'verified').length;
+    const mismatchCount = statuses.filter(s => s === 'mismatch').length;
+    const missingCount = statuses.filter(s => s === 'missing').length;
+
     let html = '';
     if (allLocs.length > 1) {
-        html += `<div style="background:rgba(33,150,243,.1);padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:13px;color:#42A5F5;font-weight:500">${allLocs.length} GBP Locations Found</div>`;
+        html += `<div style="background:rgba(33,150,243,.1);padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:13px;color:#42A5F5;font-weight:500">${allLocs.length} GBP Locations Found</div>`;
+    }
+
+    // Verification summary banner — shown whenever we have a user domain to compare against
+    if (userDomain && (mismatchCount > 0 || missingCount > 0)) {
+        const issues = [];
+        if (mismatchCount > 0) issues.push(`${mismatchCount} listing${mismatchCount > 1 ? 's link' : ' links'} to a different website`);
+        if (missingCount > 0) issues.push(`${missingCount} listing${missingCount > 1 ? 's have' : ' has'} no website set`);
+        html += `<div style="background:rgba(255,167,38,.12);border:1px solid rgba(255,167,38,.3);padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:13px;color:#FFA726;">
+            <strong>⚠ Website Verification Issue</strong><br>
+            <span style="color:var(--text);font-weight:400;">${issues.join(' · ')}. Claim and update these Google Business Profiles to link to <strong>${userDomain}</strong>.</span>
+        </div>`;
+    } else if (userDomain && verifiedCount === allLocs.length && allLocs.length > 0) {
+        html += `<div style="background:rgba(76,175,80,.12);border:1px solid rgba(76,175,80,.3);padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:13px;color:#66BB6A;">
+            <strong>✓ All GBP listings verified</strong> <span style="color:var(--text-muted);font-weight:400;">— linked to ${userDomain}</span>
+        </div>`;
     }
 
     allLocs.forEach((loc, idx) => {
+        const status = statuses[idx];
+        const verifyBadge = status === 'verified'
+            ? '<span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:10px;background:rgba(76,175,80,.15);border:1px solid rgba(76,175,80,.3);font-size:10px;color:#66BB6A;font-weight:600;letter-spacing:.3px;">✓ VERIFIED</span>'
+            : status === 'mismatch'
+            ? '<span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:10px;background:rgba(255,167,38,.15);border:1px solid rgba(255,167,38,.3);font-size:10px;color:#FFA726;font-weight:600;letter-spacing:.3px;">⚠ UNVERIFIED</span>'
+            : status === 'missing'
+            ? '<span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:10px;background:rgba(158,158,158,.15);border:1px solid rgba(158,158,158,.3);font-size:10px;color:#BDBDBD;font-weight:600;letter-spacing:.3px;">NO WEBSITE</span>'
+            : '';
+
         if (allLocs.length > 1) {
-            html += `<div style="font-weight:600;font-size:14px;color:var(--accent);padding:${idx > 0 ? '16px' : '4px'} 0 8px 0;border-top:${idx > 0 ? '1px solid var(--border)' : 'none'}">📍 Location ${idx + 1}${loc.address ? ' — ' + loc.address.split(',')[0] : ''}</div>`;
+            html += `<div style="font-weight:600;font-size:14px;color:var(--accent);padding:${idx > 0 ? '16px' : '4px'} 0 8px 0;border-top:${idx > 0 ? '1px solid var(--border)' : 'none'}">📍 Location ${idx + 1}${loc.address ? ' — ' + loc.address.split(',')[0] : ''}${verifyBadge}</div>`;
+        } else if (verifyBadge) {
+            html += `<div style="padding:4px 0 10px 0;">${verifyBadge}</div>`;
         }
 
         const ratingColor = loc.rating >= 4.5 ? 'good' : loc.rating >= 4.0 ? 'warning' : 'critical';
@@ -1797,7 +1856,12 @@ function renderGBP(allLocs) {
             loc.businessStatus === 'OPERATIONAL' ? 'good' : 'warning');
         if (loc.address) html += gbpRowHtml('Address', loc.address);
         if (loc.phone) html += gbpRowHtml('Phone', loc.phone);
-        if (loc.website) html += gbpRowHtml('Website', loc.website);
+        if (loc.website) {
+            const websiteColor = status === 'verified' ? 'good' : status === 'mismatch' ? 'warning' : '';
+            html += gbpRowHtml('Website', loc.website, websiteColor);
+        } else if (userDomain) {
+            html += gbpRowHtml('Website', 'Not set on GBP', 'critical');
+        }
 
         if (loc.recentReview) {
             html += `<div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;">
