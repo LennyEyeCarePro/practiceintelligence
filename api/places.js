@@ -207,6 +207,10 @@ async function findPlace(query, apiKey) {
 /**
  * Filter Text Search results to only locations belonging to this practice.
  * Uses fuzzy name matching + optional website verification.
+ *
+ * IMPORTANT: Website domain match is the STRONGEST signal. When a website is
+ * provided, we strongly prefer places whose website matches the domain, because
+ * a place with the same website is unambiguously the same practice.
  */
 function filterToMatchingBusiness(places, businessName, website) {
     if (!businessName) return places.slice(0, 5); // If no name, just return top results
@@ -217,35 +221,63 @@ function filterToMatchingBusiness(places, businessName, website) {
     // Extract distinctive words (3+ chars, skip common eye care filler words)
     const skipWords = new Set(['the','and','of','for','in','at','eye','care','clinic','center',
         'group','associates','llc','pc','md','od','pa','inc','office','practice','vision',
-        'optical','optometry','ophthalmology','doctor','doctors','medical']);
+        'optical','optometry','ophthalmology','doctor','doctors','medical','family',
+        'specialists','specialist','pediatric','advanced','complete','total','modern','new']);
     const bizWords = normName.split(' ').filter(w => w.length >= 3 && !skipWords.has(w));
 
-    return places.filter(p => {
+    // Eye-care category words — used to validate that a single-distinctive-word match
+    // is actually an eye care practice (not just a business with the same surname/place name)
+    const eyeCareWords = ['eye','vision','optic','optom','ophthal','sight','retina','cornea','lasik'];
+
+    const matches = places.map(p => {
         const pName = normalizeName(p.name || '');
-
-        // Exact or near-exact match: one name fully contains the other
-        if (pName.includes(normName)) return true;
-
-        // Only allow reverse contain if the place name is substantial (>= 3 words)
-        // to prevent "Eye Clinic" matching "Empress Eye Clinic"
         const pWords = pName.split(' ');
-        if (pWords.length >= 3 && normName.includes(pName)) return true;
+        let score = 0;
+        let reasons = [];
 
-        // Distinctive word match: at least 1 non-generic word from the business name
-        // must appear in the Google result name
-        if (bizWords.length > 0) {
-            const matchCount = bizWords.filter(w => pName.includes(w)).length;
-            if (matchCount >= 1) return true;
-        }
-
-        // Website domain match: if the place has a website matching ours, it's ours
+        // STRONGEST: Website domain match — unambiguous same practice
         if (domain && p.website) {
             const pDomain = p.website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').toLowerCase();
-            if (pDomain === domain) return true;
+            if (pDomain === domain) { score += 100; reasons.push('domain'); }
         }
 
-        return false;
+        // STRONG: Full business name appears in place name (e.g. "Cochrane Eye Care" ⊂ "Cochrane Eye Care - Downtown")
+        if (pName.includes(normName)) { score += 50; reasons.push('fullContain'); }
+
+        // STRONG: Place name is fully contained in business name AND has 3+ words
+        if (pWords.length >= 3 && normName.includes(pName)) { score += 40; reasons.push('reverseContain'); }
+
+        // Distinctive word match: count of non-generic words that match
+        const matchedWords = bizWords.filter(w => pName.includes(w));
+        const matchRatio = bizWords.length > 0 ? matchedWords.length / bizWords.length : 0;
+
+        // At least 2 distinctive words matching = high confidence
+        if (matchedWords.length >= 2) { score += 30; reasons.push('multiWord'); }
+
+        // All distinctive words match (even if only 1 total) AND place is eye-care-related
+        const hasEyeCareTerm = eyeCareWords.some(t => pName.includes(t));
+        if (matchRatio >= 1 && hasEyeCareTerm) { score += 20; reasons.push('allWordsEyeCare'); }
+
+        // Single distinctive word match alone is NOT enough unless it's eye-care-related
+        // AND the match word is very distinctive (rare surname, not a common place name)
+        // We require the full exact word boundary (not just substring) for single-word matches
+        if (matchedWords.length === 1 && hasEyeCareTerm && bizWords.length === 1) {
+            // Check word-boundary match (not substring — "cochran" in "cochrane" would otherwise match)
+            const word = matchedWords[0];
+            const wordBoundary = new RegExp(`\\b${word}\\b`).test(pName);
+            if (wordBoundary) { score += 10; reasons.push('singleWordEyeCareBoundary'); }
+        }
+
+        return { place: p, score, reasons };
     });
+
+    // Keep only places with a meaningful score (>= 10)
+    const filtered = matches.filter(m => m.score >= 10);
+
+    // Sort by score descending so best matches come first
+    filtered.sort((a, b) => b.score - a.score);
+
+    return filtered.map(m => m.place);
 }
 
 function normalizeName(name) {

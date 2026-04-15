@@ -23,7 +23,11 @@ export default async function handler(req, res) {
         // Fetch homepage, robots.txt, and sitemap.xml in parallel
         const [htmlResponse, robotsResponse, sitemapResponse] = await Promise.all([
             fetch(`https://${domain}`, {
-                headers: { 'User-Agent': 'Mozilla/5.0 (compatible; PracticeIntelligence-SEO-Bot/1.0)' },
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                },
                 signal: AbortSignal.timeout(10000),
                 redirect: 'follow',
             }).catch(() => null),
@@ -35,22 +39,38 @@ export default async function handler(req, res) {
             }).catch(() => null),
         ]);
 
-        if (!htmlResponse || !htmlResponse.ok) {
-            return res.json({ error: 'Could not fetch site', domain });
+        // Fallback: if bare domain failed, try www. prefix (some sites only respond at www)
+        let finalResponse = htmlResponse;
+        if (!finalResponse || !finalResponse.ok) {
+            try {
+                finalResponse = await fetch(`https://www.${domain}`, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.5',
+                    },
+                    signal: AbortSignal.timeout(10000),
+                    redirect: 'follow',
+                });
+            } catch (_) { /* fall through */ }
         }
 
-        const html = await htmlResponse.text();
-        const finalUrl = htmlResponse.url;
+        if (!finalResponse || !finalResponse.ok) {
+            return res.json({ error: 'Could not fetch site', domain, status: finalResponse?.status });
+        }
 
-        // ── Security Headers ──
+        const html = await finalResponse.text();
+        const finalUrl = finalResponse.url;
+
+        // ── Security Headers (use finalResponse — the one that actually succeeded) ──
         const securityHeaders = {
-            contentSecurityPolicy: htmlResponse.headers.get('content-security-policy') ? true : false,
-            xFrameOptions: htmlResponse.headers.get('x-frame-options') || null,
-            xContentTypeOptions: htmlResponse.headers.get('x-content-type-options') || null,
-            strictTransportSecurity: htmlResponse.headers.get('strict-transport-security') ? true : false,
-            xXssProtection: htmlResponse.headers.get('x-xss-protection') || null,
-            referrerPolicy: htmlResponse.headers.get('referrer-policy') || null,
-            permissionsPolicy: htmlResponse.headers.get('permissions-policy') ? true : false,
+            contentSecurityPolicy: finalResponse.headers.get('content-security-policy') ? true : false,
+            xFrameOptions: finalResponse.headers.get('x-frame-options') || null,
+            xContentTypeOptions: finalResponse.headers.get('x-content-type-options') || null,
+            strictTransportSecurity: finalResponse.headers.get('strict-transport-security') ? true : false,
+            xXssProtection: finalResponse.headers.get('x-xss-protection') || null,
+            referrerPolicy: finalResponse.headers.get('referrer-policy') || null,
+            permissionsPolicy: finalResponse.headers.get('permissions-policy') ? true : false,
         };
         const securityScore = [
             securityHeaders.contentSecurityPolicy,
@@ -62,7 +82,7 @@ export default async function handler(req, res) {
 
         // ── Redirect chain ──
         const redirectChain = [];
-        if (htmlResponse.redirected) {
+        if (finalResponse.redirected) {
             redirectChain.push({ from: `https://${domain}`, to: finalUrl });
         }
 
