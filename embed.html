@@ -3839,6 +3839,23 @@ function renderCoreAuditFromDossier(d) {
     convBody.innerHTML = convHtml;
 }
 
+// ─── GBP Website Verification helpers (mirror /api/places.js) ───
+function normalizeGbpDomain(url) {
+    if (!url) return '';
+    return url.toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/:\d+/, '')
+        .split('/')[0]
+        .split('?')[0]
+        .trim();
+}
+function gbpVerifyStatus(loc, userDomain) {
+    if (!userDomain) return null;
+    if (!loc.website) return 'missing';
+    return normalizeGbpDomain(loc.website) === userDomain ? 'verified' : 'mismatch';
+}
+
 // ─── Render client-facing audit panels from SEO Intelligence data ───
 function renderClientAuditPanels(data) {
     const biz = data.places?.locations?.[0] || data.places?.business || {};
@@ -3849,21 +3866,58 @@ function renderClientAuditPanels(data) {
     const audit = data.siteAudit || {};
     const report = data.report || {};
 
+    // User's scanned domain — used to verify GBP listings belong to this practice
+    const userDomain = normalizeGbpDomain(
+        audit.domain || dossier?.practice?.url || dossier?.meta?.url || dossier?.meta?.domain || ''
+    );
+
     // ═══ 3A: LOCAL VISIBILITY ═══
     const localBody = document.getElementById('localVisibilityBody');
     const localBadge = document.getElementById('localVisibilityBadge');
     let localHtml = '';
 
     if (allLocs.length > 0) {
+        // Compute verification stats across all locations
+        const statuses = allLocs.map(l => gbpVerifyStatus(l, userDomain));
+        const mismatchCount = statuses.filter(s => s === 'mismatch').length;
+        const missingCount = statuses.filter(s => s === 'missing').length;
+        const verifiedCount = statuses.filter(s => s === 'verified').length;
+
         // Multi-location summary
         if (allLocs.length > 1) {
             localHtml += `<div style="background:#E8F0FE;padding:6px 10px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#1A73E8;font-weight:500;">${allLocs.length} Google Business Profiles Found</div>`;
         }
 
+        // Verification summary banner — drives a clear action item for the client
+        if (userDomain && (mismatchCount > 0 || missingCount > 0)) {
+            const issues = [];
+            if (mismatchCount > 0) issues.push(`${mismatchCount} listing${mismatchCount > 1 ? 's link' : ' links'} to a different website`);
+            if (missingCount > 0) issues.push(`${missingCount} listing${missingCount > 1 ? 's have' : ' has'} no website set`);
+            localHtml += `<div style="background:#FFF4E5;border:1px solid #FFB74D;padding:8px 10px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#E65100;">
+                <strong>⚠ Website Verification Issue</strong><br>
+                <span style="color:#5D4037;font-weight:400;">${issues.join(' · ')}. Your Google Business Profile should link to <strong>${userDomain}</strong>.</span>
+            </div>`;
+        } else if (userDomain && verifiedCount === allLocs.length && verifiedCount > 0) {
+            localHtml += `<div style="background:#E8F5E9;border:1px solid #81C784;padding:6px 10px;border-radius:6px;margin-bottom:10px;font-size:12px;color:#2E7D32;">
+                <strong>✓ All GBP listings verified</strong> <span style="color:#555;font-weight:400;">— linked to ${userDomain}</span>
+            </div>`;
+        }
+
         // Show key metrics for primary location (or all if multi)
         allLocs.forEach((loc, idx) => {
+            const status = statuses[idx];
+            const verifyChip = status === 'verified'
+                ? '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;background:#E8F5E9;color:#2E7D32;font-size:9px;font-weight:700;letter-spacing:.3px;border:1px solid #A5D6A7;">✓ VERIFIED</span>'
+                : status === 'mismatch'
+                ? '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;background:#FFF4E5;color:#E65100;font-size:9px;font-weight:700;letter-spacing:.3px;border:1px solid #FFB74D;">⚠ UNVERIFIED</span>'
+                : status === 'missing'
+                ? '<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:8px;background:#EEE;color:#757575;font-size:9px;font-weight:700;letter-spacing:.3px;border:1px solid #BDBDBD;">NO WEBSITE</span>'
+                : '';
+
             if (allLocs.length > 1) {
-                localHtml += `<div style="font-weight:600;font-size:12px;color:var(--brand);padding:${idx > 0 ? '10px' : '0'} 0 6px 0;">${loc.address ? loc.address.split(',')[0] : 'Location ' + (idx+1)}</div>`;
+                localHtml += `<div style="font-weight:600;font-size:12px;color:var(--brand);padding:${idx > 0 ? '10px' : '0'} 0 6px 0;">${loc.address ? loc.address.split(',')[0] : 'Location ' + (idx+1)}${verifyChip}</div>`;
+            } else if (verifyChip) {
+                localHtml += `<div style="padding:0 0 6px 0;">${verifyChip}</div>`;
             }
             const ratingColor = loc.rating >= 4.5 ? 'good' : loc.rating >= 4.0 ? 'warning' : 'critical';
             const reviewColor = loc.reviewCount >= 50 ? 'good' : loc.reviewCount > 0 ? 'warning' : 'critical';
