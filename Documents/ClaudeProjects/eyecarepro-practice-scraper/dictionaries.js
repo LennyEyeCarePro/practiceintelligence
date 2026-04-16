@@ -53,6 +53,7 @@ const SCHEDULING_PLATFORMS = [
     { id: 'revolution_ehr_scheduler', name: 'RevolutionEHR Scheduler', patterns: ['revolutionehr.com/scheduling', 'revehrscheduler', 'rev-scheduler', 'revolutionehr.com/book', 'revolutionehr.*schedul'] },
     { id: 'eyefinity_scheduler', name: 'Eyefinity Scheduler', patterns: ['eyefinity.com/scheduling', 'eyefinity.*schedul', 'eyefinity.*book', 'eyefinityscheduler'] },
     { id: 'optikal', name: 'Optikal', patterns: ['optikal'] },
+    { id: 'visualbook', name: 'VisualBook', patterns: ['visualbook.ca', 'visualbook.com', 'visualbook'] },
 
     // ── General healthcare / practice schedulers ──
     { id: 'zocdoc', name: 'Zocdoc', patterns: ['zocdoc.com', 'zocdoc'] },

@@ -243,12 +243,6 @@ body {
     border-radius: 8px;
     cursor: pointer;
     transition: all .15s;
-    margin-bottom: 16px;
-    position: sticky;
-    top: 12px;
-    z-index: 100;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
 }
 .btn-back:hover {
     color: var(--brand);
@@ -256,6 +250,39 @@ body {
     background: rgba(15,76,129,.04);
 }
 .btn-back svg { width: 16px; height: 16px; }
+
+.btn-forward {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: rgba(245,247,250,.95);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .15s;
+}
+.btn-forward:hover {
+    color: var(--brand);
+    border-color: var(--brand);
+    background: rgba(15,76,129,.04);
+}
+.btn-forward svg { width: 16px; height: 16px; }
+.screen-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    position: sticky;
+    top: 12px;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
 
 .intake-footer {
     text-align: center;
@@ -1568,7 +1595,10 @@ body {
          ══════════════════════════════════════════════════════ -->
     <div id="screen2" class="screen">
 
-        <button class="btn-back" onclick="goBack(2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+        <div class="screen-nav">
+            <button class="btn-back" onclick="goBack(2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+            <button class="btn-forward" data-from="2" onclick="goForward(2)" style="display:none">Next<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
 
         <!-- Step Progress Bar -->
         <div class="step-progress">
@@ -1594,7 +1624,10 @@ body {
          SCREEN 3 — THE STORY (after all 3 confirmations)
          ══════════════════════════════════════════════════════ -->
     <div id="screen3" class="screen">
-        <button class="btn-back" onclick="goBack(3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+        <div class="screen-nav">
+            <button class="btn-back" onclick="goBack(3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+            <button class="btn-forward" data-from="3" onclick="goForward(3)" style="display:none">Next<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
         <div class="dossier-header">
             <div class="dossier-badge">Your Practice Intelligence Report</div>
             <h2 class="dossier-title" id="dossierPracticeName">Your Practice</h2>
@@ -1687,7 +1720,7 @@ body {
         <!-- CTA after story -->
         <div class="confirm-card">
             <h3>Ready to see your growth opportunities?</h3>
-            <p>We'll ask you 2-3 quick questions to personalize your recommendations, then show you exactly where the biggest growth potential is.</p>
+            <p>We'll ask you 3-4 quick questions to personalize your recommendations, then show you exactly where the biggest growth potential is.</p>
             <button class="btn-primary" onclick="goToStrategic()">Show My Opportunities</button>
         </div>
     </div>
@@ -1696,7 +1729,10 @@ body {
          SCREEN 4 — STRATEGIC QUESTIONS
          ══════════════════════════════════════════════════════ -->
     <div id="screen4" class="screen">
-        <button class="btn-back" onclick="goBack(4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+        <div class="screen-nav">
+            <button class="btn-back" onclick="goBack(4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+            <button class="btn-forward" data-from="4" onclick="goForward(4)" style="display:none">Next<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
         <div class="strategic-card">
             <div class="strategic-q-label">Question 1 of 4</div>
             <div class="strategic-q-text">What's the #1 thing you want to grow this year?</div>
@@ -1727,7 +1763,10 @@ body {
          ══════════════════════════════════════════════════════ -->
     <div id="screen5" class="screen">
 
-        <button class="btn-back" onclick="goBack(5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+        <div class="screen-nav">
+            <button class="btn-back" onclick="goBack(5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+            <span></span>
+        </div>
 
         <!-- ═══ SECTION 1: THE REVENUE GAP HEADLINE ═══ -->
         <div class="results-hero" id="resultsHero">
@@ -2135,12 +2174,41 @@ function showScreen(num) {
         target.offsetHeight;
         target.style.animation = '';
     }
+    if (num > highestScreenReached) highestScreenReached = num;
+    // Update forward buttons visibility
+    document.querySelectorAll('.btn-forward').forEach(btn => {
+        const fromScreen = parseInt(btn.dataset.from, 10);
+        btn.style.display = (fromScreen < highestScreenReached) ? '' : 'none';
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// Track the highest screen the user has reached so we know if forward is available
+let highestScreenReached = 1;
+
 function goBack(fromScreen) {
-    // Screen 2 → 1, Screen 3 → 2, Screen 4 → 3, Screen 5 → 4
+    if (fromScreen <= 1) {
+        // Going back to Screen 1 — reset so they can start over
+        resetForRestart();
+        showScreen(1);
+        return;
+    }
     showScreen(fromScreen - 1);
+}
+
+function goForward(fromScreen) {
+    if (fromScreen < highestScreenReached) {
+        showScreen(fromScreen + 1);
+    }
+}
+
+function resetForRestart() {
+    // Re-enable the analyze button so user can start over
+    const btn = document.getElementById('btnAnalyze');
+    if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Analyze My Practice';
+    }
 }
 
 // ─── START ANALYSIS (Progressive Flow) ─────────────────────
@@ -2715,6 +2783,9 @@ function confirmStep(stepNum) {
         document.getElementById('pip3').classList.remove('active');
         document.getElementById('pip3').classList.add('done');
         document.getElementById('pip3').innerHTML = '✓<span class="step-pip-label">Digital</span>';
+
+        // Apply client corrections to the dossier BEFORE rendering
+        applyClientCorrectionsToDossier();
 
         // All 3 steps confirmed — fold the client's free-text corrections back into
         // the AI analysis. This is cheap (only re-hits /api/seo-report, not the full
@@ -4531,6 +4602,53 @@ function submitToHubSpot(gap) {
 // ═══════════════════════════════════════════════════════════
 
 /**
+ * Apply client corrections directly to the dossier object so that
+ * renderFullStory() and generateNarrative() use the corrected data.
+ * This is called BEFORE rendering, so the story reflects what the user told us.
+ */
+function applyClientCorrectionsToDossier() {
+    if (!dossier || !userAnswers) return;
+
+    const s1 = (userAnswers.step1Corrections || '').trim();
+    if (!s1) return;
+
+    const lower = s1.toLowerCase();
+
+    // ── Extract corrected business name ──
+    // Match patterns like "name is Cochrane Eyecare", "its Cochrane Eyecare", "we are Cochrane Eyecare", "actually called Cochrane Eyecare"
+    const nameMatch = s1.match(
+        /(?:actually called|our name is|name is|we(?:'| a)re|it(?:'| i)s|called)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i
+    );
+    if (nameMatch && nameMatch[1]) {
+        const correctedName = nameMatch[1].trim().replace(/[.,;]+$/, '');
+        if (correctedName.length >= 3) {
+            dossier.practice = dossier.practice || {};
+            dossier.practice.name = correctedName;
+        }
+    }
+
+    // ── Extract corrected location count ──
+    // Match patterns like "only have 1", "we have 1 location", "1 location", "only 1", "single location"
+    const locMatch = s1.match(
+        /(?:only\s+(?:have\s+)?|we\s+(?:only\s+)?have\s+|just\s+)(\d+)\s*(?:location|office|clinic|branch|practice)?/i
+    ) || s1.match(
+        /(\d+)\s+(?:location|office|clinic|branch|practice)/i
+    );
+    if (locMatch) {
+        const correctedCount = parseInt(locMatch[1], 10);
+        if (correctedCount >= 1 && correctedCount <= 100) {
+            dossier.locations = dossier.locations || {};
+            dossier.locations.count = correctedCount;
+        }
+    }
+    // Also handle "single location" / "one location"
+    if (/\b(?:single|one|only one|just one)\s+(?:location|office|clinic|practice)/i.test(lower)) {
+        dossier.locations = dossier.locations || {};
+        dossier.locations.count = 1;
+    }
+}
+
+/**
  * Build a client-context object from the free-text corrections and answers
  * so the AI report can weight them as authoritative over scraped data.
  */
@@ -4545,10 +4663,14 @@ function getUserCorrectionsForReport() {
         freetext: userAnswers.freetext || '',
     };
     // Try to extract a corrected business name from Step 1 if the client typed one.
+    // Matches patterns like: "its Cochrane Eyecare", "name is Cochrane Eyecare",
+    // "actually called Cochrane Eyecare", "we are Cochrane Eyecare"
     const nameMatch = corrections.practiceCorrections.match(
-        /(?:actually called|our name is|we(?:'| a)re|it(?:'| i)s|called)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:[.,\n]|$)/i
+        /(?:actually called|our name is|name is|we(?:'| a)re|it(?:'| i)?s|called)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i
     );
-    if (nameMatch && nameMatch[1]) corrections.correctedBusinessName = nameMatch[1].trim();
+    if (nameMatch && nameMatch[1]) {
+        corrections.correctedBusinessName = nameMatch[1].trim().replace(/[.,;]+$/, '');
+    }
 
     const hasAny = Object.values(corrections).some(v => v && v.trim());
     return hasAny ? corrections : null;
@@ -4582,6 +4704,8 @@ async function rerunAiReportWithCorrections() {
         if (reportResp && !reportResp.error) {
             seoReportData.report = reportResp;
             renderClientAuditPanels(seoReportData);
+            // Re-render the full story so the narrative reflects the corrected AI report
+            renderFullStory();
         }
     } catch (err) {
         console.warn('AI report refinement failed:', err);
@@ -4662,21 +4786,37 @@ async function runSeoIntelligence(url) {
 }
 
 function extractCityFromDossier() {
-    // Try to get city from scraped addresses
-    const addr = dossier?.locations?.addresses?.[0] || '';
-    const match = addr.match(/,\s*([A-Za-z\s]+),?\s*[A-Z]{2}/);
-    if (match) return match[1].trim();
+    // Helper: try all city patterns against an address string
+    function tryExtract(addr) {
+        if (!addr) return '';
+        // Canadian format: "Cochrane, AB T4C 1B5" (City, PROV PostalCode)
+        const caMatch = addr.match(/,\s*([A-Za-z\s]+?)\s*,\s*[A-Z]{2}\s+[A-Z]\d[A-Z]/);
+        if (caMatch) return caMatch[1].trim();
+        // US format: "City, ST 12345" or "City, ST"
+        const usMatch = addr.match(/,\s*([A-Za-z\s]+?)\s*,\s*[A-Z]{2}(?:\s|$)/);
+        if (usMatch) return usMatch[1].trim();
+        // Fallback: "City, STATE" where STATE is 2+ uppercase chars
+        const fallback = addr.match(/,\s*([A-Za-z\s]+?)\s*,?\s*[A-Z]{2}/);
+        if (fallback) return fallback[1].trim();
+        return '';
+    }
+
+    // Try scraped addresses first
+    const addresses = dossier?.locations?.addresses || [];
+    for (const addr of addresses) {
+        const city = tryExtract(addr);
+        if (city) return city;
+    }
+
+    // Try to extract city from the domain name hint in the footer/meta
+    // (some practices have city in their domain: cochraneyecare.com)
 
     // Fallback: try GBP address from Places API (available after SEO intelligence runs)
     const gbpAddr = seoReportData?.places?.locations?.[0]?.address
         || seoReportData?.places?.business?.address || '';
     if (gbpAddr) {
-        // Try US format: "City, ST 12345"
-        const usMatch = gbpAddr.match(/,\s*([A-Za-z\s]+),?\s*[A-Z]{2}\s/);
-        if (usMatch) return usMatch[1].trim();
-        // Try Canadian format: "City, ON M1H 1B3" or "Scarborough, ON"
-        const caMatch = gbpAddr.match(/,\s*([A-Za-z\s]+),?\s*[A-Z]{2}\s*[A-Z]\d[A-Z]/);
-        if (caMatch) return caMatch[1].trim();
+        const city = tryExtract(gbpAddr);
+        if (city) return city;
         // Generic: grab the second-to-last comma-separated part (usually city)
         const parts = gbpAddr.split(',').map(p => p.trim());
         if (parts.length >= 3) return parts[parts.length - 3];

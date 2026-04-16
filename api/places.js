@@ -61,7 +61,9 @@ export default async function handler(req, res) {
         }
 
         // Tertiary search: website domain (catches listings that might use a different display name)
-        if (website && allPlaces.length === 0) {
+        // ALWAYS run when website is provided, not just when allPlaces is empty — this catches
+        // cases where the name-based search returns false positives (e.g. "Cochrane" town name)
+        if (website) {
             const domain = website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
             const domainResults = await textSearch(domain, API_KEY);
             debugLog.push({ step: 'textSearch3_domain', query: domain, resultCount: domainResults.length });
@@ -144,8 +146,12 @@ export default async function handler(req, res) {
             if (websiteMatched.length > 0) {
                 // Strong signal: lock in to only the website-verified locations
                 locations = websiteMatched;
+            } else {
+                // No website matches — be conservative: only keep top 1 name-matched result
+                // This prevents returning 6 false positive "Cochrane" businesses when none match the domain.
+                debugLog.push({ step: 'website_filter_fallback', reason: 'No GBP website matched user domain, limiting to top 1 name-match' });
+                locations = locations.slice(0, 1);
             }
-            // Otherwise fall through to name-based candidates (lower confidence)
         }
 
         if (locations.length === 0) {

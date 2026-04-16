@@ -132,7 +132,7 @@ export default async function handler(req, res) {
 
             // Booking signals
             hasBookingCTA: /book|schedule|appointment|reserve/i.test(html),
-            hasOnlineBooking: /book\s*(?:online|now|an?\s*appointment)|schedule\s*(?:online|now|an?\s*appointment)|request\s*(?:an?\s*)?appointment/i.test(html),
+            hasOnlineBooking: /book\s*(?:online|now|an?\s*appointment)|schedule\s*(?:online|now|an?\s*appointment)|request\s*(?:an?\s*)?appointment|visualbook\.ca|visualbook\.com|localmed\.com|zocdoc\.com|nexhealth\.com|scheduleyourexam\.com|acuityscheduling\.com|calendly\.com/i.test(html),
 
             // NAP signals
             hasPhone: /\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/.test(html),
