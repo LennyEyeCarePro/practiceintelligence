@@ -4,6 +4,7 @@
   "private": true,
   "description": "EyeCarePro Practice Intelligence — SEO audit + client assessment tool",
   "scripts": {
-    "build": "node build-embed.js"
+    "build": "node build-embed.js",
+    "postinstall": "node build-embed.js"
   }
 }
