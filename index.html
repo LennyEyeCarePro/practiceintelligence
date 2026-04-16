@@ -2204,12 +2204,16 @@ async function startAnalysis() {
     // Go to Screen 2 — progressive confirmation
     showScreen(2);
 
-    // Fire BOTH Apify and Lighthouse simultaneously
+    // Fire Apify, Lighthouse, AND a quick Places lookup ALL simultaneously.
+    // The Places lookup uses the website domain to get the VERIFIED business name
+    // from Google, which is far more reliable than scraping the website's meta tags
+    // (which often return taglines like "Experienced Eye Doctors" instead of the real name).
     const apifyPromise = runApifyScraper(url);
     const lighthousePromise = runLighthouse(url);
+    const placesNamePromise = fetchPlacesName(url);
 
     // Track completion
-    apifyPromise.then(result => {
+    apifyPromise.then(async (result) => {
         dossier = result;
         // Auto-correct practice type: if both MDs and ODs present, force multi_specialty
         correctPracticeType(dossier);
@@ -2220,10 +2224,24 @@ async function startAnalysis() {
                 dossier.locations.count = Math.max(addrCount, 1);
             }
         }
-        // Sanity-check practice name: generic service names are likely scraper errors
+
+        // ── PRIMARY name source: Google Places (verified business name) ──
+        // Wait for the parallel Places lookup to finish (it usually completes fast)
+        try {
+            const placesName = await placesNamePromise;
+            if (placesName) {
+                console.log('[startAnalysis] Using Places-verified name:', placesName, '(scraper had:', dossier.practice?.name, ')');
+                dossier.practice = dossier.practice || {};
+                dossier.practice.name = placesName;
+            }
+        } catch (_) { /* Places lookup failed — fall through to scraper name */ }
+
+        // ── FALLBACK: Sanity-check scraper name for generic junk ──
         const GENERIC_NAMES = ['eye exams','contact lenses','eye care','optical','services',
             'about us','home','our services','about','welcome','locations','schedule',
-            'eyeglasses','frames','sunglasses','blog','news','careers','faqs'];
+            'eyeglasses','frames','sunglasses','blog','news','careers','faqs',
+            'experienced eye doctors','your eye doctors','our doctors','our team',
+            'comprehensive eye care','quality eye care','trusted eye care'];
         const detectedName = (dossier.practice?.name || '').trim();
         if (!detectedName || GENERIC_NAMES.includes(detectedName.toLowerCase())) {
             // Fall back to domain-based name (e.g. empresseyeclinic.com -> Empress Eye Clinic)
@@ -3124,6 +3142,36 @@ function formatPracticeType(type) {
 function formatSubType(sub) {
     const map = { solo: 'Solo Provider', group: 'Group Practice', large_group: 'Large Group (6+ providers)' };
     return map[sub] || sub || '';
+}
+
+// ─── PLACES NAME LOOKUP (runs in parallel with scraper) ─────
+// Queries Google Places with the website domain to get the VERIFIED business name.
+// This is the single most reliable way to identify a practice — Google's own listing
+// is always more accurate than scraping website meta tags / h1 / title.
+async function fetchPlacesName(url) {
+    try {
+        const domain = url.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+        if (!domain) return null;
+        const resp = await fetch(`/api/places?website=${encodeURIComponent('https://' + domain)}`);
+        const data = await resp.json();
+        // The Places API returns a business object with the verified name
+        const biz = data?.business || data?.locations?.[0];
+        if (biz?.name && biz?.website) {
+            // Verify the returned business's website actually matches our domain
+            const bizDomain = biz.website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').toLowerCase();
+            if (bizDomain === domain.toLowerCase()) {
+                console.log('[fetchPlacesName] Verified match:', biz.name, '- domain:', bizDomain);
+                // Also stash the full Places data so runSeoIntelligence can reuse it
+                // instead of making a duplicate API call later
+                window._earlyPlacesData = data;
+                return biz.name;
+            }
+        }
+        return null;
+    } catch (err) {
+        console.warn('[fetchPlacesName] Failed:', err);
+        return null;
+    }
 }
 
 // ─── APIFY SCRAPER ──────────────────────────────────────────
@@ -4759,12 +4807,20 @@ async function runSeoIntelligence(url) {
         if (domain) placesParams.set('website', domain);
         if (practicePhone) placesParams.set('phone', practicePhone);
 
+        // Reuse early Places data from fetchPlacesName() if available and the name
+        // hasn't been corrected by the user (corrected name needs a fresh query).
+        const canReuseEarlyPlaces = window._earlyPlacesData
+            && !corrections?.correctedBusinessName
+            && window._earlyPlacesData.business;
+
         const [auditResp, rankResp, placesResp] = await Promise.all([
             fetch(`/api/site-audit?url=${encodeURIComponent(domain)}`).then(r => r.json()).catch(() => null),
             fetch(`/api/pagerank?domain=${encodeURIComponent(domain)}`).then(r => r.json()).catch(() => null),
-            (businessName || domain)
-                ? fetch(`/api/places?${placesParams.toString()}`).then(r => r.json()).catch(() => null)
-                : Promise.resolve(null),
+            canReuseEarlyPlaces
+                ? Promise.resolve(window._earlyPlacesData)
+                : ((businessName || domain)
+                    ? fetch(`/api/places?${placesParams.toString()}`).then(r => r.json()).catch(() => null)
+                    : Promise.resolve(null)),
         ]);
 
         results.siteAudit = auditResp;
