@@ -2149,6 +2149,8 @@ function showScreen(num) {
         const fromScreen = parseInt(btn.dataset.from, 10);
         btn.style.display = (fromScreen < highestScreenReached) ? '' : 'none';
     });
+    // If returning to screen 1 (the start form), re-enable the analyze button
+    if (num === 1) resetForRestart();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2157,8 +2159,6 @@ let highestScreenReached = 1;
 
 function goBack(fromScreen) {
     if (fromScreen <= 1) {
-        // Going back to Screen 1 — reset so they can start over
-        resetForRestart();
         showScreen(1);
         return;
     }
