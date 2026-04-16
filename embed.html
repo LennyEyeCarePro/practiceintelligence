@@ -1,9 +1,14 @@
 <!DOCTYPE html>
+<!--
+  AUTO-GENERATED FILE — do not edit.
+  Built from index.html + embed-overrides.css by build-embed.js.
+  Run: npm run build (or: node build-embed.js)
+-->
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Practice Growth Assessment | EyeCarePro</title>
 <style id="embed-overrides">
 /* ─── EMBED MODE: borderless, transparent ─── */
 html, body { background: transparent !important; }
@@ -29,6 +34,7 @@ html, body { background: transparent !important; }
 .screen { max-width: 680px; margin: 0 auto; }
 footer, .footer { display: none !important; }
 </style>
+<title>Practice Growth Assessment | EyeCarePro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -4539,15 +4545,11 @@ function getUserCorrectionsForReport() {
         freetext: userAnswers.freetext || '',
     };
     // Try to extract a corrected business name from Step 1 if the client typed one.
-    // Heuristic: look for "actually called", "our name is", "it's", "we're", or a line containing
-    // the URL's domain + a proper-noun pattern. Otherwise leave blank (Gemini gets the raw text).
-    const s1 = corrections.practiceCorrections.toLowerCase();
     const nameMatch = corrections.practiceCorrections.match(
         /(?:actually called|our name is|we(?:'| a)re|it(?:'| i)s|called)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:[.,\n]|$)/i
     );
     if (nameMatch && nameMatch[1]) corrections.correctedBusinessName = nameMatch[1].trim();
 
-    // Drop empty properties
     const hasAny = Object.values(corrections).some(v => v && v.trim());
     return hasAny ? corrections : null;
 }
@@ -4558,9 +4560,9 @@ function getUserCorrectionsForReport() {
  * Cheap — only hits /api/seo-report (Gemini), not the full data pipeline.
  */
 async function rerunAiReportWithCorrections() {
-    if (!seoReportData) return; // No prior scan to refine
+    if (!seoReportData) return;
     const corrections = getUserCorrectionsForReport();
-    if (!corrections) return; // Nothing new to add
+    if (!corrections) return;
 
     try {
         const reportResp = await fetch('/api/seo-report', {
@@ -4579,7 +4581,6 @@ async function rerunAiReportWithCorrections() {
         }).then(r => r.json());
         if (reportResp && !reportResp.error) {
             seoReportData.report = reportResp;
-            // Re-render if panels are visible
             renderClientAuditPanels(seoReportData);
         }
     } catch (err) {

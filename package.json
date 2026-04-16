@@ -1,0 +1,9 @@
+{
+  "name": "practiceintelligence",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EyeCarePro Practice Intelligence — SEO audit + client assessment tool",
+  "scripts": {
+    "build": "node build-embed.js"
+  }
+}
