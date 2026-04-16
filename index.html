@@ -4880,7 +4880,9 @@ async function runSeoIntelligence(url) {
     renderClientAuditPanels(results);
 
     // Submit SEO data to Google Sheets (internal capture)
-    submitSeoToSheets(results);
+    if (typeof submitSeoToSheets === 'function') {
+        submitSeoToSheets(results);
+    }
 
     // Fire search rankings check async (doesn't block SEO section display)
     runSearchRankings().catch(err => console.error('Search rankings error:', err));
