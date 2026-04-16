@@ -4716,13 +4716,39 @@ async function rerunAiReportWithCorrections() {
     if (!corrections) return;
 
     try {
+        const correctedName = corrections.correctedBusinessName || dossier?.practice?.name || '';
+        const domain = seoReportData.siteAudit?.domain || userAnswers.url?.replace(/^https?:\/\//, '').replace(/\/.*$/, '') || '';
+        const city = extractCityFromDossier();
+
+        // If the user corrected the business name, re-query the Places API with
+        // the corrected name — the original name may have been a tagline/meta desc
+        // that returned completely wrong GBP results and competitors.
+        if (corrections.correctedBusinessName) {
+            const placesParams = new URLSearchParams();
+            placesParams.set('businessName', correctedName);
+            if (city) placesParams.set('city', city);
+            if (domain) placesParams.set('website', domain);
+            const practicePhone = dossier?.practice?.phone || '';
+            if (practicePhone) placesParams.set('phone', practicePhone);
+
+            try {
+                const newPlaces = await fetch(`/api/places?${placesParams.toString()}`).then(r => r.json());
+                if (newPlaces && !newPlaces.error && (newPlaces.business || newPlaces.locations?.length > 0)) {
+                    seoReportData.places = newPlaces;
+                    console.log('[rerun] Places re-queried with corrected name:', correctedName);
+                }
+            } catch (placesErr) {
+                console.warn('Places re-query failed:', placesErr);
+            }
+        }
+
         const reportResp = await fetch('/api/seo-report', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                url: seoReportData.siteAudit?.domain || userAnswers.url || '',
-                businessName: corrections.correctedBusinessName || dossier?.practice?.name || '',
-                city: extractCityFromDossier(),
+                url: domain,
+                businessName: correctedName,
+                city,
                 siteAudit: seoReportData.siteAudit,
                 lighthouse: seoReportData.lighthouse,
                 pageRank: seoReportData.pageRank,

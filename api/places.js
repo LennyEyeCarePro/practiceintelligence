@@ -63,10 +63,14 @@ export default async function handler(req, res) {
         // Tertiary search: website domain (catches listings that might use a different display name)
         // ALWAYS run when website is provided, not just when allPlaces is empty — this catches
         // cases where the name-based search returns false positives (e.g. "Cochrane" town name)
+        // We track domain results separately so they can be used as a high-priority fallback
+        // when the name filter fails (e.g. scraped name was a tagline, not the real practice name).
+        let domainSearchResults = [];
         if (website) {
             const domain = website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
             const domainResults = await textSearch(domain, API_KEY);
             debugLog.push({ step: 'textSearch3_domain', query: domain, resultCount: domainResults.length });
+            domainSearchResults = [...domainResults]; // keep a separate copy
             const existingIds = new Set(allPlaces.map(p => p.place_id));
             for (const r of domainResults) {
                 if (!existingIds.has(r.place_id)) {
@@ -125,8 +129,19 @@ export default async function handler(req, res) {
         const nameMatchedPlaces = filterToMatchingBusiness(allPlaces, businessName, website);
         debugLog.push({ step: 'post_name_filter', matchedCount: nameMatchedPlaces.length });
 
-        // If filter removed everything, fall back to the top search result only
-        const candidates = nameMatchedPlaces.length > 0 ? nameMatchedPlaces : allPlaces.slice(0, 1);
+        // If filter removed everything, prefer domain search results over generic text search.
+        // The domain search (step 3) is the strongest signal — a GBP that shows up when
+        // searching for "cochraneeyecare.com" is almost certainly the right practice, even
+        // if the scraped business name was completely wrong (e.g. a tagline like "Experienced Eye Doctors").
+        let candidates;
+        if (nameMatchedPlaces.length > 0) {
+            candidates = nameMatchedPlaces;
+        } else if (website && domainSearchResults.length > 0) {
+            debugLog.push({ step: 'fallback_to_domain_results', reason: 'Name filter matched 0, using domain search results instead', count: domainSearchResults.length });
+            candidates = domainSearchResults;
+        } else {
+            candidates = allPlaces.slice(0, 1);
+        }
 
         // ── Step 3: Get Place Details for each candidate (parallel, max 10) ──
         // We fetch details FIRST so we have the website field for the second-pass filter.
