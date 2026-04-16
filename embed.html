@@ -2256,7 +2256,7 @@ async function startAnalysis() {
             }
         }
 
-        // ── PRIMARY name source: Google Places (verified business name) ──
+        // ── PRIMARY source: Google Places (verified business name + location data) ──
         // Wait for the parallel Places lookup to finish (it usually completes fast)
         try {
             const placesName = await placesNamePromise;
@@ -2264,6 +2264,27 @@ async function startAnalysis() {
                 console.log('[startAnalysis] Using Places-verified name:', placesName, '(scraper had:', dossier.practice?.name, ')');
                 dossier.practice = dossier.practice || {};
                 dossier.practice.name = placesName;
+
+                // Also override location count + address + phone from Places data
+                const earlyPlaces = window._earlyPlacesData;
+                if (earlyPlaces) {
+                    const placesLocs = earlyPlaces.locations || (earlyPlaces.business ? [earlyPlaces.business] : []);
+                    if (placesLocs.length > 0) {
+                        dossier.locations = dossier.locations || {};
+                        const scraperLocCount = dossier.locations.count || 0;
+                        dossier.locations.count = placesLocs.length;
+                        console.log('[startAnalysis] Overriding location count:', scraperLocCount, '->', placesLocs.length, '(from Places)');
+
+                        // Use Places address/phone as primary
+                        const primaryLoc = placesLocs[0];
+                        if (primaryLoc.address) {
+                            dossier.locations.addresses = placesLocs.map(l => l.address).filter(Boolean);
+                        }
+                        if (primaryLoc.phone) {
+                            dossier.locations.phones = placesLocs.map(l => l.phone).filter(Boolean);
+                        }
+                    }
+                }
             }
         } catch (_) { /* Places lookup failed — fall through to scraper name */ }
 
