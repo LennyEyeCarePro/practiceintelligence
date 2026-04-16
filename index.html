@@ -4584,16 +4584,35 @@ function applyClientCorrectionsToDossier() {
     const lower = s1.toLowerCase();
 
     // ── Extract corrected business name ──
-    // Match patterns like "name is Cochrane Eyecare", "its Cochrane Eyecare", "we are Cochrane Eyecare", "actually called Cochrane Eyecare"
-    const nameMatch = s1.match(
-        /(?:actually called|our name is|name is|we(?:'| a)re|it(?:'| i)s|called)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i
-    );
-    if (nameMatch && nameMatch[1]) {
-        const correctedName = nameMatch[1].trim().replace(/[.,;]+$/, '');
-        if (correctedName.length >= 3) {
-            dossier.practice = dossier.practice || {};
-            dossier.practice.name = correctedName;
+    // Strategy: try multiple patterns in priority order.
+    // "its Cochrane Eyecare" or "it's Cochrane Eyecare" is the strongest signal.
+    // "name is X" is weaker because "name is wrong" is a common complaint, not a name.
+    const skipWords = /^(?:wrong|incorrect|not right|not correct|bad|inaccurate|different|changed|outdated|old|the wrong|missing)\b/i;
+    const namePatterns = [
+        // "its Cochrane Eyecare" / "it's Cochrane Eyecare" — strongest signal
+        /(?:it(?:'| i)?s|it is)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i,
+        // "actually called Cochrane Eyecare" / "called Cochrane Eyecare"
+        /(?:actually called|called)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i,
+        // "we are Cochrane Eyecare"
+        /(?:we(?:'| a)re)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i,
+        // "our name is Cochrane Eyecare" / "name is Cochrane Eyecare" — weakest (often "name is wrong")
+        /(?:our name is|name is)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i,
+    ];
+    let correctedName = null;
+    for (const pat of namePatterns) {
+        const m = s1.match(pat);
+        if (m && m[1]) {
+            const candidate = m[1].trim().replace(/[.,;]+$/, '');
+            // Skip common complaint words that aren't actual business names
+            if (candidate.length >= 3 && !skipWords.test(candidate)) {
+                correctedName = candidate;
+                break;
+            }
         }
+    }
+    if (correctedName) {
+        dossier.practice = dossier.practice || {};
+        dossier.practice.name = correctedName;
     }
 
     // ── Extract corrected location count ──
@@ -4632,13 +4651,23 @@ function getUserCorrectionsForReport() {
         freetext: userAnswers.freetext || '',
     };
     // Try to extract a corrected business name from Step 1 if the client typed one.
-    // Matches patterns like: "its Cochrane Eyecare", "name is Cochrane Eyecare",
-    // "actually called Cochrane Eyecare", "we are Cochrane Eyecare"
-    const nameMatch = corrections.practiceCorrections.match(
-        /(?:actually called|our name is|name is|we(?:'| a)re|it(?:'| i)?s|called)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i
-    );
-    if (nameMatch && nameMatch[1]) {
-        corrections.correctedBusinessName = nameMatch[1].trim().replace(/[.,;]+$/, '');
+    // Uses same priority-ordered pattern list as applyClientCorrectionsToDossier().
+    const skipWordsRe = /^(?:wrong|incorrect|not right|not correct|bad|inaccurate|different|changed|outdated|old|the wrong|missing)\b/i;
+    const namePatterns = [
+        /(?:it(?:'| i)?s|it is)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i,
+        /(?:actually called|called)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i,
+        /(?:we(?:'| a)re)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i,
+        /(?:our name is|name is)\s+["']?([A-Z][\w\s&\-'.,]{2,60}?)["']?(?:\s+and\b|[.,;\n]|$)/i,
+    ];
+    for (const pat of namePatterns) {
+        const m = corrections.practiceCorrections.match(pat);
+        if (m && m[1]) {
+            const candidate = m[1].trim().replace(/[.,;]+$/, '');
+            if (candidate.length >= 3 && !skipWordsRe.test(candidate)) {
+                corrections.correctedBusinessName = candidate;
+                break;
+            }
+        }
     }
 
     const hasAny = Object.values(corrections).some(v => v && v.trim());
