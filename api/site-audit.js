@@ -21,20 +21,34 @@ export default async function handler(req, res) {
 
     try {
         // Fetch homepage, robots.txt, and sitemap.xml in parallel
+        // Full browser-like headers to avoid WAF/bot-protection 403s
+        const browserHeaders = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1',
+            'Connection': 'keep-alive',
+        };
+
         const [htmlResponse, robotsResponse, sitemapResponse] = await Promise.all([
             fetch(`https://${domain}`, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.5',
-                },
+                headers: browserHeaders,
                 signal: AbortSignal.timeout(10000),
                 redirect: 'follow',
             }).catch(() => null),
             fetch(`https://${domain}/robots.txt`, {
+                headers: browserHeaders,
                 signal: AbortSignal.timeout(5000),
             }).catch(() => null),
             fetch(`https://${domain}/sitemap.xml`, {
+                headers: browserHeaders,
                 signal: AbortSignal.timeout(5000),
             }).catch(() => null),
         ]);
@@ -44,11 +58,7 @@ export default async function handler(req, res) {
         if (!finalResponse || !finalResponse.ok) {
             try {
                 finalResponse = await fetch(`https://www.${domain}`, {
-                    headers: {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                        'Accept-Language': 'en-US,en;q=0.5',
-                    },
+                    headers: browserHeaders,
                     signal: AbortSignal.timeout(10000),
                     redirect: 'follow',
                 });
