@@ -1449,21 +1449,32 @@ function renderResults() {
 
     // ═══ SCORE BREAKDOWN ═══
     const pillars = report?.pillarScores || {};
+    const crawlerBlocked = report?.crawlerBlocked || false;
     const barData = [
         { label: 'Page Speed', value: pillars.pageSpeed ?? mobile.performance ?? 0 },
-        { label: 'On-Page SEO', value: pillars.onPageSeo ?? mobile.seo ?? 0 },
+        { label: 'On-Page SEO', value: pillars.onPageSeo },
         { label: 'Local / GBP', value: pillars.localGbp ?? 0 },
         { label: 'Backlinks', value: pillars.backlinks ?? 0 },
-        { label: 'Technical', value: pillars.technical ?? 0 },
+        { label: 'Technical', value: pillars.technical },
     ];
     document.getElementById('breakdownContent').innerHTML = barData.map(b => {
+        // null means we couldn't fetch the data — show honestly
+        if (b.value === null || b.value === undefined) {
+            return `<div class="bar-row">
+                <div class="bar-label">${b.label}</div>
+                <div class="bar-track" style="position:relative">
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.3px">Could not fetch — site blocked our crawler</div>
+                </div>
+                <div class="bar-value" style="color:rgba(255,255,255,.4)">N/A</div>
+            </div>`;
+        }
         const color = b.value >= 75 ? '#4CAF50' : b.value >= 50 ? '#FF9800' : '#F44336';
         return `<div class="bar-row">
             <div class="bar-label">${b.label}</div>
             <div class="bar-track"><div class="bar-fill" style="width:${b.value}%;background:${color}"></div></div>
             <div class="bar-value" style="color:${color}">${b.value}</div>
         </div>`;
-    }).join('');
+    }).join('') + (crawlerBlocked ? `<div style="margin-top:10px;padding:8px 12px;background:rgba(255,152,0,.1);border:1px solid rgba(255,152,0,.3);border-radius:6px;font-size:12px;color:rgba(255,255,255,.7)">⚠️ This site's firewall blocked our HTML crawler. On-Page SEO and Technical scores could not be determined. Page Speed, Local/GBP, and Backlink scores are based on verified data.</div>` : '');
 
     // ═══ PERFORMANCE & CORE WEB VITALS ═══
     renderPerformance(mobile, desktop);
@@ -1615,8 +1626,11 @@ function renderPerformance(mobile, desktop) {
 
 // ─── TECHNICAL SEO DEEP DIVE ────────────────────────
 function renderTechnical(audit) {
-    if (!audit.domain) {
-        document.getElementById('technicalContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Site audit data unavailable</div>';
+    if (!audit.domain || (audit.error && !audit.titleTag)) {
+        const blocked = audit.error && audit.domain;
+        document.getElementById('technicalContent').innerHTML = blocked
+            ? `<div style="color:var(--text-muted);padding:12px 0;">⚠️ Could not crawl this site — the server returned HTTP ${audit.status || 'error'}.<br>On-page technical checks require direct HTML access, which this site's firewall blocked.</div>`
+            : '<div style="color:var(--text-muted);padding:12px 0;">Site audit data unavailable</div>';
         document.getElementById('techBadge').textContent = 'N/A';
         return;
     }
@@ -1668,8 +1682,11 @@ function renderTechnical(audit) {
 
 // ─── CONTENT & ON-PAGE ANALYSIS ─────────────────────
 function renderContentAnalysis(audit, mobile) {
-    if (!audit.domain) {
-        document.getElementById('contentContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Site audit data unavailable</div>';
+    if (!audit.domain || (audit.error && !audit.titleTag)) {
+        const blocked = audit.error && audit.domain;
+        document.getElementById('contentContent').innerHTML = blocked
+            ? `<div style="color:var(--text-muted);padding:12px 0;">⚠️ Could not crawl this site (HTTP ${audit.status || 'error'}). On-page content analysis requires direct HTML access.</div>`
+            : '<div style="color:var(--text-muted);padding:12px 0;">Site audit data unavailable</div>';
         document.getElementById('contentBadge').textContent = 'N/A';
         return;
     }
@@ -2238,9 +2255,12 @@ function renderTechStack(audit) {
     const techBadge = document.getElementById('techStackBadge');
     const techs = audit.technology || [];
 
-    if (!audit.domain || techs.length === 0) {
+    if (!audit.domain || (audit.error && !audit.titleTag) || techs.length === 0) {
         techBadge.textContent = 'Unknown';
-        document.getElementById('techStackContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Could not detect technology stack</div>';
+        const blocked = audit.error && audit.domain;
+        document.getElementById('techStackContent').innerHTML = blocked
+            ? `<div style="color:var(--text-muted);padding:12px 0;">⚠️ Could not detect — site blocked our crawler (HTTP ${audit.status || 'error'})</div>`
+            : '<div style="color:var(--text-muted);padding:12px 0;">Could not detect technology stack</div>';
         return;
     }
 
@@ -2286,9 +2306,12 @@ function renderTechStack(audit) {
 function renderKeywords(audit) {
     const kwBadge = document.getElementById('keywordBadge');
 
-    if (!audit.domain || !audit.topKeywords?.length) {
+    if (!audit.domain || (audit.error && !audit.titleTag) || !audit.topKeywords?.length) {
         kwBadge.textContent = 'N/A';
-        document.getElementById('keywordContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Content analysis unavailable</div>';
+        const blocked = audit.error && audit.domain;
+        document.getElementById('keywordContent').innerHTML = blocked
+            ? `<div style="color:var(--text-muted);padding:12px 0;">⚠️ Could not analyze — site blocked our crawler (HTTP ${audit.status || 'error'})</div>`
+            : '<div style="color:var(--text-muted);padding:12px 0;">Content analysis unavailable</div>';
         return;
     }
 
@@ -2358,9 +2381,12 @@ function renderKeywords(audit) {
 function renderSecurity(audit) {
     const secBadge = document.getElementById('secBadge');
 
-    if (!audit.domain || !audit.securityHeaders) {
+    if (!audit.domain || (audit.error && !audit.titleTag) || !audit.securityHeaders) {
         secBadge.textContent = 'N/A';
-        document.getElementById('securityContent').innerHTML = '<div style="color:var(--text-muted);padding:12px 0;">Security data unavailable</div>';
+        const blocked = audit.error && audit.domain;
+        document.getElementById('securityContent').innerHTML = blocked
+            ? `<div style="color:var(--text-muted);padding:12px 0;">⚠️ Could not check security headers — site blocked our crawler (HTTP ${audit.status || 'error'}). SSL status is shown separately below.</div>`
+            : '<div style="color:var(--text-muted);padding:12px 0;">Security data unavailable</div>';
         return;
     }
 
@@ -3010,10 +3036,13 @@ function exportReport() {
             text += `PILLAR SCORES:\n`;
             const p = report.pillarScores;
             text += `  Page Speed:  ${p.pageSpeed}/100\n`;
-            text += `  On-Page SEO: ${p.onPageSeo}/100\n`;
+            text += `  On-Page SEO: ${p.onPageSeo !== null && p.onPageSeo !== undefined ? p.onPageSeo + '/100' : 'N/A — crawler blocked'}\n`;
             text += `  Local/GBP:   ${p.localGbp}/100\n`;
             text += `  Backlinks:   ${p.backlinks}/100\n`;
-            text += `  Technical:   ${p.technical}/100\n\n`;
+            text += `  Technical:   ${p.technical !== null && p.technical !== undefined ? p.technical + '/100' : 'N/A — crawler blocked'}\n\n`;
+            if (report.crawlerBlocked) {
+                text += `  ⚠️ Site firewall blocked our crawler. On-Page SEO and Technical could not be assessed.\n\n`;
+            }
         }
     }
 

@@ -4969,22 +4969,32 @@ function renderSeoSection(data) {
 
     // ── Score Breakdown Bars ──
     const pillars = report.pillarScores || {};
+    const crawlerBlocked = report.crawlerBlocked || false;
     const barData = [
         { label: 'Page Speed', value: pillars.pageSpeed ?? mobile.performance ?? 0 },
-        { label: 'On-Page SEO', value: pillars.onPageSeo ?? mobile.seo ?? 0 },
+        { label: 'On-Page SEO', value: pillars.onPageSeo },
         { label: 'Local / GBP', value: pillars.localGbp ?? 0 },
         { label: 'Backlinks', value: pillars.backlinks ?? 0 },
-        { label: 'Technical', value: pillars.technical ?? 0 },
+        { label: 'Technical', value: pillars.technical },
     ];
 
     document.getElementById('seoBreakdownBars').innerHTML = barData.map(b => {
+        if (b.value === null || b.value === undefined) {
+            return `<div class="seo-bar-row">
+                <div class="seo-bar-label">${b.label}</div>
+                <div class="seo-bar-track" style="position:relative">
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;padding-left:8px;font-size:11px;color:rgba(0,0,0,.4)">Could not fetch — site blocked our crawler</div>
+                </div>
+                <div class="seo-bar-value" style="color:#999">N/A</div>
+            </div>`;
+        }
         const color = b.value >= 75 ? '#4CAF50' : b.value >= 50 ? '#FF9800' : '#F44336';
         return `<div class="seo-bar-row">
             <div class="seo-bar-label">${b.label}</div>
             <div class="seo-bar-track"><div class="seo-bar-fill" style="width:${b.value}%;background:${color}"></div></div>
             <div class="seo-bar-value">${b.value}</div>
         </div>`;
-    }).join('');
+    }).join('') + (crawlerBlocked ? `<div style="margin-top:8px;padding:6px 10px;background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.2);border-radius:6px;font-size:11px;color:#666">⚠️ This site's firewall blocked our crawler. On-Page SEO and Technical scores could not be determined.</div>` : '');
 
     // ── Mobile vs Desktop ──
     const mPerf = mobile.performance ?? '--';
