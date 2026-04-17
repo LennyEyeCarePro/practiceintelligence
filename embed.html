@@ -4151,7 +4151,10 @@ function renderClientAuditPanels(data) {
     }
 
     // Key site audit items (simplified — client doesn't need the full checklist)
-    if (audit.domain) {
+    const auditBlockedEarly = !!(audit.error && !audit.titleTag && audit.domain);
+    if (auditBlockedEarly) {
+        seoHtml += `<div class="audit-metric"><span class="audit-metric-label">On-Page Audit</span><span class="audit-metric-value" style="color:#999">Unavailable — site blocked our crawler</span></div>`;
+    } else if (audit.domain) {
         if (!audit.ssl) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">SSL Security</span><span class="audit-metric-value critical">Not Secure</span></div>`;
         if (!audit.hasLocalBusinessSchema) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Google Schema Markup</span><span class="audit-metric-value warning">Missing</span></div>`;
         if (!audit.hasSitemap) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Sitemap</span><span class="audit-metric-value warning">Not Found</span></div>`;
@@ -5094,33 +5097,41 @@ function renderSeoSection(data) {
     }
 
     // ── On-Page Checklist ──
-    const checks = [];
-    checks.push(checkRow('SSL Certificate', audit.ssl, audit.ssl ? 'HTTPS active' : 'Not secure'));
-    checks.push(checkRow('Title Tag', audit.titleTag && audit.titleLength >= 30 && audit.titleLength <= 70,
-        audit.titleTag ? `${audit.titleLength} chars` : 'Missing', audit.titleTag && (audit.titleLength < 30 || audit.titleLength > 70) ? 'warn' : ''));
-    checks.push(checkRow('Meta Description', audit.metaDescription && audit.metaDescriptionLength >= 120,
-        audit.metaDescription ? `${audit.metaDescriptionLength} chars` : 'Missing', audit.metaDescription && audit.metaDescriptionLength < 120 ? 'warn' : ''));
-    checks.push(checkRow('H1 Tag', audit.h1 && audit.h1Count === 1,
-        audit.h1 ? `${audit.h1Count} found` : 'Missing', audit.h1Count > 1 ? 'warn' : ''));
-    checks.push(checkRow('Schema Markup', audit.hasLocalBusinessSchema,
-        audit.hasLocalBusinessSchema ? 'LocalBusiness' : audit.hasSchemaMarkup ? 'Generic only' : 'Missing',
-        audit.hasSchemaMarkup && !audit.hasLocalBusinessSchema ? 'warn' : ''));
-    checks.push(checkRow('Canonical Tag', audit.hasCanonical, audit.hasCanonical ? 'Present' : 'Missing'));
-    checks.push(checkRow('Viewport Meta', audit.hasViewport, audit.hasViewport ? 'Present' : 'Missing'));
-    checks.push(checkRow('Sitemap', audit.hasSitemap,
-        audit.hasSitemap ? `${audit.sitemapUrlCount} URLs` : 'Missing'));
-    checks.push(checkRow('Robots.txt', audit.hasRobots && !audit.blocksGooglebot,
-        audit.hasRobots ? (audit.blocksGooglebot ? 'Blocks Googlebot!' : 'OK') : 'Missing',
-        audit.blocksGooglebot ? 'fail' : ''));
-    checks.push(checkRow('Image Alt Text', audit.altTextCoverage >= 80,
-        `${audit.altTextCoverage || 0}% coverage`, audit.altTextCoverage >= 50 && audit.altTextCoverage < 80 ? 'warn' : ''));
-    checks.push(checkRow('Open Graph', audit.hasOgTitle && audit.hasOgImage,
-        [audit.hasOgTitle && 'Title', audit.hasOgDescription && 'Desc', audit.hasOgImage && 'Image'].filter(Boolean).join(', ') || 'Missing'));
-    checks.push(checkRow('Booking CTA', audit.hasOnlineBooking || audit.hasBookingCTA,
-        audit.hasOnlineBooking ? 'Online booking' : audit.hasBookingCTA ? 'Basic link' : 'Not found'));
-
     const checklistEl = document.getElementById('seoChecklist');
-    if (audit.domain) {
+    const auditBlocked = !!(audit.error && !audit.titleTag && audit.domain);
+
+    if (auditBlocked) {
+        checklistEl.innerHTML = `<div style="padding:16px 12px;color:#888;font-size:13px;text-align:center;background:rgba(255,152,0,.06);border:1px solid rgba(255,152,0,.15);border-radius:8px;">
+            <div style="font-size:18px;margin-bottom:6px">⚠️</div>
+            <div style="font-weight:600;color:#666;margin-bottom:4px">On-Page Audit Unavailable</div>
+            <div>This site's firewall blocked our crawler (HTTP ${audit.status || 'error'}). We could not inspect the HTML to check title tags, meta descriptions, schema markup, and other on-page elements.</div>
+            <div style="margin-top:8px;font-size:11px;color:#aaa">Page Speed, Google Business Profile, and Backlink data are still accurate.</div>
+        </div>`;
+    } else if (audit.domain) {
+        const checks = [];
+        checks.push(checkRow('SSL Certificate', audit.ssl, audit.ssl ? 'HTTPS active' : 'Not secure'));
+        checks.push(checkRow('Title Tag', audit.titleTag && audit.titleLength >= 30 && audit.titleLength <= 70,
+            audit.titleTag ? `${audit.titleLength} chars` : 'Missing', audit.titleTag && (audit.titleLength < 30 || audit.titleLength > 70) ? 'warn' : ''));
+        checks.push(checkRow('Meta Description', audit.metaDescription && audit.metaDescriptionLength >= 120,
+            audit.metaDescription ? `${audit.metaDescriptionLength} chars` : 'Missing', audit.metaDescription && audit.metaDescriptionLength < 120 ? 'warn' : ''));
+        checks.push(checkRow('H1 Tag', audit.h1 && audit.h1Count === 1,
+            audit.h1 ? `${audit.h1Count} found` : 'Missing', audit.h1Count > 1 ? 'warn' : ''));
+        checks.push(checkRow('Schema Markup', audit.hasLocalBusinessSchema,
+            audit.hasLocalBusinessSchema ? 'LocalBusiness' : audit.hasSchemaMarkup ? 'Generic only' : 'Missing',
+            audit.hasSchemaMarkup && !audit.hasLocalBusinessSchema ? 'warn' : ''));
+        checks.push(checkRow('Canonical Tag', audit.hasCanonical, audit.hasCanonical ? 'Present' : 'Missing'));
+        checks.push(checkRow('Viewport Meta', audit.hasViewport, audit.hasViewport ? 'Present' : 'Missing'));
+        checks.push(checkRow('Sitemap', audit.hasSitemap,
+            audit.hasSitemap ? `${audit.sitemapUrlCount} URLs` : 'Missing'));
+        checks.push(checkRow('Robots.txt', audit.hasRobots && !audit.blocksGooglebot,
+            audit.hasRobots ? (audit.blocksGooglebot ? 'Blocks Googlebot!' : 'OK') : 'Missing',
+            audit.blocksGooglebot ? 'fail' : ''));
+        checks.push(checkRow('Image Alt Text', audit.altTextCoverage >= 80,
+            `${audit.altTextCoverage || 0}% coverage`, audit.altTextCoverage >= 50 && audit.altTextCoverage < 80 ? 'warn' : ''));
+        checks.push(checkRow('Open Graph', audit.hasOgTitle && audit.hasOgImage,
+            [audit.hasOgTitle && 'Title', audit.hasOgDescription && 'Desc', audit.hasOgImage && 'Image'].filter(Boolean).join(', ') || 'Missing'));
+        checks.push(checkRow('Booking CTA', audit.hasOnlineBooking || audit.hasBookingCTA,
+            audit.hasOnlineBooking ? 'Online booking' : audit.hasBookingCTA ? 'Basic link' : 'Not found'));
         checklistEl.innerHTML = checks.join('');
     } else {
         checklistEl.innerHTML = `<div style="padding:12px 0;color:#888;font-size:14px;text-align:center">Site audit data unavailable</div>`;
