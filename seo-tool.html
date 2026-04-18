@@ -2750,12 +2750,27 @@ function renderBacklinks(data) {
     const badge = document.getElementById('backlinkBadge');
 
     if (data.error && !data.backlinks?.length && !data.toxicBacklinks?.length) {
-        badge.textContent = data.error.includes('RAPIDAPI_KEY') ? 'Not Configured' : 'Error';
-        badge.className = 'panel-badge badge-critical';
-        const msg = data.error.includes('RAPIDAPI_KEY')
-            ? 'Backlink API not configured — add RAPIDAPI_KEY to Vercel environment variables.'
-            : data.error;
-        document.getElementById('backlinkContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">${msg}</div>`;
+        const isQuota = data.quotaExceeded || data.error.includes('quota') || data.error.includes('429');
+        const isNotConfigured = data.error.includes('RAPIDAPI_KEY');
+        const isAuth = data.error.includes('invalid') || data.error.includes('expired') || data.error.includes('401') || data.error.includes('403');
+
+        badge.textContent = isQuota ? 'Unavailable' : isNotConfigured ? 'Not Configured' : isAuth ? 'Auth Error' : 'Error';
+        badge.className = `panel-badge ${isQuota ? 'badge-warning' : 'badge-critical'}`;
+
+        let msg;
+        if (isQuota) {
+            msg = `<div style="padding:16px 0;">
+                <div style="font-size:14px;font-weight:600;color:var(--warn);margin-bottom:6px;">⚠️ Backlink Data Unavailable</div>
+                <div style="color:var(--text-secondary);font-size:13px;">API quota exceeded — could not fetch backlink data for this scan. Backlink analysis will be skipped for this report. Try again later when the quota resets.</div>
+            </div>`;
+        } else if (isNotConfigured) {
+            msg = `<div style="color:var(--text-muted);padding:12px 0;">Backlink API not configured — add RAPIDAPI_KEY to Vercel environment variables.</div>`;
+        } else if (isAuth) {
+            msg = `<div style="color:var(--text-muted);padding:12px 0;">Backlink API key is invalid or expired. Update RAPIDAPI_KEY in Vercel environment variables.</div>`;
+        } else {
+            msg = `<div style="color:var(--text-muted);padding:12px 0;">${data.error}</div>`;
+        }
+        document.getElementById('backlinkContent').innerHTML = msg;
         return;
     }
 

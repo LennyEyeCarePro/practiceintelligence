@@ -48,7 +48,14 @@ async function rapidApiGet(endpoint, domain, timeoutMs = 25000) {
 
         if (!resp.ok) {
             const errText = await resp.text().catch(() => '');
-            return { _error: `RapidAPI ${endpoint} returned ${resp.status}: ${errText.slice(0, 200)}` };
+            const status = resp.status;
+            if (status === 429) {
+                return { _error: 'API quota exceeded — backlink data unavailable', _rateLimited: true };
+            }
+            if (status === 403 || status === 401) {
+                return { _error: 'API key invalid or expired', _authError: true };
+            }
+            return { _error: `RapidAPI ${endpoint} returned ${status}: ${errText.slice(0, 200)}` };
         }
 
         return resp.json();
@@ -72,8 +79,13 @@ async function handleBacklinks(req, res) {
         ]);
 
         if (topData._error && newData._error) {
+            const rateLimited = topData._rateLimited || newData._rateLimited;
+            const authError = topData._authError || newData._authError;
             return res.json({
-                error: topData._error,
+                error: rateLimited ? 'API quota exceeded — backlink data unavailable'
+                     : authError ? 'API key invalid or expired'
+                     : topData._error,
+                quotaExceeded: rateLimited || false,
                 domain,
                 backlinks: [],
                 newBacklinks: [],
@@ -173,6 +185,7 @@ async function handleToxic(req, res) {
         if (poorData._error) {
             return res.json({
                 error: poorData._error,
+                quotaExceeded: poorData._rateLimited || false,
                 domain,
                 toxicBacklinks: [],
                 stats: { toxicCount: 0 },
