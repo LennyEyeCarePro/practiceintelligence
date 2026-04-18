@@ -1366,9 +1366,13 @@ async function startScan() {
         setStep('brokenlinks', 'active');
         setStep('validate', 'active');
 
-        const [backlinkResp, brokenResp, validateResp] = await Promise.all([
+        const [backlinkResp, toxicResp, brokenResp, validateResp] = await Promise.all([
             fetch(API_BASE + '/link-audit?action=backlinks&domain=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message, backlinks: [], stats: {} })),
+
+            // Toxic backlinks — internal SEO tool only (uses dedicated Poor Backlinks endpoint)
+            fetch(API_BASE + '/link-audit?action=toxic&domain=' + encodeURIComponent(domain))
+                .then(r => r.json()).catch(e => ({ error: e.message, toxicBacklinks: [], stats: {} })),
 
             fetch(API_BASE + '/link-audit?action=broken-links&url=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message, stats: {} })),
@@ -1376,6 +1380,32 @@ async function startScan() {
             fetch(API_BASE + '/html-validate?url=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message, validation: {}, richResults: {} })),
         ]);
+
+        // Merge toxic backlinks from dedicated endpoint into backlink data
+        if (toxicResp?.toxicBacklinks?.length > 0) {
+            backlinkResp.toxicBacklinks = [
+                ...(backlinkResp.toxicBacklinks || []),
+                ...toxicResp.toxicBacklinks,
+            ];
+            // Deduplicate by source
+            const seen = new Set();
+            backlinkResp.toxicBacklinks = backlinkResp.toxicBacklinks.filter(b => {
+                const key = b.source || b.url;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+            // Update stats
+            backlinkResp.stats = backlinkResp.stats || {};
+            backlinkResp.stats.toxicCount = backlinkResp.toxicBacklinks.length;
+            const total = backlinkResp.stats.totalDiscovered || backlinkResp.toxicBacklinks.length;
+            backlinkResp.stats.healthScore = total > 0
+                ? Math.max(0, Math.round(100 - (backlinkResp.stats.toxicCount / total) * 100))
+                : null;
+            if (backlinkResp.stats.healthScore !== null) {
+                backlinkResp.stats.healthLabel = backlinkResp.stats.healthScore >= 80 ? 'Healthy' : backlinkResp.stats.healthScore >= 50 ? 'Moderate Risk' : 'High Risk';
+            }
+        }
 
         scanData.backlinks = backlinkResp;
         scanData.brokenLinks = brokenResp;
@@ -2719,10 +2749,13 @@ function renderCompetitiveKeywords(data) {
 function renderBacklinks(data) {
     const badge = document.getElementById('backlinkBadge');
 
-    if (data.error && !data.backlinks?.length && !data.indexedPages) {
-        badge.textContent = 'Error';
+    if (data.error && !data.backlinks?.length && !data.toxicBacklinks?.length) {
+        badge.textContent = data.error.includes('RAPIDAPI_KEY') ? 'Not Configured' : 'Error';
         badge.className = 'panel-badge badge-critical';
-        document.getElementById('backlinkContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">${data.error}</div>`;
+        const msg = data.error.includes('RAPIDAPI_KEY')
+            ? 'Backlink API not configured — add RAPIDAPI_KEY to Vercel environment variables.'
+            : data.error;
+        document.getElementById('backlinkContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">${msg}</div>`;
         return;
     }
 
@@ -2730,15 +2763,19 @@ function renderBacklinks(data) {
     const healthScore = stats.healthScore;
 
     badge.textContent = stats.healthLabel || 'Analyzed';
-    badge.className = `panel-badge ${healthScore >= 80 ? 'badge-good' : healthScore >= 50 ? 'badge-warning' : 'badge-critical'}`;
+    badge.className = `panel-badge ${healthScore >= 80 ? 'badge-good' : healthScore >= 50 ? 'badge-warning' : healthScore !== null ? 'badge-critical' : 'badge-info'}`;
 
     let html = '';
 
     // Stats grid
-    html += `<div class="content-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+    html += `<div class="content-grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr;">
         <div class="content-stat">
             <div class="content-stat-value" style="color:var(--accent);">${stats.totalDiscovered || 0}</div>
             <div class="content-stat-label">Discovered</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#2196F3;">${stats.newCount || 0}</div>
+            <div class="content-stat-label">New</div>
         </div>
         <div class="content-stat">
             <div class="content-stat-value" style="color:#4CAF50;">${stats.cleanCount || 0}</div>
@@ -2750,56 +2787,60 @@ function renderBacklinks(data) {
         </div>
         <div class="content-stat">
             <div class="content-stat-value" style="color:${healthScore >= 80 ? 'var(--success)' : healthScore >= 50 ? 'var(--warn)' : 'var(--danger)'};">${healthScore ?? 'N/A'}</div>
-            <div class="content-stat-label">Health Score</div>
+            <div class="content-stat-label">Health</div>
         </div>
     </div>`;
 
-    // CommonCrawl indexed pages
-    if (data.indexedPages > 0) {
-        html += `<div class="metric-row"><span class="metric-label">Pages Indexed in CommonCrawl</span><span class="metric-value">${data.indexedPages}</span></div>`;
-        html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">From crawl: ${data.crawlIndex || 'latest'}</div>`;
-    }
-
     // Toxic backlinks (show first — most important)
     if (data.toxicBacklinks?.length > 0) {
-        html += '<div class="section-label" style="color:var(--danger);">Toxic / Suspicious Backlinks</div>';
+        html += '<div class="section-label" style="color:var(--danger);">🚨 Toxic / Poor Quality Backlinks</div>';
         html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Consider disavowing these in Google Search Console</div>';
-        html += data.toxicBacklinks.map(b =>
-            `<div class="check-row">
+        html += data.toxicBacklinks.map(b => {
+            const display = b.source || (b.url ? b.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 55) : 'Unknown');
+            const anchor = b.anchor ? `<span style="display:block;font-size:10px;color:var(--text-muted);margin-top:1px;">anchor: "${b.anchor.slice(0, 40)}"</span>` : '';
+            return `<div class="check-row">
                 <span class="check-icon">🚨</span>
-                <span class="check-text" style="word-break:break-all;">${b.source}</span>
-                <span class="check-status" style="color:var(--danger);font-size:11px;">${b.toxicReason || 'Suspicious'}</span>
-            </div>`
-        ).join('');
+                <span class="check-text" style="word-break:break-all;flex:1;">${display}${anchor}</span>
+                <span class="check-status" style="color:var(--danger);font-size:11px;">${b.toxicReason || 'Poor quality'}</span>
+            </div>`;
+        }).join('');
+    }
+
+    // New backlinks (recently discovered)
+    if (data.newBacklinks?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;color:#2196F3;">🆕 Recently Discovered Backlinks</div>';
+        html += data.newBacklinks.filter(b => !b.toxic).slice(0, 8).map(b => {
+            const display = b.source || (b.url ? b.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 55) : 'Unknown');
+            const anchor = b.anchor ? `<span style="display:block;font-size:10px;color:var(--text-muted);margin-top:1px;">anchor: "${b.anchor.slice(0, 40)}"</span>` : '';
+            const dateStr = b.firstSeen ? `<span style="font-size:10px;color:var(--text-muted);">${b.firstSeen}</span>` : '';
+            return `<div class="check-row">
+                <span class="check-icon">🔗</span>
+                <span class="check-text" style="word-break:break-all;flex:1;">${display}${anchor}</span>
+                ${dateStr}
+            </div>`;
+        }).join('');
     }
 
     // Clean backlinks
     if (data.cleanBacklinks?.length > 0) {
-        html += '<div class="section-label" style="margin-top:16px;">Clean Backlinks Found</div>';
-        html += data.cleanBacklinks.slice(0, 10).map(b =>
-            `<div class="check-row">
+        html += '<div class="section-label" style="margin-top:16px;">✅ Clean Backlinks</div>';
+        html += data.cleanBacklinks.slice(0, 10).map(b => {
+            const display = b.source || (b.url ? b.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 55) : 'Unknown');
+            const anchor = b.anchor ? `<span style="display:block;font-size:10px;color:var(--text-muted);margin-top:1px;">anchor: "${b.anchor.slice(0, 40)}"</span>` : '';
+            const nfTag = b.nofollow ? '<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(255,152,0,.15);color:#FF9800;margin-left:4px;">nofollow</span>' : '';
+            return `<div class="check-row">
                 <span class="check-icon">✅</span>
-                <span class="check-text" style="word-break:break-all;">${b.source}</span>
-                <span class="check-status" style="color:var(--text-muted);font-size:11px;">${b.type || 'link'}</span>
-            </div>`
-        ).join('');
+                <span class="check-text" style="word-break:break-all;flex:1;">${display}${nfTag}${anchor}</span>
+            </div>`;
+        }).join('');
     }
 
     // Referring domains
     if (data.topReferringDomains?.length > 0) {
         html += '<div class="section-label" style="margin-top:16px;">Top Referring Domains</div>';
-        html += data.topReferringDomains.map(d =>
+        html += data.topReferringDomains.slice(0, 10).map(d =>
             `<div class="metric-row"><span class="metric-label" style="word-break:break-all;">${d.domain}</span><span class="metric-value">${d.count} link${d.count > 1 ? 's' : ''}</span></div>`
         ).join('');
-    }
-
-    // Site pages in CommonCrawl
-    if (data.sitePages?.length > 0) {
-        html += '<div class="section-label" style="margin-top:16px;">Your Pages in CommonCrawl Index</div>';
-        html += data.sitePages.filter(p => p.url).slice(0, 8).map(p => {
-            const shortUrl = p.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60);
-            return `<div class="metric-row"><span class="metric-label" style="word-break:break-all;flex:1;">${shortUrl}</span><span class="metric-value" style="width:auto;">${p.status || ''}</span></div>`;
-        }).join('');
     }
 
     if (stats.toxicCount > 0) {

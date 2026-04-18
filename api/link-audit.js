@@ -1,10 +1,13 @@
 /**
  * Vercel Serverless Function — Link Audit Hub
- * Combines Backlink Discovery (CommonCrawl) + Broken Link Checker into one endpoint.
+ * Backlink Discovery (RapidAPI Best Backlink Checker) + Broken Link Checker.
  *
- * GET /api/link-audit?action=backlinks&domain=example.com
- * GET /api/link-audit?action=broken-links&url=example.com
+ * GET /api/link-audit?action=backlinks&domain=example.com   → Top + New backlinks
+ * GET /api/link-audit?action=toxic&domain=example.com       → Poor/toxic backlinks (internal tool only)
+ * GET /api/link-audit?action=broken-links&url=example.com   → Outbound broken link check
  */
+
+const RAPIDAPI_HOST = 'best-backlink-checker-api.p.rapidapi.com';
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,62 +19,86 @@ export default async function handler(req, res) {
     const action = req.query.action || 'backlinks';
 
     if (action === 'backlinks') return handleBacklinks(req, res);
+    if (action === 'toxic') return handleToxic(req, res);
     if (action === 'broken-links') return handleBrokenLinks(req, res);
-    return res.status(400).json({ error: `Unknown action: ${action}. Use backlinks|broken-links` });
+    return res.status(400).json({ error: `Unknown action: ${action}. Use backlinks|toxic|broken-links` });
+}
+
+/**
+ * Shared helper — call a RapidAPI Best Backlink Checker endpoint
+ */
+async function rapidApiGet(endpoint, domain) {
+    const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+    if (!RAPIDAPI_KEY) {
+        return { _error: 'RAPIDAPI_KEY not configured' };
+    }
+
+    const resp = await fetch(
+        `https://${RAPIDAPI_HOST}/${endpoint}?domain=${encodeURIComponent(domain)}`,
+        {
+            headers: {
+                'Content-Type': 'application/json',
+                'x-rapidapi-host': RAPIDAPI_HOST,
+                'x-rapidapi-key': RAPIDAPI_KEY,
+            },
+            signal: AbortSignal.timeout(15000),
+        }
+    );
+
+    if (!resp.ok) {
+        const errText = await resp.text().catch(() => '');
+        return { _error: `RapidAPI ${endpoint} returned ${resp.status}: ${errText.slice(0, 200)}` };
+    }
+
+    return resp.json();
 }
 
 // ═══════════════════════════════════════════════════
-//   ACTION: backlinks — CommonCrawl Backlink Discovery
+//   ACTION: backlinks — Top + New Backlinks via RapidAPI
 // ═══════════════════════════════════════════════════
 async function handleBacklinks(req, res) {
     const domain = (req.query.domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
     if (!domain) return res.status(400).json({ error: 'Missing domain parameter' });
 
     try {
-        // Step 1: Get the latest CommonCrawl index
-        const indexResp = await fetch('https://index.commoncrawl.org/collinfo.json', {
-            signal: AbortSignal.timeout(8000),
-        });
-        const indexes = await indexResp.json();
-        const latestIndex = indexes[0]?.id;
-        if (!latestIndex) {
-            return res.json({ error: 'Could not determine latest CommonCrawl index', backlinks: [] });
-        }
-
-        // Step 2: Search CommonCrawl for pages related to this domain
-        const searchUrl = `https://index.commoncrawl.org/${latestIndex}-index?url=*.${domain}&output=json&limit=100&fl=url,mime,status,timestamp`;
-
-        const [ccResp, backlinkResp] = await Promise.all([
-            fetch(searchUrl, { signal: AbortSignal.timeout(15000) })
-                .then(r => r.text())
-                .catch(() => ''),
-            discoverBacklinks(domain),
+        // Fetch top and new backlinks in parallel
+        const [topData, newData] = await Promise.all([
+            rapidApiGet('backlinks.php', domain),
+            rapidApiGet('newbacklinks.php', domain),
         ]);
 
-        // Parse CommonCrawl results (NDJSON format)
-        const ccPages = [];
-        if (ccResp) {
-            const lines = ccResp.split('\n').filter(l => l.trim());
-            for (const line of lines) {
-                try {
-                    const parsed = JSON.parse(line);
-                    ccPages.push({
-                        url: parsed.url,
-                        mime: parsed.mime,
-                        status: parsed.status,
-                        lastCrawled: parsed.timestamp,
-                    });
-                } catch (_) {}
-            }
+        if (topData._error && newData._error) {
+            return res.json({
+                error: topData._error,
+                domain,
+                backlinks: [],
+                newBacklinks: [],
+                stats: { totalDiscovered: 0, healthScore: null },
+            });
         }
 
-        // Combine backlink data
-        const backlinks = backlinkResp.backlinks || [];
-        const toxicLinks = backlinks.filter(b => b.toxic);
-        const cleanLinks = backlinks.filter(b => !b.toxic);
+        // Normalize the RapidAPI response into our standard format
+        // The API returns arrays of backlink objects — exact shape may vary,
+        // so we handle both array and object responses defensively
+        const topLinks = normalizeBacklinks(topData, 'top');
+        const newLinks = normalizeBacklinks(newData, 'new');
+        const allLinks = [...topLinks, ...newLinks];
 
-        // Calculate backlink health score
-        const totalLinks = backlinks.length;
+        // Deduplicate by source domain
+        const seen = new Set();
+        const uniqueLinks = allLinks.filter(b => {
+            const key = b.source || b.url;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        // Separate clean vs toxic using our local heuristics + any API flags
+        const toxicLinks = uniqueLinks.filter(b => b.toxic);
+        const cleanLinks = uniqueLinks.filter(b => !b.toxic);
+
+        // Health score
+        const totalLinks = uniqueLinks.length;
         const toxicCount = toxicLinks.length;
         const healthScore = totalLinks > 0
             ? Math.max(0, Math.round(100 - (toxicCount / totalLinks) * 100))
@@ -82,22 +109,32 @@ async function handleBacklinks(req, res) {
             healthLabel = healthScore >= 80 ? 'Healthy' : healthScore >= 50 ? 'Moderate Risk' : 'High Risk';
         }
 
+        // Build referring domains summary
+        const domainCounts = {};
+        uniqueLinks.forEach(b => {
+            const d = b.source || extractDomain(b.url);
+            if (d) domainCounts[d] = (domainCounts[d] || 0) + 1;
+        });
+        const topReferringDomains = Object.entries(domainCounts)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 20)
+            .map(([domain, count]) => ({ domain, count }));
+
         return res.json({
             domain,
-            crawlIndex: latestIndex,
-            indexedPages: ccPages.length,
-            sitePages: ccPages.slice(0, 20),
-            backlinks: backlinks.slice(0, 30),
+            backlinks: uniqueLinks.slice(0, 30),
+            newBacklinks: newLinks.slice(0, 15),
             toxicBacklinks: toxicLinks.slice(0, 15),
             cleanBacklinks: cleanLinks.slice(0, 15),
             stats: {
                 totalDiscovered: totalLinks,
+                newCount: newLinks.length,
                 toxicCount,
                 cleanCount: cleanLinks.length,
                 healthScore,
                 healthLabel,
             },
-            topReferringDomains: backlinkResp.referringDomains || [],
+            topReferringDomains,
         });
 
     } catch (err) {
@@ -110,90 +147,113 @@ async function handleBacklinks(req, res) {
     }
 }
 
-/**
- * Discover backlinks by checking multiple free sources
- */
-async function discoverBacklinks(domain) {
-    const backlinks = [];
-    const referringDomains = {};
+// ═══════════════════════════════════════════════════
+//   ACTION: toxic — Poor/Toxic Backlinks via RapidAPI
+//   (Internal SEO tool only — not exposed in client embed)
+// ═══════════════════════════════════════════════════
+async function handleToxic(req, res) {
+    const domain = (req.query.domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+    if (!domain) return res.status(400).json({ error: 'Missing domain parameter' });
 
-    // Use Google Suggest to find sites mentioning this domain
     try {
-        const suggestUrl = `https://suggestqueries.google.com/complete/search?client=firefox&q="${domain}"&hl=en&gl=us`;
-        await fetch(suggestUrl, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0' },
-            signal: AbortSignal.timeout(5000),
-        });
-    } catch (_) {}
+        const poorData = await rapidApiGet('poorbacklinks.php', domain);
 
-    // Scrape the homepage to find external domains, then check for reciprocal links
-    try {
-        const siteResp = await fetch(`https://${domain}`, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            },
-            signal: AbortSignal.timeout(8000),
-            redirect: 'follow',
-        });
-
-        if (siteResp.ok) {
-            const html = await siteResp.text();
-
-            const linkRegex = /href=["'](https?:\/\/[^"']+)["']/gi;
-            let match;
-            const externalLinks = new Set();
-
-            while ((match = linkRegex.exec(html)) !== null) {
-                try {
-                    const linkUrl = new URL(match[1]);
-                    const linkDomain = linkUrl.hostname.replace(/^www\./, '');
-                    if (linkDomain !== domain && linkDomain !== `www.${domain}`) {
-                        externalLinks.add(linkDomain);
-                    }
-                } catch (_) {}
-            }
-
-            // Check each external domain for reciprocal links
-            const checkPromises = [...externalLinks].slice(0, 10).map(async extDomain => {
-                try {
-                    const resp = await fetch(`https://${extDomain}`, {
-                        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                        signal: AbortSignal.timeout(5000),
-                        redirect: 'follow',
-                    });
-                    if (resp.ok) {
-                        const extHtml = await resp.text();
-                        if (extHtml.includes(domain)) {
-                            const toxic = isToxicDomain(extDomain);
-                            backlinks.push({
-                                source: extDomain,
-                                url: `https://${extDomain}`,
-                                type: 'reciprocal',
-                                toxic,
-                                toxicReason: toxic ? getToxicReason(extDomain) : null,
-                            });
-                            referringDomains[extDomain] = (referringDomains[extDomain] || 0) + 1;
-                        }
-                    }
-                } catch (_) {}
+        if (poorData._error) {
+            return res.json({
+                error: poorData._error,
+                domain,
+                toxicBacklinks: [],
+                stats: { toxicCount: 0 },
             });
-
-            await Promise.all(checkPromises);
         }
-    } catch (_) {}
 
-    backlinks.sort((a, b) => (b.toxic ? 1 : 0) - (a.toxic ? 1 : 0));
+        const toxicLinks = normalizeBacklinks(poorData, 'poor');
 
-    return {
-        backlinks,
-        referringDomains: Object.entries(referringDomains)
-            .sort(([, a], [, b]) => b - a)
-            .slice(0, 20)
-            .map(([domain, count]) => ({ domain, count })),
-    };
+        return res.json({
+            domain,
+            toxicBacklinks: toxicLinks.slice(0, 30),
+            stats: {
+                toxicCount: toxicLinks.length,
+            },
+        });
+
+    } catch (err) {
+        return res.json({
+            error: err.message,
+            domain,
+            toxicBacklinks: [],
+            stats: { toxicCount: 0 },
+        });
+    }
+}
+
+
+// ═══════════════════════════════════════════════════
+//   Normalize RapidAPI backlink responses
+// ═══════════════════════════════════════════════════
+
+/**
+ * Normalize whatever shape the RapidAPI returns into our standard format.
+ * The API may return an array directly or an object with a data/backlinks key.
+ */
+function normalizeBacklinks(apiResp, type) {
+    if (!apiResp || apiResp._error) return [];
+
+    // Find the actual array in the response
+    let items = [];
+    if (Array.isArray(apiResp)) {
+        items = apiResp;
+    } else if (Array.isArray(apiResp.data)) {
+        items = apiResp.data;
+    } else if (Array.isArray(apiResp.backlinks)) {
+        items = apiResp.backlinks;
+    } else if (Array.isArray(apiResp.result)) {
+        items = apiResp.result;
+    } else if (Array.isArray(apiResp.results)) {
+        items = apiResp.results;
+    } else if (typeof apiResp === 'object') {
+        // Maybe the object keys are the backlinks themselves
+        const keys = Object.keys(apiResp).filter(k => !['error', 'status', 'message', 'domain', '_error'].includes(k));
+        if (keys.length > 0 && typeof apiResp[keys[0]] === 'object') {
+            items = keys.map(k => apiResp[k]).filter(v => v && typeof v === 'object');
+        }
+    }
+
+    return items.filter(item => item && typeof item === 'object').map(item => {
+        // Extract source domain from whatever fields the API provides
+        const url = item.url || item.source_url || item.source || item.link || item.href || '';
+        const sourceDomain = item.source_domain || item.domain || item.source || extractDomain(url);
+        const anchor = item.anchor || item.anchor_text || item.anchorText || '';
+
+        // For 'poor' type, always mark toxic. For others, run heuristics.
+        const isToxic = type === 'poor' ? true : isToxicDomain(sourceDomain);
+
+        return {
+            url,
+            source: sourceDomain,
+            anchor,
+            type: type === 'poor' ? 'toxic' : (item.type || type),
+            toxic: isToxic,
+            toxicReason: isToxic
+                ? (type === 'poor' ? (item.reason || 'Flagged as poor quality') : getToxicReason(sourceDomain))
+                : null,
+            nofollow: item.nofollow ?? item.rel?.includes('nofollow') ?? null,
+            firstSeen: item.first_seen || item.firstSeen || item.date || null,
+        };
+    });
+}
+
+function extractDomain(url) {
+    if (!url) return '';
+    try {
+        return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
+    } catch {
+        return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+    }
 }
 
 function isToxicDomain(domain) {
+    if (!domain) return false;
     const lower = domain.toLowerCase();
     const spamTLDs = ['.xyz', '.top', '.buzz', '.click', '.link', '.info', '.win',
         '.bid', '.stream', '.download', '.gdn', '.review', '.trade', '.webcam',
@@ -217,6 +277,7 @@ function isToxicDomain(domain) {
 }
 
 function getToxicReason(domain) {
+    if (!domain) return 'Unknown';
     const lower = domain.toLowerCase();
     const spamTLDs = ['.xyz', '.top', '.buzz', '.click', '.link', '.info', '.win', '.bid', '.cf', '.ga', '.gq', '.ml', '.tk'];
     if (spamTLDs.some(tld => lower.endsWith(tld))) return 'Suspicious TLD';
@@ -229,6 +290,7 @@ function getToxicReason(domain) {
     if ((lower.match(/-/g) || []).length >= 4) return 'Excessive hyphens';
     return 'Suspicious pattern';
 }
+
 
 // ═══════════════════════════════════════════════════
 //   ACTION: broken-links — Outbound Broken Link Checker
@@ -243,7 +305,11 @@ async function handleBrokenLinks(req, res) {
     try {
         const pageResp = await fetch(targetUrl, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
             },
             signal: AbortSignal.timeout(10000),
             redirect: 'follow',
