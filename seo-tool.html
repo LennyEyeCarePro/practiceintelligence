@@ -2767,19 +2767,26 @@ function renderBacklinks(data) {
 
     let html = '';
 
-    // Stats grid
-    html += `<div class="content-grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr;">
+    // Stats grid — use real API totals when available
+    const totalBL = stats.totalBacklinks || stats.totalDiscovered || 0;
+    const totalDF = stats.totalDoFollow || null;
+    const totalDom = stats.totalDomains || null;
+    html += `<div class="content-grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;">
         <div class="content-stat">
-            <div class="content-stat-value" style="color:var(--accent);">${stats.totalDiscovered || 0}</div>
-            <div class="content-stat-label">Discovered</div>
+            <div class="content-stat-value" style="color:var(--accent);">${totalBL.toLocaleString()}</div>
+            <div class="content-stat-label">Total Backlinks</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#7C4DFF;">${totalDom ? totalDom.toLocaleString() : '—'}</div>
+            <div class="content-stat-label">Ref. Domains</div>
         </div>
         <div class="content-stat">
             <div class="content-stat-value" style="color:#2196F3;">${stats.newCount || 0}</div>
             <div class="content-stat-label">New</div>
         </div>
         <div class="content-stat">
-            <div class="content-stat-value" style="color:#4CAF50;">${stats.cleanCount || 0}</div>
-            <div class="content-stat-label">Clean</div>
+            <div class="content-stat-value" style="color:#4CAF50;">${totalDF ? totalDF.toLocaleString() : '—'}</div>
+            <div class="content-stat-label">DoFollow</div>
         </div>
         <div class="content-stat">
             <div class="content-stat-value" style="color:#F44336;">${stats.toxicCount || 0}</div>
@@ -2791,48 +2798,41 @@ function renderBacklinks(data) {
         </div>
     </div>`;
 
+    // Helper to render a single backlink row
+    function backlinkRow(b, icon) {
+        const linkUrl = b.url || '';
+        const display = b.source || (linkUrl ? linkUrl.replace(/^https?:\/\/(www\.)?/, '').slice(0, 60) : 'Unknown');
+        const linkEl = linkUrl ? `<a href="${linkUrl}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--text-muted);">${display}</a>` : display;
+        const titleEl = b.title ? `<span style="display:block;font-size:10px;color:var(--text-secondary);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:350px;" title="${b.title.replace(/"/g, '&quot;')}">${b.title.slice(0, 60)}</span>` : '';
+        const anchor = b.anchor ? `<span style="font-size:10px;color:var(--text-muted);">anchor: "${b.anchor.slice(0, 40)}"</span>` : '';
+        const nfTag = b.nofollow ? '<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(255,152,0,.15);color:#FF9800;margin-left:4px;">nofollow</span>' : '';
+        const rankTag = b.domainInlinkRank != null ? `<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(100,100,255,.12);color:#7C4DFF;margin-left:4px;">rank ${b.domainInlinkRank}</span>` : '';
+        const dateStr = b.firstSeen ? `<span style="font-size:10px;color:var(--text-muted);white-space:nowrap;">${b.firstSeen}</span>` : '';
+        const meta = [anchor, dateStr].filter(Boolean).join(' · ');
+        return `<div class="check-row">
+            <span class="check-icon">${icon}</span>
+            <span class="check-text" style="word-break:break-all;flex:1;">${linkEl}${nfTag}${rankTag}${titleEl}${meta ? `<span style="display:block;font-size:10px;margin-top:1px;">${meta}</span>` : ''}</span>
+            ${b.toxicReason ? `<span class="check-status" style="color:var(--danger);font-size:11px;">${b.toxicReason}</span>` : ''}
+        </div>`;
+    }
+
     // Toxic backlinks (show first — most important)
     if (data.toxicBacklinks?.length > 0) {
         html += '<div class="section-label" style="color:var(--danger);">🚨 Toxic / Poor Quality Backlinks</div>';
         html += '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Consider disavowing these in Google Search Console</div>';
-        html += data.toxicBacklinks.map(b => {
-            const display = b.source || (b.url ? b.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 55) : 'Unknown');
-            const anchor = b.anchor ? `<span style="display:block;font-size:10px;color:var(--text-muted);margin-top:1px;">anchor: "${b.anchor.slice(0, 40)}"</span>` : '';
-            return `<div class="check-row">
-                <span class="check-icon">🚨</span>
-                <span class="check-text" style="word-break:break-all;flex:1;">${display}${anchor}</span>
-                <span class="check-status" style="color:var(--danger);font-size:11px;">${b.toxicReason || 'Poor quality'}</span>
-            </div>`;
-        }).join('');
+        html += data.toxicBacklinks.map(b => backlinkRow(b, '🚨')).join('');
     }
 
     // New backlinks (recently discovered)
     if (data.newBacklinks?.length > 0) {
         html += '<div class="section-label" style="margin-top:16px;color:#2196F3;">🆕 Recently Discovered Backlinks</div>';
-        html += data.newBacklinks.filter(b => !b.toxic).slice(0, 8).map(b => {
-            const display = b.source || (b.url ? b.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 55) : 'Unknown');
-            const anchor = b.anchor ? `<span style="display:block;font-size:10px;color:var(--text-muted);margin-top:1px;">anchor: "${b.anchor.slice(0, 40)}"</span>` : '';
-            const dateStr = b.firstSeen ? `<span style="font-size:10px;color:var(--text-muted);">${b.firstSeen}</span>` : '';
-            return `<div class="check-row">
-                <span class="check-icon">🔗</span>
-                <span class="check-text" style="word-break:break-all;flex:1;">${display}${anchor}</span>
-                ${dateStr}
-            </div>`;
-        }).join('');
+        html += data.newBacklinks.filter(b => !b.toxic).slice(0, 8).map(b => backlinkRow(b, '🔗')).join('');
     }
 
     // Clean backlinks
     if (data.cleanBacklinks?.length > 0) {
-        html += '<div class="section-label" style="margin-top:16px;">✅ Clean Backlinks</div>';
-        html += data.cleanBacklinks.slice(0, 10).map(b => {
-            const display = b.source || (b.url ? b.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 55) : 'Unknown');
-            const anchor = b.anchor ? `<span style="display:block;font-size:10px;color:var(--text-muted);margin-top:1px;">anchor: "${b.anchor.slice(0, 40)}"</span>` : '';
-            const nfTag = b.nofollow ? '<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(255,152,0,.15);color:#FF9800;margin-left:4px;">nofollow</span>' : '';
-            return `<div class="check-row">
-                <span class="check-icon">✅</span>
-                <span class="check-text" style="word-break:break-all;flex:1;">${display}${nfTag}${anchor}</span>
-            </div>`;
-        }).join('');
+        html += '<div class="section-label" style="margin-top:16px;">✅ Top Backlinks</div>';
+        html += data.cleanBacklinks.slice(0, 10).map(b => backlinkRow(b, '✅')).join('');
     }
 
     // Referring domains

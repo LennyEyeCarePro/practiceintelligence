@@ -120,6 +120,10 @@ async function handleBacklinks(req, res) {
             .slice(0, 20)
             .map(([domain, count]) => ({ domain, count }));
 
+        // Extract counts from the top backlinks response (if available)
+        const apiCounts = topData?.counts?.backlinks || {};
+        const apiDomainCounts = topData?.counts?.domains || {};
+
         return res.json({
             domain,
             backlinks: uniqueLinks.slice(0, 30),
@@ -127,6 +131,10 @@ async function handleBacklinks(req, res) {
             toxicBacklinks: toxicLinks.slice(0, 15),
             cleanBacklinks: cleanLinks.slice(0, 15),
             stats: {
+                totalBacklinks: apiCounts.total || totalLinks,
+                totalDoFollow: apiCounts.doFollow || null,
+                totalDomains: apiDomainCounts.total || null,
+                doFollowDomains: apiDomainCounts.doFollow || null,
                 totalDiscovered: totalLinks,
                 newCount: newLinks.length,
                 toxicCount,
@@ -220,18 +228,22 @@ function normalizeBacklinks(apiResp, type) {
     }
 
     return items.filter(item => item && typeof item === 'object').map(item => {
-        // Extract source domain from whatever fields the API provides
-        const url = item.url || item.source_url || item.source || item.link || item.href || '';
-        const sourceDomain = item.source_domain || item.domain || item.source || extractDomain(url);
+        // RapidAPI Best Backlink Checker uses url_from (source) and url_to (target)
+        const url = item.url_from || item.url || item.source_url || item.source || item.link || item.href || '';
+        const targetUrl = item.url_to || '';
+        const sourceDomain = item.source_domain || item.domain || extractDomain(url);
         const anchor = item.anchor || item.anchor_text || item.anchorText || '';
+        const title = item.title || '';
 
         // For 'poor' type, always mark toxic. For others, run heuristics.
         const isToxic = type === 'poor' ? true : isToxicDomain(sourceDomain);
 
         return {
             url,
+            targetUrl,
             source: sourceDomain,
             anchor,
+            title,
             type: type === 'poor' ? 'toxic' : (item.type || type),
             toxic: isToxic,
             toxicReason: isToxic
@@ -239,6 +251,10 @@ function normalizeBacklinks(apiResp, type) {
                 : null,
             nofollow: item.nofollow ?? item.rel?.includes('nofollow') ?? null,
             firstSeen: item.first_seen || item.firstSeen || item.date || null,
+            lastVisited: item.last_visited || null,
+            inlinkRank: item.inlink_rank ?? null,
+            domainInlinkRank: item.domain_inlink_rank ?? null,
+            isImage: item.image || false,
         };
     });
 }
