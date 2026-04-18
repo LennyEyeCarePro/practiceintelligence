@@ -27,30 +27,34 @@ export default async function handler(req, res) {
 /**
  * Shared helper — call a RapidAPI Best Backlink Checker endpoint
  */
-async function rapidApiGet(endpoint, domain) {
+async function rapidApiGet(endpoint, domain, timeoutMs = 25000) {
     const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
     if (!RAPIDAPI_KEY) {
         return { _error: 'RAPIDAPI_KEY not configured' };
     }
 
-    const resp = await fetch(
-        `https://${RAPIDAPI_HOST}/${endpoint}?domain=${encodeURIComponent(domain)}`,
-        {
-            headers: {
-                'Content-Type': 'application/json',
-                'x-rapidapi-host': RAPIDAPI_HOST,
-                'x-rapidapi-key': RAPIDAPI_KEY,
-            },
-            signal: AbortSignal.timeout(15000),
+    try {
+        const resp = await fetch(
+            `https://${RAPIDAPI_HOST}/${endpoint}?domain=${encodeURIComponent(domain)}`,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-rapidapi-host': RAPIDAPI_HOST,
+                    'x-rapidapi-key': RAPIDAPI_KEY,
+                },
+                signal: AbortSignal.timeout(timeoutMs),
+            }
+        );
+
+        if (!resp.ok) {
+            const errText = await resp.text().catch(() => '');
+            return { _error: `RapidAPI ${endpoint} returned ${resp.status}: ${errText.slice(0, 200)}` };
         }
-    );
 
-    if (!resp.ok) {
-        const errText = await resp.text().catch(() => '');
-        return { _error: `RapidAPI ${endpoint} returned ${resp.status}: ${errText.slice(0, 200)}` };
+        return resp.json();
+    } catch (err) {
+        return { _error: `RapidAPI ${endpoint} failed: ${err.message?.slice(0, 100)}` };
     }
-
-    return resp.json();
 }
 
 // ═══════════════════════════════════════════════════

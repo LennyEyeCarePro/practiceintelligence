@@ -2,6 +2,15 @@
     "functions": {
         "api/scrape.js": {
             "maxDuration": 120
+        },
+        "api/link-audit.js": {
+            "maxDuration": 60
+        },
+        "api/seo-report.js": {
+            "maxDuration": 60
+        },
+        "api/site-audit.js": {
+            "maxDuration": 30
         }
     }
 }
