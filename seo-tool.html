@@ -785,7 +785,8 @@ body {
             <div class="print-footer">Confidential — Prepared by EyeCarePro SEO Intelligence | eyecarepro.com</div>
             <div class="results-header">
                 <h2 id="resultsTitle">SEO Report</h2>
-                <div style="display:flex;gap:8px;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <span id="saveStatus" style="font-size:11px;color:var(--text-muted);display:none;"></span>
                     <button class="btn-export" onclick="exportReport()">📋 Copy Report</button>
                     <button class="btn-export" onclick="printReport()" style="background:rgba(78,205,196,.15);border-color:rgba(78,205,196,.3);">📄 Download PDF</button>
                     <button class="btn-new-scan" onclick="resetScan()">+ New Scan</button>
@@ -1446,6 +1447,9 @@ async function startScan() {
 
         // Render results
         renderResults();
+
+        // Auto-save to Supabase
+        saveScanToSupabase();
 
     } catch (err) {
         console.error('Scan error:', err);
@@ -3251,6 +3255,43 @@ function renderCrawl(data) {
     }
 
     document.getElementById('crawlContent').innerHTML = html;
+}
+
+// ─── SAVE TO SUPABASE ────────────────────────────────
+async function saveScanToSupabase() {
+    const statusEl = document.getElementById('saveStatus');
+    statusEl.style.display = 'inline';
+    statusEl.textContent = '💾 Saving to database...';
+    statusEl.style.color = 'var(--text-muted)';
+
+    try {
+        const resp = await fetch(API_BASE + '/save-scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(scanData),
+        });
+
+        const result = await resp.json();
+
+        if (result.success) {
+            statusEl.textContent = `✅ Saved — ${result.saved.pages} pages, ${result.saved.backlinks} backlinks`;
+            statusEl.style.color = 'var(--success)';
+            scanData._scanId = result.scanId;
+        } else {
+            const errMsg = result.error || 'Unknown error';
+            if (errMsg.includes('SUPABASE')) {
+                statusEl.textContent = '⚠️ Database not configured';
+            } else {
+                statusEl.textContent = '⚠️ Save failed — ' + errMsg.slice(0, 60);
+            }
+            statusEl.style.color = 'var(--warn)';
+            console.warn('Save to Supabase failed:', result);
+        }
+    } catch (err) {
+        statusEl.textContent = '⚠️ Save failed — ' + err.message.slice(0, 40);
+        statusEl.style.color = 'var(--warn)';
+        console.error('Save to Supabase error:', err);
+    }
 }
 
 function downloadCrawlJson() {
