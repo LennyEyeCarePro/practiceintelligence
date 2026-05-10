@@ -769,6 +769,7 @@ body {
                     <div class="progress-step" id="step-backlinks"><span class="progress-step-num">13</span><span class="progress-icon">○</span> Backlink Discovery & Toxic Links</div>
                     <div class="progress-step" id="step-brokenlinks"><span class="progress-step-num">14</span><span class="progress-icon">○</span> Broken Link Audit</div>
                     <div class="progress-step" id="step-validate"><span class="progress-step-num">15</span><span class="progress-icon">○</span> HTML Validation & Rich Results</div>
+                    <div class="progress-step" id="step-crawl"><span class="progress-step-num">16</span><span class="progress-icon">○</span> Full Site Content Crawl</div>
                 </div>
                 <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div>
                 <div class="progress-elapsed"><span id="progressElapsed">0:00</span><span id="progressPct">0%</span></div>
@@ -1045,6 +1046,20 @@ body {
                 <div class="panel-body"><div class="panel-content" id="validateContent"></div></div>
             </div>
 
+            <!-- Site Content Crawl -->
+            <div class="panel" id="panelCrawl">
+                <div class="panel-header" onclick="togglePanel('panelCrawl')">
+                    <div class="panel-header-left">
+                        <div class="panel-icon" style="background:rgba(0,150,136,.15)">🕷️</div>
+                        <div class="panel-title">Site Content Crawl</div>
+                    </div>
+                    <span class="panel-badge" id="crawlBadge"></span>
+                    <div class="panel-chevron">▾</div>
+                </div>
+                <div class="print-desc">Full spider crawl of the entire site — discovers all pages via sitemap and internal links. Extracts metadata (title, description, OG tags), headings, word count, and full text content from every page. Identifies thin content, missing metadata, and duplicate titles/descriptions.</div>
+                <div class="panel-body"><div class="panel-content" id="crawlContent"></div></div>
+            </div>
+
             <!-- AI Findings -->
             <div class="panel open" id="panelFindings">
                 <div class="panel-header" onclick="togglePanel('panelFindings')">
@@ -1178,7 +1193,7 @@ async function startScan() {
 
     try {
         // Phase 1: Parallel — Lighthouse, Site Audit, PageRank, Places
-        setPhase('Phase 1 of 5 — Core performance & business data');
+        setPhase('Phase 1 of 6 — Core performance & business data');
         setStep('lighthouse', 'active');
         setStep('audit', 'active');
         setStep('pagerank', 'active');
@@ -1239,7 +1254,7 @@ async function startScan() {
         setProgress(60);
 
         // Phase 2: AI Report
-        setPhase('Phase 2 of 5 — AI-powered analysis');
+        setPhase('Phase 2 of 6 — AI-powered analysis');
         setStep('report', 'active');
         const reportResp = await fetch(API_BASE + '/seo-report', {
             method: 'POST',
@@ -1260,7 +1275,7 @@ async function startScan() {
         setProgress(70);
 
         // Phase 3: Parallel — Moz DA, Safe Browsing, SSL Labs, Keyword Suggestions
-        setPhase('Phase 3 of 5 — Security, authority & keyword gaps');
+        setPhase('Phase 3 of 6 — Security, authority & keyword gaps');
         setStep('moz', 'active');
         setStep('safe', 'active');
         setStep('ssl', 'active');
@@ -1299,7 +1314,7 @@ async function startScan() {
         setProgress(80);
 
         // Phase 4: Parallel — Google Suggest, SERP Mining, Competitive Keywords
-        setPhase('Phase 4 of 5 — Keyword intelligence & competitors');
+        setPhase('Phase 4 of 6 — Keyword intelligence & competitors');
         setStep('suggest', 'active');
         setStep('serp', 'active');
         setStep('competitive', 'active');
@@ -1361,7 +1376,7 @@ async function startScan() {
         setProgress(90);
 
         // Phase 5: Parallel — Backlinks, Broken Links, HTML Validation
-        setPhase('Phase 5 of 5 — Link health & validation');
+        setPhase('Phase 5 of 6 — Link health & validation');
         setStep('backlinks', 'active');
         setStep('brokenlinks', 'active');
         setStep('validate', 'active');
@@ -1414,6 +1429,17 @@ async function startScan() {
         setStep('backlinks', backlinkResp?.error && !backlinkResp?.backlinks?.length ? 'error' : 'done');
         setStep('brokenlinks', brokenResp?.error && !brokenResp?.stats?.linkHealth ? 'error' : 'done');
         setStep('validate', validateResp?.error && !validateResp?.validation?.validationScore ? 'error' : 'done');
+        setProgress(90);
+
+        // Phase 6: Full Site Content Crawl
+        setPhase('Phase 6 of 6 — Crawling site content');
+        setStep('crawl', 'active');
+
+        const crawlResp = await fetch(API_BASE + '/crawl-site?domain=' + encodeURIComponent(domain) + '&maxPages=80')
+            .then(r => r.json()).catch(e => ({ error: e.message, pages: [], crawlStats: {}, sitemap: {} }));
+
+        scanData.crawl = crawlResp;
+        setStep('crawl', crawlResp?.error && !crawlResp?.pages?.length ? 'error' : 'done');
         setProgress(100);
         setPhase('Audit complete — generating report...');
         stopTimer();
@@ -1433,7 +1459,7 @@ async function startScan() {
 
 // ─── RENDER ALL RESULTS ─────────────────────────────
 function renderResults() {
-    const { lighthouse, siteAudit: audit, pageRank: pr, places, report, domain, businessName, moz, safeBrowsing, ssl, keywordSuggestions, googleSuggest, serpKeywords, competitiveKeywords, backlinks: backlinkData, brokenLinks: brokenLinkData, htmlValidation } = scanData;
+    const { lighthouse, siteAudit: audit, pageRank: pr, places, report, domain, businessName, moz, safeBrowsing, ssl, keywordSuggestions, googleSuggest, serpKeywords, competitiveKeywords, backlinks: backlinkData, brokenLinks: brokenLinkData, htmlValidation, crawl: crawlData } = scanData;
     const mobile = lighthouse?.mobile || {};
     const desktop = lighthouse?.desktop || {};
     const biz = places?.locations?.[0] || places?.business || {};
@@ -1556,6 +1582,9 @@ function renderResults() {
 
     // ═══ HTML VALIDATION & RICH RESULTS ═══
     renderValidation(htmlValidation || {});
+
+    // ═══ SITE CONTENT CRAWL ═══
+    renderCrawl(crawlData || {});
 
     // ═══ FINDINGS ═══
     renderFindings(report || {});
@@ -3070,6 +3099,170 @@ function gbpRowHtml(label, value, status) {
     else if (status === 'critical') cls = 'critical';
     else if (status === 'warning') cls = 'warning';
     return `<div class="gbp-row"><div class="gbp-label">${label}</div><div class="gbp-value ${cls}">${value}</div></div>`;
+}
+
+// ─── SITE CONTENT CRAWL ──────────────────────────────
+function renderCrawl(data) {
+    const badge = document.getElementById('crawlBadge');
+
+    if (data.error && !data.pages?.length) {
+        badge.textContent = 'Error';
+        badge.className = 'panel-badge badge-critical';
+        document.getElementById('crawlContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">${data.error}</div>`;
+        return;
+    }
+
+    if (!data.pages || data.pages.length === 0) {
+        badge.textContent = 'No Pages';
+        badge.className = 'panel-badge badge-warning';
+        document.getElementById('crawlContent').innerHTML = `<div style="color:var(--text-muted);padding:12px 0;">No pages could be crawled.</div>`;
+        return;
+    }
+
+    const stats = data.crawlStats || {};
+    const issues = data.seoIssues || {};
+    const sitemap = data.sitemap || {};
+
+    badge.textContent = `${stats.pagesFound || 0} Pages`;
+    badge.className = 'panel-badge badge-info';
+
+    let html = '';
+
+    // Stats grid
+    html += `<div class="content-grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;">
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:var(--accent);">${stats.pagesFound || 0}</div>
+            <div class="content-stat-label">Pages Crawled</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#7C4DFF;">${sitemap.urlCount || 0}</div>
+            <div class="content-stat-label">Sitemap URLs</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#2196F3;">${(stats.totalWords || 0).toLocaleString()}</div>
+            <div class="content-stat-label">Total Words</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#4CAF50;">${stats.avgWordsPerPage || 0}</div>
+            <div class="content-stat-label">Avg Words/Page</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:#FF9800;">${issues.thinPages || 0}</div>
+            <div class="content-stat-label">Thin Pages</div>
+        </div>
+        <div class="content-stat">
+            <div class="content-stat-value" style="color:var(--text-secondary);">${stats.duration || '—'}</div>
+            <div class="content-stat-label">Crawl Time</div>
+        </div>
+    </div>`;
+
+    // SEO Issues summary
+    const issueItems = [];
+    if (issues.pagesWithoutTitle > 0) issueItems.push({ icon: '🚨', text: `${issues.pagesWithoutTitle} page${issues.pagesWithoutTitle > 1 ? 's' : ''} missing title tag`, severity: 'danger' });
+    if (issues.pagesWithoutMeta > 0) issueItems.push({ icon: '⚠️', text: `${issues.pagesWithoutMeta} page${issues.pagesWithoutMeta > 1 ? 's' : ''} missing meta description`, severity: 'warn' });
+    if (issues.pagesWithoutH1 > 0) issueItems.push({ icon: '⚠️', text: `${issues.pagesWithoutH1} page${issues.pagesWithoutH1 > 1 ? 's' : ''} missing H1 heading`, severity: 'warn' });
+    if (issues.thinPages > 0) issueItems.push({ icon: '📄', text: `${issues.thinPages} thin page${issues.thinPages > 1 ? 's' : ''} (under 300 words)`, severity: 'warn' });
+    if (issues.duplicateTitles?.length > 0) issueItems.push({ icon: '🔁', text: `${issues.duplicateTitles.length} duplicate title${issues.duplicateTitles.length > 1 ? 's' : ''} found`, severity: 'warn' });
+    if (issues.duplicateDescriptions?.length > 0) issueItems.push({ icon: '🔁', text: `${issues.duplicateDescriptions.length} duplicate meta description${issues.duplicateDescriptions.length > 1 ? 's' : ''} found`, severity: 'warn' });
+
+    if (issueItems.length > 0) {
+        html += '<div class="section-label" style="color:var(--danger);margin-top:16px;">Content Issues Found</div>';
+        html += issueItems.map(i =>
+            `<div class="check-row"><span class="check-icon">${i.icon}</span><span class="check-text" style="color:var(--${i.severity});">${i.text}</span></div>`
+        ).join('');
+    } else {
+        html += '<div class="check-row" style="margin-top:12px;"><span class="check-icon">✅</span><span class="check-text" style="color:var(--success);">No major content issues detected</span></div>';
+    }
+
+    // Duplicate titles detail
+    if (issues.duplicateTitles?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;">🔁 Duplicate Titles</div>';
+        html += issues.duplicateTitles.map(d =>
+            `<div class="metric-row"><span class="metric-label" style="word-break:break-all;font-size:12px;">"${d.value}"</span><span class="metric-value">${d.count}×</span></div>`
+        ).join('');
+    }
+
+    // Sitemap status
+    html += '<div class="section-label" style="margin-top:16px;">🗺️ Sitemap</div>';
+    if (sitemap.found) {
+        html += `<div class="check-row"><span class="check-icon">✅</span><span class="check-text">${sitemap.urlCount} URLs found in sitemap.xml</span></div>`;
+        // Show pages NOT in sitemap
+        const notInSitemap = data.pages.filter(p => !p.inSitemap);
+        if (notInSitemap.length > 0) {
+            html += `<div class="check-row"><span class="check-icon">⚠️</span><span class="check-text" style="color:var(--warn);">${notInSitemap.length} discovered page${notInSitemap.length > 1 ? 's' : ''} not in sitemap</span></div>`;
+            notInSitemap.slice(0, 10).forEach(p => {
+                html += `<div class="metric-row" style="padding-left:28px;"><span class="metric-label" style="font-size:11px;word-break:break-all;">${p.slug}</span></div>`;
+            });
+        }
+    } else {
+        html += `<div class="check-row"><span class="check-icon">🚨</span><span class="check-text" style="color:var(--danger);">No sitemap.xml found — ${sitemap.error || 'search engines cannot discover all pages'}</span></div>`;
+    }
+
+    // Page table
+    html += '<div class="section-label" style="margin-top:16px;">📄 All Crawled Pages</div>';
+    html += `<div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,.1);text-align:left;">
+                    <th style="padding:6px 8px;color:var(--text-muted);font-weight:500;min-width:180px;">Slug</th>
+                    <th style="padding:6px 8px;color:var(--text-muted);font-weight:500;min-width:180px;">Title</th>
+                    <th style="padding:6px 8px;color:var(--text-muted);font-weight:500;min-width:120px;">Meta Description</th>
+                    <th style="padding:6px 8px;color:var(--text-muted);font-weight:500;">H1</th>
+                    <th style="padding:6px 8px;color:var(--text-muted);font-weight:500;text-align:right;">Words</th>
+                    <th style="padding:6px 8px;color:var(--text-muted);font-weight:500;text-align:center;">Sitemap</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+    data.pages.forEach(p => {
+        const titleColor = !p.title ? 'var(--danger)' : p.titleLength > 60 ? 'var(--warn)' : 'var(--text-primary)';
+        const descColor = !p.metaDescription ? 'var(--danger)' : p.metaDescriptionLength > 160 ? 'var(--warn)' : 'var(--text-primary)';
+        const wordColor = (p.wordCount || 0) < 300 ? 'var(--warn)' : 'var(--text-primary)';
+        const h1Text = p.h1?.length > 0 ? p.h1[0].slice(0, 50) : '<span style="color:var(--danger);">Missing</span>';
+
+        html += `<tr style="border-bottom:1px solid rgba(255,255,255,.05);" class="crawl-page-row" data-slug="${(p.slug||'').replace(/"/g,'&quot;')}">
+            <td style="padding:6px 8px;word-break:break-all;"><a href="${p.url}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">${p.slug || '/'}</a></td>
+            <td style="padding:6px 8px;color:${titleColor};max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(p.title||'').replace(/"/g,'&quot;')}">${p.title || '<span style="color:var(--danger);">Missing</span>'}</td>
+            <td style="padding:6px 8px;color:${descColor};max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(p.metaDescription||'').replace(/"/g,'&quot;')}">${p.metaDescription ? p.metaDescription.slice(0, 60) + '…' : '<span style="color:var(--danger);">Missing</span>'}</td>
+            <td style="padding:6px 8px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h1Text}</td>
+            <td style="padding:6px 8px;text-align:right;color:${wordColor};font-variant-numeric:tabular-nums;">${(p.wordCount || 0).toLocaleString()}</td>
+            <td style="padding:6px 8px;text-align:center;">${p.inSitemap ? '✅' : '❌'}</td>
+        </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+
+    // Crawl limit warning
+    if (stats.hitLimit) {
+        html += `<div class="opportunity-box" style="margin-top:16px;border-color:rgba(255,152,0,.3);background:rgba(255,152,0,.08)"><p style="color:var(--warn);"><strong>Crawl limit reached.</strong> Stopped at ${stats.pagesFound} pages (max ${stats.maxPagesLimit}). The site may have more pages. Increase maxPages for a deeper crawl.</p></div>`;
+    }
+
+    // Download JSON button
+    html += `<div style="margin-top:20px;display:flex;gap:10px;">
+        <button onclick="downloadCrawlJson()" style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;">⬇ Download Full Crawl Data (JSON)</button>
+    </div>`;
+
+    // Errors
+    if (data.errors?.length > 0) {
+        html += '<div class="section-label" style="margin-top:16px;color:var(--text-muted);">Crawl Errors</div>';
+        html += data.errors.slice(0, 10).map(e =>
+            `<div style="font-size:11px;color:var(--text-muted);padding:2px 0;word-break:break-all;">${e}</div>`
+        ).join('');
+    }
+
+    document.getElementById('crawlContent').innerHTML = html;
+}
+
+function downloadCrawlJson() {
+    const data = scanData.crawl;
+    if (!data) return alert('No crawl data available');
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${scanData.domain || 'site'}-crawl-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 // ─── EXPORT ─────────────────────────────────────────

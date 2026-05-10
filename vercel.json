@@ -11,6 +11,9 @@
         },
         "api/site-audit.js": {
             "maxDuration": 30
+        },
+        "api/crawl-site.js": {
+            "maxDuration": 120
         }
     }
 }
