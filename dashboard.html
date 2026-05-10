@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scan Dashboard | Practice Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --brand: #0F4C81;
+    --brand-light: #1A6BB5;
+    --accent: #4ECDC4;
+    --accent-glow: rgba(78,205,196,.25);
+    --warn: #F59E0B;
+    --danger: #EF4444;
+    --success: #10B981;
+    --bg: #0B1929;
+    --bg-light: #132F4C;
+    --surface: #1E3A5F;
+    --surface-alt: #162D4A;
+    --border: #1E3A5F;
+    --text: #E8EDF2;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --shadow: 0 2px 8px rgba(0,0,0,.3);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.4);
+    --font: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --mono: 'Space Mono', monospace;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { font-size:16px; -webkit-font-smoothing:antialiased; }
+body { font-family:var(--font); background:var(--bg); color:var(--text); min-height:100vh; }
+
+/* Password Gate */
+#passwordGate { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+.gate-box { background:var(--surface); padding:32px; border-radius:var(--radius-lg); text-align:center; }
+.gate-box h2 { margin-bottom:16px; }
+.gate-box input { background:var(--bg-light); border:1px solid var(--border); color:var(--text); padding:10px 16px; border-radius:8px; font-size:14px; width:200px; margin-right:8px; }
+.gate-box button { background:var(--accent); color:#0B1929; padding:10px 20px; border:none; border-radius:8px; font-weight:600; cursor:pointer; }
+.gate-error { color:var(--danger); font-size:12px; margin-top:8px; display:none; }
+
+/* Layout */
+#app { display:none; }
+.header { background:linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%); padding:20px 32px; display:flex; justify-content:space-between; align-items:center; }
+.header h1 { font-size:20px; font-weight:700; }
+.header-right { display:flex; gap:12px; align-items:center; }
+.header-right input { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); color:#fff; padding:8px 14px; border-radius:8px; font-size:13px; width:220px; }
+.header-right input::placeholder { color:rgba(255,255,255,.5); }
+.header-right a { color:var(--accent); text-decoration:none; font-size:13px; font-weight:500; }
+
+.container { max-width:1400px; margin:0 auto; padding:24px 32px; }
+
+/* Stats Row */
+.stats-row { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:24px; }
+.stat-card { background:var(--surface); border-radius:var(--radius); padding:16px; text-align:center; }
+.stat-value { font-size:28px; font-weight:800; font-family:var(--mono); }
+.stat-label { font-size:11px; color:var(--text-muted); margin-top:4px; text-transform:uppercase; letter-spacing:.5px; }
+
+/* Table */
+.scan-table { width:100%; border-collapse:collapse; background:var(--surface); border-radius:var(--radius); overflow:hidden; }
+.scan-table thead { background:var(--surface-alt); }
+.scan-table th { padding:12px 14px; text-align:left; font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; }
+.scan-table td { padding:10px 14px; font-size:13px; border-top:1px solid rgba(255,255,255,.04); }
+.scan-table tbody tr { cursor:pointer; transition:background .15s; }
+.scan-table tbody tr:hover { background:rgba(78,205,196,.06); }
+
+.grade-badge { display:inline-block; width:28px; height:28px; line-height:28px; text-align:center; border-radius:6px; font-weight:700; font-size:14px; }
+.grade-A { background:rgba(16,185,129,.2); color:#10B981; }
+.grade-B { background:rgba(78,205,196,.2); color:#4ECDC4; }
+.grade-C { background:rgba(245,158,11,.2); color:#F59E0B; }
+.grade-D { background:rgba(239,68,68,.2); color:#EF4444; }
+.grade-F { background:rgba(239,68,68,.3); color:#EF4444; }
+
+.score-bar { width:60px; height:6px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:6px; }
+.score-bar-fill { height:100%; border-radius:3px; }
+
+.pill { font-size:10px; padding:2px 6px; border-radius:4px; font-weight:500; }
+.pill-blocked { background:rgba(239,68,68,.15); color:var(--danger); }
+
+/* Detail View */
+#detailView { display:none; }
+.back-btn { background:none; border:1px solid var(--border); color:var(--text-secondary); padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; margin-bottom:20px; }
+.back-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+.detail-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; }
+.detail-title { font-size:24px; font-weight:800; }
+.detail-meta { font-size:12px; color:var(--text-muted); margin-top:4px; }
+
+.detail-score-ring { width:100px; height:100px; position:relative; }
+.detail-score-ring svg { width:100px; height:100px; }
+.detail-score-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:800; font-family:var(--mono); }
+
+.pillar-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:24px; }
+.pillar-card { background:var(--surface); border-radius:var(--radius); padding:16px; text-align:center; }
+.pillar-score { font-size:32px; font-weight:800; font-family:var(--mono); }
+.pillar-label { font-size:11px; color:var(--text-muted); margin-top:4px; }
+.pillar-na { color:var(--text-muted); font-size:14px; }
+
+.detail-section { background:var(--surface); border-radius:var(--radius); padding:20px; margin-bottom:16px; }
+.detail-section h3 { font-size:14px; font-weight:600; margin-bottom:12px; color:var(--accent); }
+
+.detail-table { width:100%; border-collapse:collapse; font-size:12px; }
+.detail-table th { padding:8px 10px; text-align:left; font-size:10px; font-weight:600; color:var(--text-muted); text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,.08); }
+.detail-table td { padding:6px 10px; border-bottom:1px solid rgba(255,255,255,.03); }
+.detail-table td a { color:var(--accent); text-decoration:none; }
+
+.tag { font-size:10px; padding:1px 5px; border-radius:3px; font-weight:500; }
+.tag-toxic { background:rgba(239,68,68,.15); color:var(--danger); }
+.tag-clean { background:rgba(16,185,129,.15); color:var(--success); }
+.tag-new { background:rgba(33,150,243,.15); color:#2196F3; }
+.tag-nofollow { background:rgba(255,152,0,.15); color:#FF9800; }
+.tag-missing { background:rgba(239,68,68,.1); color:var(--danger); }
+.tag-thin { background:rgba(245,158,11,.1); color:var(--warn); }
+.tag-ok { background:rgba(16,185,129,.1); color:var(--success); }
+
+.tabs { display:flex; gap:4px; margin-bottom:16px; }
+.tab-btn { background:var(--surface-alt); border:1px solid var(--border); color:var(--text-muted); padding:8px 16px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:500; }
+.tab-btn.active { background:var(--accent); color:#0B1929; border-color:var(--accent); }
+
+.empty { text-align:center; color:var(--text-muted); padding:40px; font-size:14px; }
+
+/* Loading */
+.loading { text-align:center; padding:60px; color:var(--text-muted); }
+.loading::after { content:''; display:inline-block; width:20px; height:20px; border:2px solid var(--accent); border-top-color:transparent; border-radius:50%; animation:spin .6s linear infinite; margin-left:10px; vertical-align:middle; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+@media (max-width:900px) {
+    .stats-row { grid-template-columns:repeat(3,1fr); }
+    .pillar-grid { grid-template-columns:repeat(3,1fr); }
+    .container { padding:16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Password Gate -->
+<div id="passwordGate">
+    <div class="gate-box">
+        <h2>🔒 Dashboard Access</h2>
+        <div style="margin-top:16px;">
+            <input type="password" id="gatePw" placeholder="Enter password">
+            <button onclick="checkPassword()">Unlock</button>
+        </div>
+        <div class="gate-error" id="gateError">Incorrect password</div>
+    </div>
+</div>
+
+<!-- App -->
+<div id="app">
+    <div class="header">
+        <h1>📊 Scan Dashboard</h1>
+        <div class="header-right">
+            <input type="text" id="searchInput" placeholder="Filter by domain..." oninput="filterScans()">
+            <a href="seo-tool.html">← SEO Tool</a>
+        </div>
+    </div>
+
+    <!-- List View -->
+    <div id="listView">
+        <div class="container">
+            <div class="stats-row" id="summaryStats"></div>
+            <div id="scanTableWrap">
+                <div class="loading">Loading scans</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail View -->
+    <div id="detailView">
+        <div class="container">
+            <button class="back-btn" onclick="showList()">← Back to all scans</button>
+            <div id="detailContent"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_BASE = 'https://practiceintelligence-lennys-projects-2067cb84.vercel.app/api';
+const PASSWORD = 'ecp2026';
+
+let allScans = [];
+
+// ─── AUTH ────────────────────────────────────────────
+function checkPassword() {
+    if (document.getElementById('gatePw').value === PASSWORD) {
+        document.getElementById('passwordGate').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        localStorage.setItem('dash-auth', 'true');
+        loadScans();
+    } else {
+        document.getElementById('gateError').style.display = '';
+    }
+}
+document.getElementById('gatePw').addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+if (localStorage.getItem('dash-auth') === 'true') {
+    document.getElementById('passwordGate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadScans();
+}
+
+// ─── LOAD SCANS ──────────────────────────────────────
+async function loadScans() {
+    try {
+        const resp = await fetch(API_BASE + '/get-scans');
+        const data = await resp.json();
+
+        if (data.error) {
+            document.getElementById('scanTableWrap').innerHTML = `<div class="empty">⚠️ ${data.error}</div>`;
+            return;
+        }
+
+        allScans = data.scans || [];
+        renderSummary();
+        renderTable(allScans);
+    } catch (err) {
+        document.getElementById('scanTableWrap').innerHTML = `<div class="empty">Failed to load: ${err.message}</div>`;
+    }
+}
+
+function renderSummary() {
+    const total = allScans.length;
+    const domains = new Set(allScans.map(s => s.domain)).size;
+    const avgScore = total > 0 ? Math.round(allScans.reduce((s, x) => s + (x.overall_score || 0), 0) / total) : 0;
+    const gradeA = allScans.filter(s => s.grade === 'A').length;
+    const blocked = allScans.filter(s => s.crawler_blocked).length;
+    const totalPages = allScans.reduce((s, x) => s + (x.crawl_pages_found || 0), 0);
+
+    document.getElementById('summaryStats').innerHTML = `
+        <div class="stat-card"><div class="stat-value" style="color:var(--accent);">${total}</div><div class="stat-label">Total Scans</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#7C4DFF;">${domains}</div><div class="stat-label">Unique Domains</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:${avgScore >= 70 ? 'var(--success)' : avgScore >= 50 ? 'var(--warn)' : 'var(--danger)'};">${avgScore}</div><div class="stat-label">Avg Score</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--success);">${gradeA}</div><div class="stat-label">Grade A</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:var(--danger);">${blocked}</div><div class="stat-label">Blocked</div></div>
+        <div class="stat-card"><div class="stat-value" style="color:#2196F3;">${totalPages.toLocaleString()}</div><div class="stat-label">Pages Crawled</div></div>
+    `;
+}
+
+function renderTable(scans) {
+    if (scans.length === 0) {
+        document.getElementById('scanTableWrap').innerHTML = '<div class="empty">No scans found. Run a scan in the SEO tool to get started.</div>';
+        return;
+    }
+
+    let html = `<table class="scan-table">
+        <thead><tr>
+            <th>Domain</th>
+            <th>Date</th>
+            <th>Grade</th>
+            <th>Score</th>
+            <th>Speed</th>
+            <th>On-Page</th>
+            <th>Local</th>
+            <th>Backlinks</th>
+            <th>Technical</th>
+            <th>Pages</th>
+            <th>DA</th>
+            <th>Status</th>
+        </tr></thead><tbody>`;
+
+    scans.forEach(s => {
+        const date = new Date(s.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+        const time = new Date(s.created_at).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+        const gradeClass = `grade-${s.grade || 'F'}`;
+
+        html += `<tr onclick="loadDetail('${s.id}')">
+            <td><strong>${s.domain}</strong>${s.business_name ? `<br><span style="font-size:11px;color:var(--text-muted);">${s.business_name}</span>` : ''}</td>
+            <td style="white-space:nowrap;font-size:12px;">${date}<br><span style="color:var(--text-muted);font-size:11px;">${time}</span></td>
+            <td><span class="grade-badge ${gradeClass}">${s.grade || '—'}</span></td>
+            <td>${scoreCell(s.overall_score)}</td>
+            <td>${scoreCell(s.score_page_speed)}</td>
+            <td>${scoreCell(s.score_on_page_seo)}</td>
+            <td>${scoreCell(s.score_local_gbp)}</td>
+            <td>${scoreCell(s.score_backlinks)}</td>
+            <td>${scoreCell(s.score_technical)}</td>
+            <td style="font-family:var(--mono);font-size:12px;">${s.crawl_pages_found ?? '—'}</td>
+            <td style="font-family:var(--mono);font-size:12px;">${s.moz_da ?? s.page_rank ?? '—'}</td>
+            <td>${s.crawler_blocked ? '<span class="pill pill-blocked">Blocked</span>' : '<span style="color:var(--success);font-size:12px;">✓</span>'}</td>
+        </tr>`;
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('scanTableWrap').innerHTML = html;
+}
+
+function scoreCell(val) {
+    if (val === null || val === undefined) return '<span style="color:var(--text-muted);font-size:12px;">N/A</span>';
+    const color = val >= 75 ? 'var(--success)' : val >= 50 ? 'var(--warn)' : 'var(--danger)';
+    return `<div style="display:flex;align-items:center;gap:4px;">
+        <div class="score-bar"><div class="score-bar-fill" style="width:${val}%;background:${color};"></div></div>
+        <span style="font-family:var(--mono);font-size:12px;color:${color};">${val}</span>
+    </div>`;
+}
+
+function filterScans() {
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    const filtered = q ? allScans.filter(s => s.domain.includes(q) || (s.business_name || '').toLowerCase().includes(q)) : allScans;
+    renderTable(filtered);
+}
+
+// ─── DETAIL VIEW ─────────────────────────────────────
+async function loadDetail(id) {
+    document.getElementById('listView').style.display = 'none';
+    document.getElementById('detailView').style.display = 'block';
+    document.getElementById('detailContent').innerHTML = '<div class="loading">Loading scan details</div>';
+
+    try {
+        const resp = await fetch(API_BASE + '/get-scans?id=' + id);
+        const data = await resp.json();
+
+        if (data.error) {
+            document.getElementById('detailContent').innerHTML = `<div class="empty">⚠️ ${data.error}</div>`;
+            return;
+        }
+
+        renderDetail(data);
+    } catch (err) {
+        document.getElementById('detailContent').innerHTML = `<div class="empty">Failed: ${err.message}</div>`;
+    }
+}
+
+function showList() {
+    document.getElementById('listView').style.display = 'block';
+    document.getElementById('detailView').style.display = 'none';
+}
+
+function renderDetail(data) {
+    const s = data.scan;
+    const pages = data.pages || [];
+    const backlinks = data.backlinks || [];
+    const keywords = data.keywords || [];
+
+    const date = new Date(s.created_at).toLocaleString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+    const score = s.overall_score ?? 0;
+    const scoreColor = score >= 70 ? 'var(--success)' : score >= 50 ? 'var(--warn)' : 'var(--danger)';
+
+    const circumference = 2 * Math.PI * 38;
+    const dashoffset = circumference - (score / 100) * circumference;
+
+    let html = '';
+
+    // Header
+    html += `<div class="detail-header">
+        <div>
+            <div class="detail-title">${s.domain}</div>
+            <div class="detail-meta">${s.business_name ? s.business_name + ' · ' : ''}${date}</div>
+            <div class="detail-meta" style="margin-top:4px;">${s.headline || ''}</div>
+        </div>
+        <div class="detail-score-ring">
+            <svg viewBox="0 0 84 84">
+                <circle cx="42" cy="42" r="38" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="6"/>
+                <circle cx="42" cy="42" r="38" fill="none" stroke="${scoreColor}" stroke-width="6"
+                    stroke-dasharray="${circumference}" stroke-dashoffset="${dashoffset}"
+                    stroke-linecap="round" transform="rotate(-90 42 42)"/>
+            </svg>
+            <div class="detail-score-num" style="color:${scoreColor};">${score}</div>
+        </div>
+    </div>`;
+
+    // Pillar scores
+    const pillars = [
+        { label: 'Page Speed', value: s.score_page_speed },
+        { label: 'On-Page SEO', value: s.score_on_page_seo },
+        { label: 'Local / GBP', value: s.score_local_gbp },
+        { label: 'Backlinks', value: s.score_backlinks },
+        { label: 'Technical', value: s.score_technical },
+    ];
+
+    html += '<div class="pillar-grid">';
+    pillars.forEach(p => {
+        const color = p.value === null || p.value === undefined ? 'var(--text-muted)'
+            : p.value >= 75 ? 'var(--success)' : p.value >= 50 ? 'var(--warn)' : 'var(--danger)';
+        html += `<div class="pillar-card">
+            <div class="pillar-score" style="color:${color};">${p.value ?? '<span class="pillar-na">N/A</span>'}</div>
+            <div class="pillar-label">${p.label}</div>
+        </div>`;
+    });
+    html += '</div>';
+
+    // Quick stats
+    html += `<div class="stats-row" style="grid-template-columns:repeat(8,1fr);margin-bottom:24px;">
+        <div class="stat-card"><div class="stat-value" style="font-size:18px;color:var(--accent);">${s.lh_performance ?? '—'}</div><div class="stat-label">Perf</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:18px;">${s.page_rank ?? '—'}</div><div class="stat-label">PageRank</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:18px;">${s.moz_da ?? '—'}</div><div class="stat-label">DA</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:18px;">${s.backlinks_total?.toLocaleString() ?? '—'}</div><div class="stat-label">Backlinks</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:18px;color:var(--danger);">${s.backlinks_toxic ?? '—'}</div><div class="stat-label">Toxic</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:18px;color:#2196F3;">${s.crawl_pages_found ?? '—'}</div><div class="stat-label">Pages</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:18px;">${s.crawl_total_words?.toLocaleString() ?? '—'}</div><div class="stat-label">Words</div></div>
+        <div class="stat-card"><div class="stat-value" style="font-size:18px;">${s.broken_links_total ?? '—'}</div><div class="stat-label">Broken</div></div>
+    </div>`;
+
+    // Tabs
+    html += `<div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(this,'tabPages')">Pages (${pages.length})</button>
+        <button class="tab-btn" onclick="switchTab(this,'tabBacklinks')">Backlinks (${backlinks.length})</button>
+        <button class="tab-btn" onclick="switchTab(this,'tabKeywords')">Keywords (${keywords.length})</button>
+        <button class="tab-btn" onclick="switchTab(this,'tabAudit')">Audit Details</button>
+    </div>`;
+
+    // ── Pages Tab ──
+    html += '<div id="tabPages" class="tab-content">';
+    if (pages.length > 0) {
+        html += `<div class="detail-section"><h3>📄 Crawled Pages</h3>
+            <div style="overflow-x:auto;"><table class="detail-table"><thead><tr>
+                <th>Slug</th><th>Title</th><th>Meta Description</th><th>H1</th><th style="text-align:right;">Words</th><th>Sitemap</th>
+            </tr></thead><tbody>`;
+
+        pages.forEach(p => {
+            const h1 = p.h1?.length > 0 ? p.h1[0].slice(0, 50) : '<span class="tag tag-missing">Missing</span>';
+            const titleTag = p.title ? (p.title_length > 60 ? `<span class="tag tag-thin" title="Title too long">${p.title.slice(0,50)}…</span>` : p.title.slice(0,50)) : '<span class="tag tag-missing">Missing</span>';
+            const descTag = p.meta_description ? p.meta_description.slice(0, 50) + '…' : '<span class="tag tag-missing">Missing</span>';
+            const wordTag = (p.word_count || 0) < 300 ? `<span class="tag tag-thin">${p.word_count}</span>` : p.word_count;
+
+            html += `<tr>
+                <td><a href="${p.url}" target="_blank">${p.slug || '/'}</a></td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(p.title||'').replace(/"/g,'&quot;')}">${titleTag}</td>
+                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(p.meta_description||'').replace(/"/g,'&quot;')}">${descTag}</td>
+                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h1}</td>
+                <td style="text-align:right;font-family:var(--mono);">${wordTag}</td>
+                <td style="text-align:center;">${p.in_sitemap ? '✅' : '❌'}</td>
+            </tr>`;
+        });
+
+        html += '</tbody></table></div></div>';
+    } else {
+        html += '<div class="empty">No pages crawled for this scan</div>';
+    }
+    html += '</div>';
+
+    // ── Backlinks Tab ──
+    html += '<div id="tabBacklinks" class="tab-content" style="display:none;">';
+    if (backlinks.length > 0) {
+        html += `<div class="detail-section"><h3>🔗 Backlinks</h3>
+            <div style="overflow-x:auto;"><table class="detail-table"><thead><tr>
+                <th>Source</th><th>Anchor</th><th>Title</th><th>Type</th><th>Rank</th><th>First Seen</th>
+            </tr></thead><tbody>`;
+
+        backlinks.forEach(b => {
+            const typeTag = b.is_toxic ? '<span class="tag tag-toxic">Toxic</span>'
+                : b.link_type === 'new' ? '<span class="tag tag-new">New</span>'
+                : '<span class="tag tag-clean">Clean</span>';
+            const nfTag = b.is_nofollow ? ' <span class="tag tag-nofollow">NF</span>' : '';
+
+            html += `<tr>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><a href="${b.url || '#'}" target="_blank">${b.source_domain || '—'}</a></td>
+                <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.anchor_text || '—'}</td>
+                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-muted);">${b.title || '—'}</td>
+                <td>${typeTag}${nfTag}${b.toxic_reason ? `<br><span style="font-size:10px;color:var(--text-muted);">${b.toxic_reason}</span>` : ''}</td>
+                <td style="font-family:var(--mono);font-size:12px;">${b.domain_inlink_rank ?? '—'}</td>
+                <td style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${b.first_seen || '—'}</td>
+            </tr>`;
+        });
+
+        html += '</tbody></table></div></div>';
+    } else {
+        html += '<div class="empty">No backlinks recorded for this scan</div>';
+    }
+    html += '</div>';
+
+    // ── Keywords Tab ──
+    html += '<div id="tabKeywords" class="tab-content" style="display:none;">';
+    if (keywords.length > 0) {
+        html += `<div class="detail-section"><h3>🔑 Keywords</h3>
+            <div style="overflow-x:auto;"><table class="detail-table"><thead><tr>
+                <th>Keyword</th><th>Source</th><th style="text-align:right;">Volume</th><th style="text-align:right;">Difficulty</th><th style="text-align:right;">CPC</th><th style="text-align:right;">Position</th>
+            </tr></thead><tbody>`;
+
+        keywords.forEach(k => {
+            const srcTag = k.source === 'serp' ? '<span class="tag tag-new">SERP</span>'
+                : k.source === 'suggestion' ? '<span class="tag tag-clean">Suggest</span>'
+                : k.source === 'google_suggest' ? '<span class="tag" style="background:rgba(255,152,0,.1);color:#FF9800;">Google</span>'
+                : `<span class="tag">${k.source || '—'}</span>`;
+
+            html += `<tr>
+                <td><strong>${k.keyword}</strong></td>
+                <td>${srcTag}</td>
+                <td style="text-align:right;font-family:var(--mono);">${k.search_volume?.toLocaleString() ?? '—'}</td>
+                <td style="text-align:right;font-family:var(--mono);">${k.difficulty ?? '—'}</td>
+                <td style="text-align:right;font-family:var(--mono);">${k.cpc ? '$' + k.cpc.toFixed(2) : '—'}</td>
+                <td style="text-align:right;font-family:var(--mono);">${k.position ?? '—'}</td>
+            </tr>`;
+        });
+
+        html += '</tbody></table></div></div>';
+    } else {
+        html += '<div class="empty">No keywords recorded for this scan</div>';
+    }
+    html += '</div>';
+
+    // ── Audit Tab ──
+    html += '<div id="tabAudit" class="tab-content" style="display:none;">';
+    html += '<div class="detail-section"><h3>🔍 Site Audit Details</h3>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">';
+
+    // Left column - technical
+    html += '<div>';
+    html += auditRow('SSL Certificate', s.ssl_valid, s.ssl_valid ? 'Valid' : 'Missing');
+    html += auditRow('Sitemap', s.has_sitemap, s.has_sitemap ? 'Found' : 'Not found');
+    html += auditRow('Robots.txt', s.has_robots, s.has_robots ? 'Found' : 'Missing');
+    html += auditRow('Schema Markup', s.has_schema, s.has_schema ? 'Present' : 'Missing');
+    html += auditRow('Local Schema', s.has_local_schema, s.has_local_schema ? 'Present' : 'Missing');
+    html += auditRow('Viewport Meta', s.has_viewport, s.has_viewport ? 'Set' : 'Missing');
+    html += auditRow('Googlebot', !s.blocks_googlebot, s.blocks_googlebot ? 'Blocked!' : 'Allowed');
+    html += '</div>';
+
+    // Right column - performance
+    html += '<div>';
+    html += metricRow('FCP', s.lh_fcp, 's');
+    html += metricRow('LCP', s.lh_lcp, 's');
+    html += metricRow('TBT', s.lh_tbt, 'ms');
+    html += metricRow('CLS', s.lh_cls, '');
+    html += metricRow('Speed Index', s.lh_speed_index, 's');
+    html += metricRow('Desktop Perf', s.lh_desktop_performance, '/100');
+    html += metricRow('Desktop FCP', s.lh_desktop_fcp, 's');
+    html += '</div>';
+
+    html += '</div></div>';
+
+    // GBP info
+    if (s.gbp_name) {
+        html += `<div class="detail-section"><h3>📍 Google Business Profile</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
+                <div><span style="color:var(--text-muted);">Name:</span> ${s.gbp_name}</div>
+                <div><span style="color:var(--text-muted);">Rating:</span> ${s.gbp_rating ? '⭐ ' + s.gbp_rating + ' (' + (s.gbp_review_count || 0) + ' reviews)' : '—'}</div>
+                <div><span style="color:var(--text-muted);">Phone:</span> ${s.gbp_phone || '—'}</div>
+                <div><span style="color:var(--text-muted);">Address:</span> ${s.gbp_address || '—'}</div>
+            </div>
+        </div>`;
+    }
+    html += '</div>';
+
+    document.getElementById('detailContent').innerHTML = html;
+}
+
+function switchTab(btn, tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+    btn.classList.add('active');
+    document.getElementById(tabId).style.display = 'block';
+}
+
+function auditRow(label, pass, text) {
+    const icon = pass === null || pass === undefined ? '❓' : pass ? '✅' : '❌';
+    return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;">
+        <span>${icon} ${label}</span>
+        <span style="color:${pass ? 'var(--success)' : pass === false ? 'var(--danger)' : 'var(--text-muted)'};">${text}</span>
+    </div>`;
+}
+
+function metricRow(label, value, unit) {
+    const display = value !== null && value !== undefined ? (typeof value === 'number' ? value.toFixed(value < 10 ? 2 : 0) + unit : value) : '—';
+    return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;">
+        <span style="color:var(--text-muted);">${label}</span>
+        <span style="font-family:var(--mono);">${display}</span>
+    </div>`;
+}
+</script>
+</body>
+</html>
