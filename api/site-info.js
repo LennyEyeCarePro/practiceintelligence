@@ -1,9 +1,12 @@
 /**
- * Vercel Serverless Function — Security Hub
- * Combines Google Safe Browsing + SSL Labs into one endpoint.
+ * Vercel Serverless Function — Site Info Hub
+ * Combines PageRank, Moz DA, Safe Browsing, and SSL into one endpoint.
  *
- * GET /api/security?domain=example.com&action=safe-browsing
- * GET /api/security?domain=example.com&action=ssl
+ * GET /api/site-info?domain=example.com                          → Open PageRank
+ * GET /api/site-info?domain=example.com&competitors=a.com,b.com  → PageRank + competitors
+ * GET /api/site-info?domain=example.com&action=moz               → Moz Domain Authority
+ * GET /api/site-info?domain=example.com&action=safe-browsing      → Google Safe Browsing
+ * GET /api/site-info?domain=example.com&action=ssl                → SSL Labs
  */
 
 export default async function handler(req, res) {
@@ -13,16 +16,172 @@ export default async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    // Support legacy ?url= param for safe-browsing (no action specified + url present)
-    const action = req.query.action || (req.query.url ? 'safe-browsing' : null);
+    // Support legacy ?url= param for safe-browsing
+    const action = req.query.action || (req.query.url && !req.query.domain ? 'safe-browsing' : null);
 
     if (action === 'safe-browsing') return handleSafeBrowsing(req, res);
     if (action === 'ssl') return handleSSL(req, res);
-    return res.status(400).json({ error: `Missing or unknown action: ${action}. Use ?action=safe-browsing or ?action=ssl` });
+    if (action === 'moz') {
+        const domain = req.query.domain;
+        if (!domain) return res.status(400).json({ error: 'Missing domain parameter' });
+        return handleMoz(req, res, domain);
+    }
+
+    // Default: Open PageRank
+    const domain = req.query.domain;
+    if (!domain) return res.status(400).json({ error: 'Missing domain parameter' });
+    return handlePageRank(req, res, domain);
 }
 
 // ═══════════════════════════════════════════════════
-//   ACTION: safe-browsing — Google Safe Browsing API
+//   Open PageRank
+// ═══════════════════════════════════════════════════
+async function handlePageRank(req, res, domain) {
+    const { competitors } = req.query;
+
+    const API_KEY = process.env.OPEN_PAGE_RANK_KEY;
+    if (!API_KEY) {
+        return res.json({ domain, pageRank: null, rank: null, error: 'OPEN_PAGE_RANK_KEY not configured' });
+    }
+
+    try {
+        const cleanDomain = clean(domain);
+        const allDomains = [cleanDomain];
+        const competitorList = [];
+
+        if (competitors) {
+            competitors.split(',').map(d => clean(d)).filter(Boolean).slice(0, 15).forEach(d => {
+                if (d !== cleanDomain && !allDomains.includes(d)) {
+                    allDomains.push(d);
+                    competitorList.push(d);
+                }
+            });
+        }
+
+        const queryString = allDomains.map(d => `domains[]=${encodeURIComponent(d)}`).join('&');
+        const resp = await fetch(
+            `https://openpagerank.com/api/v1.0/getPageRank?${queryString}`,
+            { headers: { 'API-OPR': API_KEY }, signal: AbortSignal.timeout(10000) }
+        );
+
+        if (!resp.ok) {
+            return res.json({ domain: cleanDomain, pageRank: null, rank: null, error: `API returned ${resp.status}` });
+        }
+
+        const data = await resp.json();
+        const resultMap = {};
+        (data.response || []).forEach(r => { resultMap[clean(r.domain || '')] = r; });
+
+        const target = resultMap[cleanDomain] || {};
+        const pr = target.page_rank_integer ?? null;
+
+        const competitorResults = competitorList.map(d => {
+            const r = resultMap[d] || {};
+            return {
+                domain: d,
+                pageRank: r.page_rank_integer ?? null,
+                pageRankDecimal: r.page_rank_decimal ?? null,
+                rank: r.rank ?? null,
+                label: getPRLabel(r.page_rank_integer),
+            };
+        }).sort((a, b) => (b.pageRank ?? -1) - (a.pageRank ?? -1));
+
+        return res.json({
+            domain: cleanDomain,
+            pageRank: pr,
+            pageRankDecimal: target.page_rank_decimal ?? null,
+            rank: target.rank ?? null,
+            label: getPRLabel(pr),
+            benchmark: 'Average local business scores 2-4',
+            competitors: competitorResults.length > 0 ? competitorResults : undefined,
+        });
+
+    } catch (err) {
+        return res.json({ domain, pageRank: null, rank: null, error: err.message });
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//   Moz Domain Authority
+// ═══════════════════════════════════════════════════
+async function handleMoz(req, res, domain) {
+    const ACCESS_ID = process.env.MOZ_ACCESS_ID;
+    const SECRET_KEY = process.env.MOZ_SECRET_KEY;
+
+    if (!ACCESS_ID || !SECRET_KEY) {
+        return res.json({
+            domain,
+            error: 'MOZ_ACCESS_ID and MOZ_SECRET_KEY not configured',
+            domainAuthority: null,
+            pageAuthority: null,
+        });
+    }
+
+    const cleanDomain = clean(domain);
+
+    try {
+        const authToken = Buffer.from(`${ACCESS_ID}:${SECRET_KEY}`).toString('base64');
+
+        const resp = await fetch('https://lsapi.seomoz.com/v2/url_metrics', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${authToken}`,
+            },
+            body: JSON.stringify({ targets: [`${cleanDomain}/`] }),
+            signal: AbortSignal.timeout(10000),
+        });
+
+        if (!resp.ok) {
+            const errText = await resp.text();
+            return res.json({
+                domain: cleanDomain,
+                error: `Moz API ${resp.status}: ${errText.slice(0, 200)}`,
+                domainAuthority: null,
+                pageAuthority: null,
+            });
+        }
+
+        const data = await resp.json();
+        const result = data.results?.[0] || {};
+
+        const da = result.domain_authority ?? null;
+        const pa = result.page_authority ?? null;
+        const spamScore = result.spam_score ?? null;
+        const linkingDomains = result.root_domains_to_root_domain ?? null;
+        const externalLinks = result.external_pages_to_root_domain ?? null;
+
+        let daLabel;
+        if (da === null) daLabel = 'Unknown';
+        else if (da >= 60) daLabel = 'Strong';
+        else if (da >= 40) daLabel = 'Established';
+        else if (da >= 20) daLabel = 'Growing';
+        else daLabel = 'New / Low';
+
+        let spamLabel;
+        if (spamScore === null) spamLabel = 'Unknown';
+        else if (spamScore <= 30) spamLabel = 'Low risk';
+        else if (spamScore <= 60) spamLabel = 'Moderate risk';
+        else spamLabel = 'High risk';
+
+        return res.json({
+            domain: cleanDomain,
+            domainAuthority: da !== null ? Math.round(da) : null,
+            pageAuthority: pa !== null ? Math.round(pa) : null,
+            spamScore: spamScore !== null ? Math.round(spamScore) : null,
+            spamLabel,
+            linkingDomains,
+            externalLinks,
+            daLabel,
+        });
+
+    } catch (err) {
+        return res.json({ domain: cleanDomain, error: err.message, domainAuthority: null, pageAuthority: null });
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//   Google Safe Browsing
 // ═══════════════════════════════════════════════════
 async function handleSafeBrowsing(req, res) {
     const url = req.query.url || req.query.domain || '';
@@ -79,7 +238,7 @@ async function handleSafeBrowsing(req, res) {
 }
 
 // ═══════════════════════════════════════════════════
-//   ACTION: ssl — SSL Labs Certificate Analysis
+//   SSL Labs
 // ═══════════════════════════════════════════════════
 async function handleSSL(req, res) {
     const domain = (req.query.domain || '').replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
@@ -160,4 +319,19 @@ function formatSSLResults(domain, data, endpoints) {
         vulnerabilities, hasVulnerabilities: vulnerabilities.length > 0,
         endpointCount: endpoints.length, summary,
     };
+}
+
+// ═══════════════════════════════════════════════════
+//   Helpers
+// ═══════════════════════════════════════════════════
+function clean(d) {
+    return d.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').toLowerCase();
+}
+
+function getPRLabel(pr) {
+    if (pr == null) return 'Unknown';
+    if (pr >= 7) return 'Strong';
+    if (pr >= 5) return 'Established';
+    if (pr >= 3) return 'Growing';
+    return 'New / Low';
 }

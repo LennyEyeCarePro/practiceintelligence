@@ -1,21 +1,79 @@
 /**
- * Vercel Serverless Function — Save Scan to Supabase
- * Persists the complete scanData object from seo-tool.html.
+ * Vercel Serverless Function — Scan Data Hub (Supabase)
+ * Combines save-scan + get-scans into one endpoint.
  *
- * POST /api/save-scan  { ...scanData }
- * Returns { scanId, pageCount, backlinkCount }
+ * GET  /api/scan-data                         → list all scans (summary)
+ * GET  /api/scan-data?id=<uuid>               → full scan detail + pages + backlinks + keywords
+ * GET  /api/scan-data?domain=example.com      → scans for a specific domain
+ * POST /api/scan-data  { ...scanData }        → save a new scan
  *
- * Requires env vars: SUPABASE_URL, SUPABASE_KEY (service_role key)
+ * Requires env vars: SUPABASE_URL, SUPABASE_KEY
  */
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
+    if (req.method === 'GET') return handleGet(req, res);
+    if (req.method === 'POST') return handlePost(req, res);
+
+    return res.status(405).json({ error: 'GET or POST only' });
+}
+
+// ═══════════════════════════════════════════════════
+//   GET — Query scans from Supabase
+// ═══════════════════════════════════════════════════
+async function handleGet(req, res) {
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+        return res.status(500).json({ error: 'SUPABASE_URL and SUPABASE_KEY not configured' });
+    }
+
+    const { id, domain } = req.query;
+
+    try {
+        // Single scan detail
+        if (id) {
+            const scan = await supabaseGet(SUPABASE_URL, SUPABASE_KEY,
+                `scans?id=eq.${id}&select=*`);
+            if (!scan.length) return res.status(404).json({ error: 'Scan not found' });
+
+            const [pages, backlinks, keywords] = await Promise.all([
+                supabaseGet(SUPABASE_URL, SUPABASE_KEY,
+                    `scan_pages?scan_id=eq.${id}&select=url,slug,status_code,in_sitemap,title,title_length,meta_description,meta_description_length,h1,word_count,internal_link_count,external_link_count,image_count,images_without_alt,og_title,og_image,text_preview&order=slug.asc`),
+                supabaseGet(SUPABASE_URL, SUPABASE_KEY,
+                    `scan_backlinks?scan_id=eq.${id}&select=url,source_domain,anchor_text,title,link_type,is_toxic,toxic_reason,is_nofollow,first_seen,domain_inlink_rank&order=domain_inlink_rank.desc.nullslast`),
+                supabaseGet(SUPABASE_URL, SUPABASE_KEY,
+                    `scan_keywords?scan_id=eq.${id}&select=keyword,source,search_volume,difficulty,cpc,position&order=search_volume.desc.nullslast`),
+            ]);
+
+            return res.json({ scan: scan[0], pages, backlinks, keywords });
+        }
+
+        // List scans (optionally filtered by domain)
+        let query = `scans?select=id,created_at,domain,business_name,overall_score,grade,headline,score_page_speed,score_on_page_seo,score_local_gbp,score_backlinks,score_technical,crawler_blocked,backlinks_total,backlinks_toxic,crawl_pages_found,crawl_total_words,broken_links_total,lh_performance,page_rank,moz_da&order=created_at.desc&limit=100`;
+
+        if (domain) {
+            query += `&domain=eq.${encodeURIComponent(domain)}`;
+        }
+
+        const scans = await supabaseGet(SUPABASE_URL, SUPABASE_KEY, query);
+        return res.json({ scans });
+
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+}
+
+// ═══════════════════════════════════════════════════
+//   POST — Save scan to Supabase
+// ═══════════════════════════════════════════════════
+async function handlePost(req, res) {
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
@@ -47,7 +105,7 @@ export default async function handler(req, res) {
         const brokenLinks = data.brokenLinks || {};
         const brokenStats = brokenLinks.stats || {};
 
-        // ── 1. Insert main scan record ──────────────────
+        // 1. Insert main scan record
         const scanRow = {
             domain: data.domain,
             business_name: data.businessName || biz.name || null,
@@ -154,11 +212,10 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'Scan saved but no ID returned', details: scanResp });
         }
 
-        // ── 2. Insert crawled pages ─────────────────────
+        // 2. Insert crawled pages
         let pageCount = 0;
         const crawlPages = crawl.pages || [];
         if (crawlPages.length > 0) {
-            // Batch insert in chunks of 50
             const pageRows = crawlPages.map(p => ({
                 scan_id: scanId,
                 url: p.url || '',
@@ -196,12 +253,11 @@ export default async function handler(req, res) {
             }
         }
 
-        // ── 3. Insert backlinks ─────────────────────────
+        // 3. Insert backlinks
         let backlinkCount = 0;
         const allBacklinks = [
             ...(bl.backlinks || []),
             ...(bl.toxicBacklinks || []).filter(b => {
-                // Avoid duplicates with main backlinks list
                 const mainUrls = new Set((bl.backlinks || []).map(x => x.url));
                 return !mainUrls.has(b.url);
             }),
@@ -232,11 +288,10 @@ export default async function handler(req, res) {
             }
         }
 
-        // ── 4. Insert keywords ──────────────────────────
+        // 4. Insert keywords
         let keywordCount = 0;
         const keywordRows = [];
 
-        // Keyword suggestions
         (data.keywordSuggestions?.keywords || []).forEach(k => {
             keywordRows.push({
                 scan_id: scanId,
@@ -249,7 +304,6 @@ export default async function handler(req, res) {
             });
         });
 
-        // Google Suggest
         (data.googleSuggest?.suggestions || []).forEach(s => {
             keywordRows.push({
                 scan_id: scanId,
@@ -259,7 +313,6 @@ export default async function handler(req, res) {
             });
         });
 
-        // SERP keywords
         (data.serpKeywords?.keywords || data.serpKeywords || []).forEach(k => {
             if (typeof k === 'object' && k.keyword) {
                 keywordRows.push({
@@ -285,11 +338,7 @@ export default async function handler(req, res) {
         return res.json({
             success: true,
             scanId,
-            saved: {
-                pages: pageCount,
-                backlinks: backlinkCount,
-                keywords: keywordCount,
-            },
+            saved: { pages: pageCount, backlinks: backlinkCount, keywords: keywordCount },
         });
 
     } catch (err) {
@@ -298,10 +347,25 @@ export default async function handler(req, res) {
     }
 }
 
+// ═══════════════════════════════════════════════════
+//   Helpers
+// ═══════════════════════════════════════════════════
+async function supabaseGet(url, key, query) {
+    const resp = await fetch(`${url}/rest/v1/${query}`, {
+        headers: {
+            'apikey': key,
+            'Authorization': `Bearer ${key}`,
+        },
+    });
 
-/**
- * Helper — insert row(s) into a Supabase table via REST API
- */
+    if (!resp.ok) {
+        const errText = await resp.text().catch(() => '');
+        throw new Error(`Supabase query failed (${resp.status}): ${errText.slice(0, 200)}`);
+    }
+
+    return resp.json();
+}
+
 async function supabaseInsert(url, key, table, data) {
     const rows = Array.isArray(data) ? data : [data];
 

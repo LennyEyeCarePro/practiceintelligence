@@ -204,7 +204,7 @@ if (localStorage.getItem('dash-auth') === 'true') {
 // ─── LOAD SCANS ──────────────────────────────────────
 async function loadScans() {
     try {
-        const resp = await fetch(API_BASE + '/get-scans');
+        const resp = await fetch(API_BASE + '/scan-data');
         const data = await resp.json();
 
         if (data.error) {
@@ -307,7 +307,7 @@ async function loadDetail(id) {
     document.getElementById('detailContent').innerHTML = '<div class="loading">Loading scan details</div>';
 
     try {
-        const resp = await fetch(API_BASE + '/get-scans?id=' + id);
+        const resp = await fetch(API_BASE + '/scan-data?id=' + id);
         const data = await resp.json();
 
         if (data.error) {

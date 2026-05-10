@@ -1207,7 +1207,7 @@ async function startScan() {
         if (domain) placesParams.set('website', domain);
 
         const [lighthouseResp, auditResp, rankResp, placesResp] = await Promise.all([
-            fetch(API_BASE + '/lighthouse', {
+            fetch(API_BASE + '/page-quality', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ url }),
@@ -1216,7 +1216,7 @@ async function startScan() {
             fetch(API_BASE + '/site-audit?url=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message })),
 
-            fetch(API_BASE + '/pagerank?domain=' + encodeURIComponent(domain))
+            fetch(API_BASE + '/site-info?domain=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message })),
 
             (businessName || domain)
@@ -1242,7 +1242,7 @@ async function startScan() {
         if (compDomains.length > 0) {
             try {
                 const prCompResp = await fetch(
-                    API_BASE + '/pagerank?domain=' + encodeURIComponent(domain)
+                    API_BASE + '/site-info?domain=' + encodeURIComponent(domain)
                     + '&competitors=' + encodeURIComponent(compDomains.join(','))
                 ).then(r => r.json());
                 // Merge competitor data into existing pageRank result
@@ -1285,13 +1285,13 @@ async function startScan() {
         const topKws = (auditResp?.topKeywords || []).map(k => k.word);
 
         const [mozResp, safeResp, sslResp, kwResp] = await Promise.all([
-            fetch(API_BASE + '/pagerank?action=moz&domain=' + encodeURIComponent(domain))
+            fetch(API_BASE + '/site-info?action=moz&domain=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message })),
 
-            fetch(API_BASE + '/security?action=safe-browsing&url=' + encodeURIComponent(domain))
+            fetch(API_BASE + '/site-info?action=safe-browsing&url=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message })),
 
-            fetch(API_BASE + '/security?action=ssl&domain=' + encodeURIComponent(domain))
+            fetch(API_BASE + '/site-info?action=ssl&domain=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message })),
 
             topKws.length > 0
@@ -1393,7 +1393,7 @@ async function startScan() {
             fetch(API_BASE + '/link-audit?action=broken-links&url=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message, stats: {} })),
 
-            fetch(API_BASE + '/html-validate?url=' + encodeURIComponent(domain))
+            fetch(API_BASE + '/page-quality?action=validate&url=' + encodeURIComponent(domain))
                 .then(r => r.json()).catch(e => ({ error: e.message, validation: {}, richResults: {} })),
         ]);
 
@@ -3265,7 +3265,7 @@ async function saveScanToSupabase() {
     statusEl.style.color = 'var(--text-muted)';
 
     try {
-        const resp = await fetch(API_BASE + '/save-scan', {
+        const resp = await fetch(API_BASE + '/scan-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(scanData),

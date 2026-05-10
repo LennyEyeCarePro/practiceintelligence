@@ -1919,7 +1919,7 @@ body {
 // ─── CONFIGURATION ──────────────────────────────────────────
 const CONFIG = {
     APIFY_PROXY_URL: '/api/scrape',
-    LIGHTHOUSE_PROXY_URL: '/api/lighthouse',
+    LIGHTHOUSE_PROXY_URL: '/api/page-quality',
     GOOGLE_SHEETS_URL: 'https://script.google.com/macros/s/AKfycbyB00hqNLm3Krby8c9UnngJ9wjG2AgVoqZiUjnOWu4LTcdRZX3B6Z5Au-FNQWibGHVgVw/exec',
     EXISTING_CLIENTS: ['eyecarepro.net', 'eyecarepro.com'],
     PAGESPEED_TIMEOUT: 45000,
@@ -4870,7 +4870,7 @@ async function runSeoIntelligence(url) {
 
         const [auditResp, rankResp, placesResp] = await Promise.all([
             fetch(`/api/site-audit?url=${encodeURIComponent(domain)}`).then(r => r.json()).catch(() => null),
-            fetch(`/api/pagerank?domain=${encodeURIComponent(domain)}`).then(r => r.json()).catch(() => null),
+            fetch(`/api/site-info?domain=${encodeURIComponent(domain)}`).then(r => r.json()).catch(() => null),
             canReuseEarlyPlaces
                 ? Promise.resolve(window._earlyPlacesData)
                 : ((businessName || domain)
