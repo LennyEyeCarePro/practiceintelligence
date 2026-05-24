@@ -2,10 +2,11 @@
  * Vercel Serverless Function — Scan Data Hub (Supabase)
  * Combines save-scan + get-scans into one endpoint.
  *
- * GET  /api/scan-data                         → list all scans (summary)
- * GET  /api/scan-data?id=<uuid>               → full scan detail + pages + backlinks + keywords
- * GET  /api/scan-data?domain=example.com      → scans for a specific domain
- * POST /api/scan-data  { ...scanData }        → save a new scan
+ * GET  /api/scan-data                              → list all scans (summary)
+ * GET  /api/scan-data?id=<uuid>                    → full scan detail + pages + backlinks + keywords (wizard shape)
+ * GET  /api/scan-data?id=<uuid>&shape=bundle       → reshaped single-scan dossier for COOL Loop bundle consumption
+ * GET  /api/scan-data?domain=example.com           → scans for a specific domain
+ * POST /api/scan-data  { ...scanData }             → save a new scan
  *
  * Requires env vars: SUPABASE_URL, SUPABASE_KEY
  */
@@ -35,6 +36,12 @@ async function handleGet(req, res) {
     }
 
     const { id, domain } = req.query;
+    const shape = req.query?.shape ?? 'wizard';
+
+    // shape=bundle only valid for single-scan GET-by-id
+    if (shape === 'bundle' && !id) {
+        return res.status(400).json({ error: 'shape=bundle requires id' });
+    }
 
     try {
         // Single scan detail
@@ -42,6 +49,11 @@ async function handleGet(req, res) {
             const scan = await supabaseGet(SUPABASE_URL, SUPABASE_KEY,
                 `scans?id=eq.${id}&select=*`);
             if (!scan.length) return res.status(404).json({ error: 'Scan not found' });
+
+            // COOL Loop bundle shape — return reshaped row, skip the joined arrays
+            if (shape === 'bundle') {
+                return res.status(200).json(reshapeForBundle(scan[0]));
+            }
 
             const [pages, backlinks, keywords] = await Promise.all([
                 supabaseGet(SUPABASE_URL, SUPABASE_KEY,
@@ -350,6 +362,110 @@ async function handlePost(req, res) {
 // ═══════════════════════════════════════════════════
 //   Helpers
 // ═══════════════════════════════════════════════════
+
+/**
+ * Reshape a single Supabase `scans` row into the COOL Loop bundle dossier shape.
+ *
+ * Output shape is the contract with COOL Loop's dossier-schema-v2.yml — do not change
+ * field names or nesting without coordinating with the COOL Loop repo.
+ *
+ * Source-column mapping note: PI's Supabase columns use `score_*` / `lh_*` / `page_rank`
+ * etc., not the names shown in the original integration brief. Mappings below are from
+ * the actual PI schema (see POST handler in this file for the column list).
+ */
+function reshapeForBundle(scan) {
+    const lh = scan.raw_lighthouse || {};
+    const places = scan.raw_places || {};
+    const sslDetails = scan.ssl_details || {};
+
+    return {
+        samurai_id_hint: null, // COOL Loop fills this from the deal record
+        domain: scan.domain,
+        business_name: scan.business_name,
+        scan_date: scan.created_at,
+
+        overview: {
+            overall_score: scan.overall_score,
+            grade: scan.grade,
+            pillar_scores: {
+                page_speed: scan.score_page_speed,
+                on_page_seo: scan.score_on_page_seo,
+                gbp: scan.score_local_gbp,
+                domain_authority: scan.score_backlinks, // backlinks pillar represents domain authority in PI scoring
+                technical: scan.score_technical,
+            },
+        },
+
+        practice: {
+            business_name: scan.business_name,
+            domain: scan.domain,
+            gbp_name: scan.gbp_name,
+            gbp_phone: scan.gbp_phone,
+            gbp_address: scan.gbp_address,
+            gbp_place_id: scan.gbp_place_id,
+            gbp_rating: scan.gbp_rating,
+            gbp_review_count: scan.gbp_review_count,
+            total_locations: Array.isArray(places.locations) ? places.locations.length : null,
+        },
+
+        current_site: {
+            has_ssl: scan.ssl_valid,
+            has_sitemap: scan.has_sitemap,
+            has_robots: scan.has_robots,
+            has_schema: scan.has_schema,
+            title: scan.title_tag,
+            meta_description: scan.meta_description,
+            h1_count: scan.h1_count,
+            lighthouse_mobile_performance: scan.lh_performance,
+            lighthouse_desktop_performance: scan.lh_desktop_performance,
+            core_web_vitals: {
+                fcp: scan.lh_fcp,
+                lcp: scan.lh_lcp,
+                tbt: scan.lh_tbt,
+                cls: scan.lh_cls,
+                speed_index: scan.lh_speed_index,
+            },
+        },
+
+        domain_authority: {
+            pagerank: scan.page_rank,
+            moz_da: scan.moz_da,
+            moz_pa: scan.moz_pa,
+            moz_spam_score: scan.moz_spam_score,
+            linking_domains: scan.backlinks_domains,
+        },
+
+        backlinks_summary: {
+            total: scan.backlinks_total,
+            referring_domains: scan.backlinks_domains,
+            toxic_count: scan.backlinks_toxic,
+        },
+
+        crawl_summary: {
+            pages_crawled: scan.crawl_pages_found,
+            pages_with_issues: scan.crawl_thin_pages, // thin pages used as the issue proxy; broken links tracked separately
+        },
+
+        ssl: {
+            grade: scan.ssl_grade,
+            issuer: sslDetails.issuer ?? null,
+            days_remaining: sslDetails.days_remaining ?? sslDetails.daysRemaining ?? null,
+        },
+
+        raw_blobs_available: [
+            scan.ai_report ? 'ai_report' : null,
+            scan.raw_lighthouse ? 'raw_lighthouse' : null,
+            scan.raw_site_audit ? 'raw_site_audit' : null,
+            scan.raw_backlinks ? 'raw_backlinks' : null,
+            scan.raw_keywords ? 'raw_keywords' : null,
+            scan.raw_places ? 'raw_places' : null,
+        ].filter(Boolean),
+
+        pi_scan_id: scan.id,
+        pi_scan_url: `https://practiceintelligence-lennys-projects-2067cb84.vercel.app/dashboard.html?id=${scan.id}`,
+    };
+}
+
 async function supabaseGet(url, key, query) {
     const resp = await fetch(`${url}/rest/v1/${query}`, {
         headers: {
