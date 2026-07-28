@@ -39,6 +39,9 @@ const INITIAL_HEADERS = [
   // brands with no CRM write.
   'revenueGapMonthly', 'strategicFocus', 'strategicAdvice',
   'malignancySummary', 'technicalRootCause', 'emotionalRootCause', 'targetStatement',
+  // Report provenance — why a given lead's report may read generic.
+  // reportSource='rules' means the AI narrative was unavailable.
+  'reportSource', 'reportUsedClientInput', 'reportFallbackReason', 'lighthouseError',
 ];
 
 // ─── Column headers for the SEO update (appended to same row) ──

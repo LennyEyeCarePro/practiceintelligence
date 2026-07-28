@@ -2091,6 +2091,7 @@ document.addEventListener('DOMContentLoaded', applyBrand);
 let dossier = null;
 let lighthouseData = null;
 let lighthouseFullData = null; // { mobile: {...}, desktop: {...} } for SEO section
+let lighthouseError = null;    // set when the performance audit fails or is partial
 let seoReportData = null; // Full SEO intelligence report
 let userAnswers = {};
 let confirmedSteps = { step1: false, step2: false, step3: false };
@@ -2529,7 +2530,14 @@ function updateBgAnalysisBar() {
 
     if (apifyDone && lighthouseDone) {
         bar.classList.add('complete');
-        bar.innerHTML = '<span style="font-size:14px">✓</span><span>Analysis complete — all data collected</span>';
+        // Don't claim "all data collected" when the performance audit failed —
+        // that message was showing even with zero Lighthouse scores.
+        if (lighthouseError) {
+            bar.innerHTML = '<span style="font-size:14px">⚠</span>'
+                + '<span>Analysis complete — performance data unavailable for this site</span>';
+        } else {
+            bar.innerHTML = '<span style="font-size:14px">✓</span><span>Analysis complete — all data collected</span>';
+        }
         return;
     }
 
@@ -2637,6 +2645,7 @@ function resetToStart() {
     dossier = null;
     lighthouseData = null;
     lighthouseFullData = null;
+    lighthouseError = null;
     seoReportData = null;
     apifyDone = false;
     lighthouseDone = false;
@@ -3454,6 +3463,7 @@ async function runFallbackScraper(url) {
 
 // ─── LIGHTHOUSE ─────────────────────────────────────────────
 async function runLighthouse(url) {
+    lighthouseError = null;
     try {
         const resp = await fetch(CONFIG.LIGHTHOUSE_PROXY_URL, {
             method: 'POST',
@@ -3461,20 +3471,41 @@ async function runLighthouse(url) {
             body: JSON.stringify({ url }),
         });
 
-        if (!resp.ok) throw new Error(`Lighthouse proxy ${resp.status}`);
-        const data = await resp.json();
+        // Read the body even on a non-2xx so the real reason survives — the
+        // endpoint returns {error} with a useful message.
+        let data = null;
+        try { data = await resp.json(); } catch (e) { /* non-JSON body */ }
+
+        if (!resp.ok) throw new Error(data?.error || `Lighthouse proxy returned ${resp.status}`);
+        if (!data) throw new Error('Lighthouse proxy returned an unreadable response');
         if (data.error) throw new Error(data.error);
 
         // New format: { mobile: {...}, desktop: {...} }
         // Store full data for SEO section, return mobile-compat flat format for existing code
         if (data.mobile) {
             lighthouseFullData = data; // store both strategies for SEO section
+            // Partial result (one strategy failed) — keep the data, note the gap.
+            if (data.partial) {
+                lighthouseError = 'Partial performance data: '
+                    + Object.entries(data.errors || {}).map(([k, v]) => `${k} failed`).join(', ');
+                console.warn('Lighthouse partial:', data.errors);
+            }
             return data.mobile; // existing code expects flat mobile data
+        }
+        // Desktop-only success — still usable for the SEO section.
+        if (data.desktop) {
+            lighthouseFullData = data;
+            lighthouseError = 'Mobile performance data unavailable; showing desktop only.';
+            return data.desktop;
         }
         // Legacy flat format fallback
         lighthouseFullData = { mobile: data, desktop: null };
         return data;
     } catch (err) {
+        // Record it. Previously this returned null silently, so a failed audit
+        // was indistinguishable from a passing one with no scores — and the
+        // progress bar still claimed "all data collected".
+        lighthouseError = err.message || 'Performance audit unavailable';
         console.error('Lighthouse error:', err);
         return null;
     }
@@ -4760,6 +4791,14 @@ function submitToSheets(gap) {
         technicalRootCause: gap?.technicalRootCause || '',
         emotionalRootCause: gap?.emotionalRootCause || '',
         targetStatement: gap?.targetStatement || '',
+        // Report provenance. 'rules' means the AI narrative was unavailable and
+        // the findings are rule-based; usedClientInput says whether the client's
+        // own goal/pain/corrections reached the report at all. Both matter when
+        // judging why a lead's report reads generic.
+        reportSource: seoReportData?.report?.source || '',
+        reportUsedClientInput: seoReportData?.report?.usedClientInput ? 'YES' : 'No',
+        reportFallbackReason: seoReportData?.report?.fallbackReason || '',
+        lighthouseError: lighthouseError || '',
     };
 
     try {
@@ -5085,6 +5124,20 @@ async function runSeoIntelligence(url) {
 
         results.report = reportResp;
 
+        // Log degradation loudly for staff without putting diagnostics in front of
+        // a prospect. A 'rules' report means the narrative is generic rather than
+        // tailored to what the client told us — worth knowing when a lead looks
+        // oddly boilerplate. Also carried into the Sheet (see submitToSheets).
+        if (reportResp && reportResp.source === 'rules') {
+            console.warn(
+                '[seo-report] AI narrative unavailable — served the rule-based fallback.\n'
+                + '  reason: ' + (reportResp.fallbackReason || 'unknown') + '\n'
+                + '  client input used: ' + (reportResp.usedClientInput ? 'yes' : 'NO')
+            );
+        } else if (reportResp && reportResp.usedClientInput === false) {
+            console.warn('[seo-report] AI narrative generated with NO client input — corrections were empty.');
+        }
+
     } catch (err) {
         console.error('SEO intelligence error:', err);
     }
@@ -5186,12 +5239,20 @@ function renderSeoSection(data) {
     // ── Score Breakdown Bars ──
     const pillars = report.pillarScores || {};
     const crawlerBlocked = report.crawlerBlocked || false;
+    // No `?? 0` here on purpose. A null pillar means "we could not measure this",
+    // and defaulting it to 0 rendered unknown data as a red zero — i.e. reported
+    // a measurement failure as a terrible score.
     const barData = [
-        { label: 'Page Speed', value: pillars.pageSpeed ?? mobile.performance ?? 0 },
-        { label: 'On-Page SEO', value: pillars.onPageSeo },
-        { label: 'Local / GBP', value: pillars.localGbp ?? 0 },
-        { label: 'Backlinks', value: pillars.backlinks ?? 0 },
-        { label: 'Technical', value: pillars.technical },
+        { label: 'Page Speed', value: pillars.pageSpeed ?? mobile.performance ?? null,
+          why: 'Performance audit unavailable for this site' },
+        { label: 'On-Page SEO', value: pillars.onPageSeo,
+          why: report.crawlerBlocked ? 'Could not fetch — site blocked our crawler' : 'On-page data unavailable' },
+        { label: 'Local / GBP', value: pillars.localGbp ?? null,
+          why: 'No Google Business Profile match found' },
+        { label: 'Backlinks', value: pillars.backlinks ?? null,
+          why: 'Domain authority data unavailable' },
+        { label: 'Technical', value: pillars.technical,
+          why: report.crawlerBlocked ? 'Could not fetch — site blocked our crawler' : 'On-page data unavailable' },
     ];
 
     document.getElementById('seoBreakdownBars').innerHTML = barData.map(b => {
@@ -5199,7 +5260,7 @@ function renderSeoSection(data) {
             return `<div class="seo-bar-row">
                 <div class="seo-bar-label">${b.label}</div>
                 <div class="seo-bar-track" style="position:relative">
-                    <div style="position:absolute;inset:0;display:flex;align-items:center;padding-left:8px;font-size:11px;color:rgba(0,0,0,.4)">Could not fetch — site blocked our crawler</div>
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;padding-left:8px;font-size:11px;color:rgba(0,0,0,.4)">${b.why}</div>
                 </div>
                 <div class="seo-bar-value" style="color:#999">N/A</div>
             </div>`;
