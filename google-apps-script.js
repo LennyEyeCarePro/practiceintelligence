@@ -14,14 +14,19 @@ const SHEET_NAME = 'Assessments';  // Change this if your sheet tab has a differ
 
 // ─── Column headers for the initial submission ──────────────
 const INITIAL_HEADERS = [
-  'timestamp', 'name', 'email', 'url',
+  'timestamp', 'source', 'name', 'email', 'url',
   'growthGoal', 'biggestPain', 'freetext',
+  // These three are in the payload but were missing here, so they were being
+  // silently dropped.
+  'capacityOptometry', 'capacitySurgical', 'capacityOptical',
   'step1Corrections', 'step2Corrections', 'step3Corrections',
   'practiceName', 'practiceType', 'practiceSubType', 'yearEstablished',
   'doctorCount', 'mdCount', 'odCount', 'doctorNames',
   'locationCount', 'phone', 'address',
   'servicesDetected', 'servicesCount', 'missingServices',
   'cms', 'marketingVendor', 'isCompetitorClient', 'isEyeCarePro',
+  // EHR/PMS signals — website-detected, so under-reported. Sales triage hint.
+  'ehrPmsDetected', 'isEyefinityPms',
   'hasScheduling', 'schedulingPlatform', 'analyticsTools',
   'socialPlatforms', 'socialCount', 'facebookUrl', 'instagramUrl',
   'blogExists', 'homepageWordCount', 'totalWordCount',
@@ -30,6 +35,10 @@ const INITIAL_HEADERS = [
   'scoreDigital', 'scoreContent', 'scorePatientExp', 'scoreMarketing', 'scoreOverall',
   'recommendedTier', 'gapCount', 'topGaps',
   'hasOptical', 'frameBrandCount', 'brandPositioning', 'insurancePlans',
+  // Mirrored from the HubSpot payload so the Sheet is a complete record on
+  // brands with no CRM write.
+  'revenueGapMonthly', 'strategicFocus', 'strategicAdvice',
+  'malignancySummary', 'technicalRootCause', 'emotionalRootCause', 'targetStatement',
 ];
 
 // ─── Column headers for the SEO update (appended to same row) ──

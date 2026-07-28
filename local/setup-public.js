@@ -5,7 +5,7 @@
  * Run: npm run setup
  */
 
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, cp } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -48,8 +48,20 @@ async function setup() {
         }
     }
 
+    // Brand logos and any other static assets live in ../assets and are
+    // referenced by absolute path (e.g. /assets/eyefinity-logo.svg), so they
+    // have to exist under public/ too or they 404 in local dev.
+    try {
+        await cp(join(parentDir, 'assets'), join(publicDir, 'assets'), { recursive: true });
+        console.log('  ✓ assets/ → public/assets/');
+    } catch (err) {
+        if (err.code === 'ENOENT') console.warn('  ⚠ assets/ not found, skipping');
+        else console.error(`  ✗ assets/: ${err.message}`);
+    }
+
     console.log('\nDone! HTML files copied to public/ with localhost API paths.');
     console.log('Run "npm start" to launch the server.\n');
+    console.log('Brand override for testing: http://localhost:3000/index.html?brand=eyefinity\n');
 }
 
 setup();
