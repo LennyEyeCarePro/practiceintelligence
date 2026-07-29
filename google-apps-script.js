@@ -37,10 +37,12 @@ const SHEET_NAME = 'Assessments';  // Change this if your sheet tab has a differ
  */
 const BRAND_SHEETS = {
   'EyeCarePro': '',  // bound spreadsheet — do not change
-  // ⚠️ PLACEHOLDER — paste the Eyefinity spreadsheet ID here. Until it is set,
-  // Eyefinity rows fall back to the bound sheet and are only distinguishable by
-  // their `source` column, which is NOT acceptable for sharing.
-  'Eyefinity': 'PASTE_EYEFINITY_SPREADSHEET_ID',
+  // Eyefinity Practice Growth Assessment sheet (supplied by Lenny 2026-07-29):
+  // docs.google.com/spreadsheets/d/1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4
+  // Takes effect only if this script is redeployed as a NEW VERSION of the
+  // existing (grandfathered) deployment. See BRANDS.eyefinity in index.html for
+  // why a fresh deployment is not an option.
+  'Eyefinity': '1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4',
 };
 
 /**
@@ -89,8 +91,11 @@ const INITIAL_HEADERS = [
   // brands with no CRM write.
   'revenueGapMonthly', 'strategicFocus', 'strategicAdvice',
   'malignancySummary', 'technicalRootCause', 'emotionalRootCause', 'targetStatement',
-  // Report provenance — why a given lead's report may read generic.
-  // reportSource='rules' means the AI narrative was unavailable.
+  // Report provenance — explains why a given report may read generic.
+  // A reportSource of "rules" means the AI narrative was unavailable.
+  // NOTE: no apostrophes in comments inside this array. An unmatched quote
+  // shifts quote-pairing for every entry after it, which silently hid these
+  // four columns from tooling that parses this file.
   'reportSource', 'reportUsedClientInput', 'reportFallbackReason', 'lighthouseError',
 ];
 
