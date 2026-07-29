@@ -1,3 +1,8 @@
+# Dead file containing a plaintext Apify proxy password. It is a syntax error
+# (`process.env.http://auto:...`), imported by nothing, and has never been
+# committed — ignored so it stays that way. Rotate the token and delete the file.
+api/proxy-agent.js
+
 # Secrets — never commit. hubspot-setup/.env and serp-mvp/.env hold live API
 # tokens and were nearly committed by a `git add -A`.
 .env

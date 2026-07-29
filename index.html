@@ -2061,6 +2061,11 @@ let dossier = null;
 let lighthouseData = null;
 let lighthouseFullData = null; // { mobile: {...}, desktop: {...} } for SEO section
 let lighthouseError = null;    // set when the performance audit fails or is partial
+// The Sheet's SEO columns are written by a second POST that must land AFTER the
+// initial row exists, or the Apps Script appends an orphan row. See
+// submitSeoToSheets() / flushSeoSheetQueue().
+let initialSheetRowSent = false;
+let pendingSeoSheetResults = null;
 let seoReportData = null; // Full SEO intelligence report
 let userAnswers = {};
 let confirmedSteps = { step1: false, step2: false, step3: false };
@@ -2615,6 +2620,8 @@ function resetToStart() {
     lighthouseData = null;
     lighthouseFullData = null;
     lighthouseError = null;
+    initialSheetRowSent = false;
+    pendingSeoSheetResults = null;
     seoReportData = null;
     apifyDone = false;
     lighthouseDone = false;
@@ -4777,8 +4784,148 @@ function submitToSheets(gap) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
+        // The lead's row now exists (or is in flight), so the SEO update has
+        // something to match against.
+        initialSheetRowSent = true;
+        flushSeoSheetQueue();
     } catch (e) {
         console.warn('Sheets submission error:', e);
+    }
+}
+
+/**
+ * Send any SEO payload that finished before the initial row was created.
+ * Deliberately delayed: mode:'no-cors' gives us no completion signal, so we
+ * cannot await the first POST — a short delay lets the Apps Script commit the
+ * appended row before handleSeoUpdate() searches for it.
+ */
+function flushSeoSheetQueue() {
+    if (!pendingSeoSheetResults) return;
+    const queued = pendingSeoSheetResults;
+    pendingSeoSheetResults = null;
+    setTimeout(() => submitSeoToSheets(queued), 4000);
+}
+
+/**
+ * Send the SEO half of the assessment to the Sheet.
+ *
+ * This function did not exist. It was called behind a
+ * `typeof submitSeoToSheets === 'function'` guard, so the call was a silent
+ * no-op and all 55 SEO_HEADERS columns in the Sheet were permanently blank —
+ * every score, pillar, GBP field, on-page flag and the top opportunity.
+ *
+ * The receiving end was already complete: google-apps-script.js's
+ * handleSeoUpdate() looks for _type:'seo_update', finds the row matching this
+ * email + url (searching bottom-up for the most recent), and writes these keys
+ * into it. Hence email and url are required for the match — without them the
+ * Apps Script appends an orphan row instead of updating the lead's.
+ */
+function submitSeoToSheets(results) {
+    if (!CONFIG.GOOGLE_SHEETS_URL || CONFIG.GOOGLE_SHEETS_URL.includes('PASTE_YOUR')) return;
+    if (!results) return;
+    // Ordering matters: runSeoIntelligence() starts during the analysis phase,
+    // long before submitToSheets() runs on the results screen. handleSeoUpdate()
+    // matches on email + url and APPENDS AN ORPHAN ROW when it finds no match, so
+    // sending this first would split one lead across two rows. Buffer until the
+    // initial row exists; flushSeoSheetQueue() sends it.
+    if (!initialSheetRowSent) {
+        pendingSeoSheetResults = results;
+        return;
+    }
+
+    const rep = results.report || {};
+    const pillars = rep.pillarScores || {};
+    const lh = results.lighthouse || {};
+    const mob = lh.mobile || {};
+    const desk = lh.desktop || {};
+    const audit = results.siteAudit || {};
+    const pr = results.pageRank || {};
+    const biz = results.places?.business || {};
+    const locs = results.places?.locations || [];
+    const comps = results.places?.competitors || [];
+    const findings = rep.findings || [];
+
+    // ?? not || throughout: a real score of 0 is data, and coercing it to '' or a
+    // default is the same falsy-zero bug fixed in api/seo-report.js.
+    const payload = {
+        _type: 'seo_update',
+        timestamp: new Date().toISOString(),
+        // Row-matching keys — handleSeoUpdate() needs both.
+        email: userAnswers.email || '',
+        url: userAnswers.url || '',
+
+        seoOverallScore: rep.overallScore ?? '',
+        seoGrade: rep.grade ?? '',
+        seoHeadline: rep.headline ?? '',
+        topOpportunity: rep.topOpportunity ?? '',
+
+        pillarPageSpeed: pillars.pageSpeed ?? '',
+        pillarOnPageSeo: pillars.onPageSeo ?? '',
+        pillarLocalGbp: pillars.localGbp ?? '',
+        pillarBacklinks: pillars.backlinks ?? '',
+        pillarTechnical: pillars.technical ?? '',
+
+        mobilePerformance: mob.performance ?? '',
+        mobileSeo: mob.seo ?? '',
+        mobileAccessibility: mob.accessibility ?? '',
+        mobileLcp: mob.lcp ?? '',
+        mobileFcp: mob.fcp ?? '',
+        desktopPerformance: desk.performance ?? '',
+        desktopLcp: desk.lcp ?? '',
+
+        domainAuthority: pr.pageRank ?? '',
+        domainAuthorityLabel: pr.label ?? '',
+
+        gbpName: biz.name ?? '',
+        gbpRating: biz.rating ?? '',
+        gbpReviewCount: biz.reviewCount ?? '',
+        gbpPhotoCount: biz.photoCount ?? '',
+        gbpHasHours: biz.hasHours ? 'Yes' : 'No',
+        gbpCategory: biz.primaryCategory ?? '',
+        gbpStatus: biz.businessStatus ?? '',
+        gbpAddress: biz.address ?? '',
+        gbpPhone: biz.phone ?? '',
+        gbpMapsUrl: biz.mapsUrl ?? '',
+        gbpLocationCount: locs.length,
+        gbpAllLocations: locs.map(l => l.name || l.address).filter(Boolean).join('; '),
+
+        competitorCount: comps.length,
+        competitors: comps.map(c => `${c.name} (${c.rating ?? 'n/a'}★, ${c.reviewCount ?? 0})`).join('; '),
+
+        auditSsl: audit.ssl ? 'Yes' : 'No',
+        auditTitleTag: audit.titleTag ?? '',
+        auditTitleLength: audit.titleLength ?? '',
+        auditMetaDesc: audit.metaDescription ?? '',
+        auditMetaDescLength: audit.metaDescriptionLength ?? '',
+        auditH1: audit.h1 ?? '',
+        auditH1Count: audit.h1Count ?? '',
+        auditHasSchema: audit.hasSchemaMarkup ? 'Yes' : 'No',
+        auditHasLocalSchema: audit.hasLocalBusinessSchema ? 'Yes' : 'No',
+        auditHasCanonical: audit.hasCanonical ? 'Yes' : 'No',
+        auditHasViewport: audit.hasViewport ? 'Yes' : 'No',
+        auditHasSitemap: audit.hasSitemap ? 'Yes' : 'No',
+        auditSitemapUrls: audit.sitemapUrlCount ?? '',
+        auditHasRobots: audit.hasRobots ? 'Yes' : 'No',
+        auditBlocksGooglebot: audit.blocksGooglebot ? 'YES' : 'No',
+        auditAltTextCoverage: audit.altTextCoverage ?? '',
+        auditHasOgTitle: audit.hasOgTitle ? 'Yes' : 'No',
+        auditHasOgImage: audit.hasOgImage ? 'Yes' : 'No',
+        auditHasBookingCta: audit.hasOnlineBooking ? 'Online booking' : audit.hasBookingCTA ? 'Basic link' : 'No',
+
+        findingsCount: findings.length,
+        findingsCritical: findings.filter(f => f.severity === 'critical').length,
+        findingsWarning: findings.filter(f => f.severity === 'warning').length,
+    };
+
+    try {
+        fetch(CONFIG.GOOGLE_SHEETS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+    } catch (e) {
+        console.warn('SEO sheets submission error:', e);
     }
 }
 
@@ -5118,9 +5265,7 @@ async function runSeoIntelligence(url) {
     renderClientAuditPanels(results);
 
     // Submit SEO data to Google Sheets (internal capture)
-    if (typeof submitSeoToSheets === 'function') {
-        submitSeoToSheets(results);
-    }
+    submitSeoToSheets(results);
 
     // Fire search rankings check async (doesn't block SEO section display)
     runSearchRankings().catch(err => console.error('Search rankings error:', err));

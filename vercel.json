@@ -22,6 +22,9 @@
             "maxDuration": 30
         },
         "api/search-rankings.js": {
+            "maxDuration": 120
+        },
+        "api/keyword-research.js": {
             "maxDuration": 60
         },
         "api/places.js": {

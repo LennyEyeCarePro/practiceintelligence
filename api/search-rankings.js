@@ -61,9 +61,13 @@ export default async function handler(req, res) {
         const runId = runData?.data?.id;
         if (!runId) return res.json({ error: 'No Apify run ID returned', keywords: [] });
 
-        // ── Step 3: Poll for completion (max 90 seconds) ──
+        // ── Step 3: Poll for completion ──
+        // Must stay strictly under this function's vercel.json maxDuration (120s),
+        // or Vercel kills the process before this loop can exit gracefully and the
+        // caller gets a hard 504 instead of a clean partial result. Same pattern as
+        // crawl-site.js: 110s internal against a 120s ceiling.
         const startTime = Date.now();
-        const MAX_WAIT = 90000;
+        const MAX_WAIT = 105000;
         let status = 'RUNNING';
 
         while (Date.now() - startTime < MAX_WAIT) {
