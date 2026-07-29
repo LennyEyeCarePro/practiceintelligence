@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Practice Growth Assessment | EyeCarePro</title>
+<!-- Overwritten per-brand by applyBrand(); this is the pre-JS default. -->
+<title>Practice Growth Assessment</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -1514,8 +1515,8 @@ body {
 
     <!-- HEADER -->
     <div class="header">
-        <div class="header-logo">
-            <img src="https://www.eyecarepro.com/wp-content/uploads/ecp-full-logo-with-ligh-petal.svg" alt="EyeCarePro" style="height:40px;width:auto;">
+        <div class="header-logo" id="brandLogo">
+            <!-- Populated by applyBrand() from the active BRANDS entry. -->
         </div>
     </div>
 
@@ -1528,7 +1529,7 @@ body {
             <p class="intake-subtitle">Enter your info below and we'll analyze your practice's digital presence, competitive position, and growth opportunities — in about 60 seconds.</p>
 
             <div id="existingClientBanner" class="existing-client-banner">
-                It looks like you may already be an EyeCarePro client. This assessment will still work — we'll show you fresh insights.
+                <!-- Copy set by applyBrand() from BRAND.copy.existingClientBanner. -->
             </div>
 
             <div class="form-field">
@@ -1870,11 +1871,12 @@ body {
         <div class="results-cta">
             <div class="results-cta-text" id="ctaTitle">Ready to close these gaps?</div>
             <div class="results-cta-sub" id="ctaSub">Book a free 30-minute strategy session and we'll walk through your results together.</div>
-            <a class="btn-cta-calendly" href="https://calendly.com/eyecarepro-business-development/30-min-strategy-session-with-eyecarepro" target="_blank" id="calendlyLink">Book Your Strategy Session</a>
+            <!-- href/label set by applyBrand() from BRAND.ctaUrl / BRAND.ctaLabel -->
+            <a class="btn-cta-calendly" href="#" target="_blank" id="calendlyLink">Book Your Strategy Session</a>
         </div>
 
-        <div class="results-footer">
-            &copy; 2026 EyeCarePro &bull; <a href="https://www.eyecarepro.net" target="_blank" style="color:var(--text-muted)">eyecarepro.net</a>
+        <div class="results-footer" id="brandFooter">
+            <!-- Populated by applyBrand() from BRAND.footerHtml. -->
         </div>
     </div>
 
@@ -1885,19 +1887,185 @@ body {
    JEDI v2 — ASSESSMENT ENGINE (Progressive Confirmation)
    ═══════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════
+   BRANDS — one codebase, multiple front doors
+   ═══════════════════════════════════════════════════════════
+   This tool is deployed as more than one product. Each Vercel project
+   serves this same repo; the brand is chosen at runtime from the
+   hostname, so there is no build step and no forked copy to maintain.
+
+   Adding a brand = add an entry here. Nothing else in this file should
+   ever need a brand name hardcoded into it.
+
+   ⚠ THE RESELLER SAFEGUARD IS BRAND-INDEPENDENT.
+   `dossier.digital.isEyeCarePro` and CONFIG.EXISTING_CLIENTS gate ~20
+   branches that soften the findings when the scanned site is one
+   EyeCarePro built (hide Lighthouse row, hide SEO Health panel,
+   suppress competitor findings). That logic stays keyed on EyeCarePro
+   for EVERY brand, because partners resell EyeCarePro services — we
+   must never hand a prospect a teardown of a site we built. Only the
+   wording shown to them varies, via `copy` below.
+   ─────────────────────────────────────────────────────────── */
+const BRANDS = {
+
+    eyecarepro: {
+        id: 'eyecarepro',
+        name: 'EyeCarePro',
+        // Matched against location.hostname. Empty = the default fallback.
+        hostnames: [],
+        logoUrl: 'https://www.eyecarepro.com/wp-content/uploads/ecp-full-logo-with-ligh-petal.svg',
+        logoAlt: 'EyeCarePro',
+        logoHeight: 40,
+        // null = leave the stylesheet's :root value untouched
+        brandHex: null, brandLightHex: null, brandDarkHex: null,
+        surfaceHex: null, textHex: null,
+        ctaUrl: 'https://calendly.com/eyecarepro-business-development/30-min-strategy-session-with-eyecarepro',
+        ctaLabel: 'Book Your Strategy Session',
+        // CTA on the "not an eye care practice" fallback screen
+        offVerticalCtaUrl: 'https://calendly.com/lennyblockecp/45-minutes-get-know-you',
+        footerHtml: '&copy; 2026 EyeCarePro &bull; <a href="https://www.eyecarepro.net" target="_blank" style="color:var(--text-muted)">eyecarepro.net</a>',
+        sheetsUrl: 'https://script.google.com/macros/s/AKfycbyB00hqNLm3Krby8c9UnngJ9wjG2AgVoqZiUjnOWu4LTcdRZX3B6Z5Au-FNQWibGHVgVw/exec',
+        // Push assessments into HubSpot. Partner brands generally don't.
+        crmSubmit: true,
+        copy: {
+            existingClientBanner: 'It looks like you may already be an EyeCarePro client. This assessment will still work — we\'ll show you fresh insights.',
+            existingClientTag: 'EyeCarePro (Existing Client)',
+            biggerQuestion: 'Since you\'re already an EyeCarePro client, the digital foundation is in place. The question that\'s worth exploring: <strong>is your current program fully reflecting what the practice is capable of?</strong> Specialty landing pages, advanced SEO, patient recalls — there may be tools already available to you that could be doing more.',
+            programLabel: 'EyeCarePro program',
+            siteLabel: 'EyeCarePro site',
+            ctaSubDefault: 'Book a free 30-minute strategy session and we\'ll walk through your results together.',
+            ctaSubGap: 'Book a free 30-minute strategy session. We\'ll walk through this gap analysis and show you exactly how to close it.',
+            ctaSubExisting: 'Book a quick review with your growth team and we\'ll walk through these opportunities.',
+            confirmDuring: 'strategy session',
+        },
+    },
+
+    eyefinity: {
+        id: 'eyefinity',
+        name: 'Eyefinity',
+        hostnames: ['practiceintelligence-eyefinity', 'eyefinity'],
+        // Self-hosted deliberately: Eyefinity's DAM 403s any request without a
+        // browser User-Agent AND Referer, so a hotlink is one referrer-policy
+        // change from a sitewide broken logo. Refresh from:
+        // https://www.eyefinity.com/dam/jcr:5468531b-912b-4435-814b-d079be60c8dd/Eyefinity_logo.svg
+        logoUrl: '/assets/eyefinity-logo.svg',
+        logoAlt: 'Eyefinity — a VSP Vision company',
+        // Full lockup (2.22:1) including the "a vsp vision company" tagline,
+        // which is only ~13% of its height, so this runs large. Renders 489px
+        // wide; ceiling is ~290px before the 680px wrap caps the width.
+        logoHeight: 220,
+        brandHex: '#1A73E8', brandLightHex: '#4C8FF0', brandDarkHex: '#1257B5',
+        surfaceHex: '#FFFFFF', textHex: '#202124',
+        ctaUrl: 'https://outlook.office.com/bookwithme/user/16e247ed50a44063a1d9632eea1a3c6a@vsp.com/meetingtype/FulZBjeg-k6Qexcvj11zrA2?anonymous&ismsaljsauthenabled&ep=mCardFromTile',
+        ctaLabel: 'Book Your Eyefinity Demo',
+        offVerticalCtaUrl: 'https://outlook.office.com/bookwithme/user/16e247ed50a44063a1d9632eea1a3c6a@vsp.com/meetingtype/FulZBjeg-k6Qexcvj11zrA2?anonymous&ismsaljsauthenabled&ep=mCardFromTile',
+        footerHtml: '&copy; 2026 Eyefinity &bull; <a href="https://www.eyefinity.com" target="_blank" style="color:var(--text-muted)">eyefinity.com</a>'
+            + '<br><span style="opacity:.75">Powered by <a href="https://www.eyecarepro.net" target="_blank" style="color:var(--text-muted)">EyeCarePro</a></span>',
+        // ⚠ This deployment must have Access = "Anyone". As of 2026-07-28 it
+        // 302s anonymous requests to a Google login, which silently drops every
+        // lead (submitToSheets posts with mode:'no-cors', so nothing surfaces).
+        sheetsUrl: 'https://script.google.com/macros/s/AKfycbz9vTjthiBkhXQ4rGFlFQ8qSvQJMuSW9ysx5rnnJfYegEQv1hu_MoK7vGqc9XaV6WtCGw/exec',
+        crmSubmit: false,
+        copy: {
+            // Deliberately brand-neutral where an existing EyeCarePro site is
+            // concerned: a practice buying through a partner may not know the
+            // product by our name, and a site scrape can't tell a direct
+            // client from a partner-sold one.
+            existingClientBanner: 'It looks like your practice may already be on the Eyefinity website program. This assessment will still work — we\'ll show you fresh insights.',
+            existingClientTag: 'Managed Website Program (Existing Client)',
+            biggerQuestion: 'Since your practice is already on a managed website program, the digital foundation is in place. The question that\'s worth exploring: <strong>is your current program fully reflecting what the practice is capable of?</strong> Specialty landing pages, advanced SEO, patient recalls — there may be tools already available to you that could be doing more.',
+            programLabel: 'current website program',
+            siteLabel: 'site',
+            ctaSubDefault: 'Request an Eyefinity demo and we\'ll walk through your results together.',
+            ctaSubGap: 'Request an Eyefinity demo. We\'ll walk through this gap analysis and show you exactly how to close it.',
+            ctaSubExisting: 'Request a review with your growth team and we\'ll walk through these opportunities.',
+            confirmDuring: 'demo',
+        },
+    },
+
+};
+
+/**
+ * Resolve the active brand.
+ * Precedence: ?brand=<id> (for testing and for embeds served from a
+ * neutral host) → hostname substring match → eyecarepro default.
+ */
+function resolveBrand() {
+    try {
+        const forced = new URLSearchParams(location.search).get('brand');
+        if (forced && BRANDS[forced]) return BRANDS[forced];
+    } catch (e) { /* malformed query string — fall through to hostname */ }
+
+    const host = (location.hostname || '').toLowerCase();
+    for (const b of Object.values(BRANDS)) {
+        if ((b.hostnames || []).some(h => host.includes(h))) return b;
+    }
+    return BRANDS.eyecarepro;
+}
+
+const BRAND = resolveBrand();
+
 // ─── CONFIGURATION ──────────────────────────────────────────
 const CONFIG = {
     APIFY_PROXY_URL: '/api/scrape',
     LIGHTHOUSE_PROXY_URL: '/api/page-quality',
-    GOOGLE_SHEETS_URL: 'https://script.google.com/macros/s/AKfycbyB00hqNLm3Krby8c9UnngJ9wjG2AgVoqZiUjnOWu4LTcdRZX3B6Z5Au-FNQWibGHVgVw/exec',
+    // Per-brand destination — see BRANDS above.
+    GOOGLE_SHEETS_URL: BRAND.sheetsUrl,
+    // Do NOT make this per-brand. See the reseller safeguard note above.
     EXISTING_CLIENTS: ['eyecarepro.net', 'eyecarepro.com'],
     PAGESPEED_TIMEOUT: 45000,
 };
+
+// ─── BRAND APPLICATION ──────────────────────────────────────
+// Writes the active brand into the static chrome at load, so a rebrand is a
+// BRANDS edit rather than a hunt through the markup.
+function applyBrand() {
+    const root = document.documentElement.style;
+    if (BRAND.brandHex)      root.setProperty('--brand', BRAND.brandHex);
+    if (BRAND.brandLightHex) root.setProperty('--brand-light', BRAND.brandLightHex);
+    if (BRAND.brandDarkHex)  root.setProperty('--brand-dark', BRAND.brandDarkHex);
+    if (BRAND.surfaceHex)    root.setProperty('--surface', BRAND.surfaceHex);
+    if (BRAND.textHex)       root.setProperty('--text', BRAND.textHex);
+
+    const logo = document.getElementById('brandLogo');
+    if (logo) {
+        if (BRAND.logoUrl) {
+            logo.innerHTML = `<img src="${BRAND.logoUrl}" alt="${BRAND.logoAlt}" `
+                + `style="height:${BRAND.logoHeight || 40}px;width:auto;max-width:100%;">`;
+        } else {
+            // No asset — render the wordmark as text so the page never shows a
+            // broken image.
+            logo.innerHTML = `<span style="font-size:26px;font-weight:800;letter-spacing:-.5px;`
+                + `color:${BRAND.brandHex || 'var(--brand)'}">${BRAND.name}</span>`;
+        }
+    }
+
+    const cta = document.getElementById('calendlyLink');
+    if (cta) {
+        cta.href = BRAND.ctaUrl;
+        cta.textContent = BRAND.ctaLabel;
+    }
+
+    const foot = document.getElementById('brandFooter');
+    if (foot) foot.innerHTML = BRAND.footerHtml;
+
+    const banner = document.getElementById('existingClientBanner');
+    if (banner) banner.textContent = BRAND.copy.existingClientBanner;
+
+    document.title = `Practice Growth Assessment | ${BRAND.name}`;
+}
+document.addEventListener('DOMContentLoaded', applyBrand);
 
 // ─── STATE ──────────────────────────────────────────────────
 let dossier = null;
 let lighthouseData = null;
 let lighthouseFullData = null; // { mobile: {...}, desktop: {...} } for SEO section
+let lighthouseError = null;    // set when the performance audit fails or is partial
+// The Sheet's SEO columns are written by a second POST that must land AFTER the
+// initial row exists, or the Apps Script appends an orphan row. See
+// submitSeoToSheets() / flushSeoSheetQueue().
+let initialSheetRowSent = false;
+let pendingSeoSheetResults = null;
 let seoReportData = null; // Full SEO intelligence report
 let userAnswers = {};
 let confirmedSteps = { step1: false, step2: false, step3: false };
@@ -2336,7 +2504,14 @@ function updateBgAnalysisBar() {
 
     if (apifyDone && lighthouseDone) {
         bar.classList.add('complete');
-        bar.innerHTML = '<span style="font-size:14px">✓</span><span>Analysis complete — all data collected</span>';
+        // Don't claim "all data collected" when the performance audit failed —
+        // that message was showing even with zero Lighthouse scores.
+        if (lighthouseError) {
+            bar.innerHTML = '<span style="font-size:14px">⚠</span>'
+                + '<span>Analysis complete — performance data unavailable for this site</span>';
+        } else {
+            bar.innerHTML = '<span style="font-size:14px">✓</span><span>Analysis complete — all data collected</span>';
+        }
         return;
     }
 
@@ -2428,7 +2603,7 @@ function renderNonEyeCareRedirect() {
                 If you're in a different healthcare vertical, a potential partner, or believe this is a mistake — we'd love to chat.
             </p>
             <div style="display:flex;flex-direction:column;gap:12px;align-items:center;">
-                <a href="https://calendly.com/lennyblockecp/45-minutes-get-know-you" target="_blank" rel="noopener"
+                <a href="${BRAND.offVerticalCtaUrl}" target="_blank" rel="noopener"
                    style="display:inline-flex;align-items:center;gap:8px;background:var(--brand);color:#fff;padding:14px 32px;border-radius:var(--radius);font-weight:600;font-size:15px;text-decoration:none;transition:background .2s;">
                     📅 Schedule a Call
                 </a>
@@ -2444,6 +2619,9 @@ function resetToStart() {
     dossier = null;
     lighthouseData = null;
     lighthouseFullData = null;
+    lighthouseError = null;
+    initialSheetRowSent = false;
+    pendingSeoSheetResults = null;
     seoReportData = null;
     apifyDone = false;
     lighthouseDone = false;
@@ -2509,7 +2687,7 @@ function renderStep1() {
             '</div>';
     } else {
         doctorsHtml = '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--surface-alt)">' +
-            '<div style="font-size:13px;color:var(--text-muted)">Provider details will be confirmed during your strategy session</div></div>';
+            `<div style="font-size:13px;color:var(--text-muted)">Provider details will be confirmed during your ${BRAND.copy.confirmDuring}</div></div>`;
     }
 
     const rowsHtml = idRows.map(([l, v]) =>
@@ -2634,7 +2812,8 @@ function renderStep3() {
     const digRows = [];
     digRows.push(['Website Platform', d.digital?.cms?.name || 'Not detected']);
     digRows.push(['Marketing Vendor', d.digital?.marketingVendor ? (() => {
-        if (d.digital.isEyeCarePro) return `<span class="dossier-tag tag-blue">EyeCarePro (Existing Client)</span>`;
+        // Detection is EyeCarePro-keyed for every brand; only the label varies.
+        if (d.digital.isEyeCarePro) return `<span class="dossier-tag tag-blue">${BRAND.copy.existingClientTag}</span>`;
         if (d.digital.isCompetitorClient) return `<span class="dossier-tag tag-green">${d.digital.marketingVendor.name}</span>`;
         return `<span class="dossier-tag tag-green">${d.digital.marketingVendor.name}</span>`;
     })() : 'None detected']);
@@ -2924,7 +3103,8 @@ function renderFullStory() {
     const digRows = [];
     digRows.push(['Website Platform', d.digital?.cms?.name || 'Not detected']);
     digRows.push(['Marketing Vendor', d.digital?.marketingVendor ? (() => {
-        if (d.digital.isEyeCarePro) return `<span class="dossier-tag tag-blue">EyeCarePro (Existing Client)</span>`;
+        // Detection is EyeCarePro-keyed for every brand; only the label varies.
+        if (d.digital.isEyeCarePro) return `<span class="dossier-tag tag-blue">${BRAND.copy.existingClientTag}</span>`;
         if (d.digital.isCompetitorClient) return `<span class="dossier-tag tag-green">${d.digital.marketingVendor.name}</span>`;
         return `<span class="dossier-tag tag-green">${d.digital.marketingVendor.name}</span>`;
     })() : 'None detected']);
@@ -3100,7 +3280,7 @@ function generateNarrative(d) {
     // ── SECTION 3: The Bigger Question (curious, not accusatory) ──
     html += '<p>';
     if (isECP) {
-        html += `Since you're already an EyeCarePro client, the digital foundation is in place. The question that's worth exploring: <strong>is your current program fully reflecting what the practice is capable of?</strong> Specialty landing pages, advanced SEO, patient recalls — there may be tools already available to you that could be doing more.`;
+        html += BRAND.copy.biggerQuestion;
     } else if (d.digital?.isCompetitorClient) {
         html += `You're already investing in marketing — which shows you understand its importance. ${userPain ? `You mentioned that <em>"${userPain.toLowerCase()}"</em> — that's something worth exploring further.` : 'Here\'s the question worth exploring: is the digital strategy keeping pace with what your clinical team is capable of?'} When the website doesn't reflect the full scope of what a practice offers, patients make decisions based on incomplete information.`;
     } else {
@@ -3259,6 +3439,7 @@ async function runFallbackScraper(url) {
 
 // ─── LIGHTHOUSE ─────────────────────────────────────────────
 async function runLighthouse(url) {
+    lighthouseError = null;
     try {
         const resp = await fetch(CONFIG.LIGHTHOUSE_PROXY_URL, {
             method: 'POST',
@@ -3266,20 +3447,41 @@ async function runLighthouse(url) {
             body: JSON.stringify({ url }),
         });
 
-        if (!resp.ok) throw new Error(`Lighthouse proxy ${resp.status}`);
-        const data = await resp.json();
+        // Read the body even on a non-2xx so the real reason survives — the
+        // endpoint returns {error} with a useful message.
+        let data = null;
+        try { data = await resp.json(); } catch (e) { /* non-JSON body */ }
+
+        if (!resp.ok) throw new Error(data?.error || `Lighthouse proxy returned ${resp.status}`);
+        if (!data) throw new Error('Lighthouse proxy returned an unreadable response');
         if (data.error) throw new Error(data.error);
 
         // New format: { mobile: {...}, desktop: {...} }
         // Store full data for SEO section, return mobile-compat flat format for existing code
         if (data.mobile) {
             lighthouseFullData = data; // store both strategies for SEO section
+            // Partial result (one strategy failed) — keep the data, note the gap.
+            if (data.partial) {
+                lighthouseError = 'Partial performance data: '
+                    + Object.entries(data.errors || {}).map(([k, v]) => `${k} failed`).join(', ');
+                console.warn('Lighthouse partial:', data.errors);
+            }
             return data.mobile; // existing code expects flat mobile data
+        }
+        // Desktop-only success — still usable for the SEO section.
+        if (data.desktop) {
+            lighthouseFullData = data;
+            lighthouseError = 'Mobile performance data unavailable; showing desktop only.';
+            return data.desktop;
         }
         // Legacy flat format fallback
         lighthouseFullData = { mobile: data, desktop: null };
         return data;
     } catch (err) {
+        // Record it. Previously this returned null silently, so a failed audit
+        // was indistinguishable from a passing one with no scores — and the
+        // progress bar still claimed "all data collected".
+        lighthouseError = err.message || 'Performance audit unavailable';
         console.error('Lighthouse error:', err);
         return null;
     }
@@ -3726,18 +3928,21 @@ function showResults() {
     const ctaSub = document.getElementById('ctaSub');
     if (isECP) {
         ctaTitle.textContent = 'Let\'s optimize your program together';
-        ctaSub.textContent = 'Book a quick review with your growth team and we\'ll walk through these opportunities.';
+        ctaSub.textContent = BRAND.copy.ctaSubExisting;
     } else if (gap.monthlyGap > 0) {
         ctaTitle.textContent = `Let's Reclaim Your ${gap.monthlyLossFormatted}/Month`;
-        ctaSub.textContent = 'Book a free 30-minute strategy session. We\'ll walk through this gap analysis and show you exactly how to close it.';
+        ctaSub.textContent = BRAND.copy.ctaSubGap;
     } else {
         ctaTitle.textContent = 'Let\'s discuss what we found';
-        ctaSub.textContent = 'Book a free 30-minute strategy session and we\'ll walk through your results together.';
+        ctaSub.textContent = BRAND.copy.ctaSubDefault;
     }
 
     showScreen(5);
-    submitToSheets();
-    submitToHubSpot(gap);
+    // gap is passed through so the Sheet captures the revenue gap and narrative
+    // fields even on brands that don't write to HubSpot.
+    submitToSheets(gap);
+    // Partner brands capture to Sheets only — their leads are not ours to file.
+    if (BRAND.crmSubmit) submitToHubSpot(gap);
 
     // SEO Intelligence safety fallback
     if (!seoReportData) {
@@ -4161,7 +4366,7 @@ function generateReflection(d) {
     // Pick the most resonant reflection based on context
     if (isECP) {
         if (missingHV.length >= 2) {
-            return `Here's something worth thinking about: your EyeCarePro program handles the digital foundation well, and there are ${missingHV.length} additional services that could benefit from stronger online promotion. What would it look like if every service ${name} provides was easy for patients to find and understand?`;
+            return `Here's something worth thinking about: your ${BRAND.copy.programLabel} handles the digital foundation well, and there are ${missingHV.length} additional services that could benefit from stronger online promotion. What would it look like if every service ${name} provides was easy for patients to find and understand?`;
         }
         return `Your website is built on a solid platform. But here's what we'd love to explore with you: is it working as hard as your clinical team? Is it bringing in the right patients, for the right services, at the right time?`;
     }
@@ -4362,7 +4567,7 @@ function generateInsights(d) {
             insights.push({
                 icon: '🚀', iconClass: 'insight-icon-blue', priority: 8,
                 title: 'Have You Looked Into Adding Online Scheduling?',
-                text: `Your EyeCarePro site is attracting visitors — but without real-time scheduling, some of those visitors may not convert. Have you explored adding online booking to capture the patients your site is already bringing in?`,
+                text: `Your ${BRAND.copy.siteLabel} is attracting visitors — but without real-time scheduling, some of those visitors may not convert. Have you explored adding online booking to capture the patients your site is already bringing in?`,
             });
         }
         if (missingHV.length >= 2) {
@@ -4481,7 +4686,7 @@ function generateGrowthOpportunities(d) {
 }
 
 // ─── GOOGLE SHEETS SUBMISSION ───────────────────────────────
-function submitToSheets() {
+function submitToSheets(gap) {
     if (!CONFIG.GOOGLE_SHEETS_URL || CONFIG.GOOGLE_SHEETS_URL.includes('PASTE_YOUR')) return;
 
     const d = dossier;
@@ -4489,6 +4694,7 @@ function submitToSheets() {
 
     const payload = {
         timestamp: new Date().toISOString(),
+        source: BRAND.name,
         name: userAnswers.name,
         email: userAnswers.email,
         url: userAnswers.url,
@@ -4547,6 +4753,168 @@ function submitToSheets() {
         frameBrandCount: d.optical?.totalBrands || 0,
         brandPositioning: d.optical?.positioning || '',
         insurancePlans: (d.insurance?.detected || []).map(i => i.name).join('; '),
+        // EHR/PMS signal from the scraper dictionary. Website-signal-based, so it
+        // under-reports — a sales triage hint, never a customer lookup. Drives no
+        // UI behavior.
+        ehrPmsDetected: (d.ehrPms || []).map(e => e.name).join('; '),
+        isEyefinityPms: (d.ehrPms || []).some(e => e.id === 'eyefinity') ? 'YES' : 'No',
+        // Also sent to HubSpot when BRAND.crmSubmit is on, but mirrored here so
+        // the Sheet is a complete record on brands that have no CRM write.
+        revenueGapMonthly: gap?.monthlyGap || 0,
+        strategicFocus: connectivityLogic.goals[userAnswers.goal] || '',
+        strategicAdvice: connectivityLogic.advice[connectivityLogic.goals[userAnswers.goal]] || '',
+        malignancySummary: gap?.malignancySummary || '',
+        technicalRootCause: gap?.technicalRootCause || '',
+        emotionalRootCause: gap?.emotionalRootCause || '',
+        targetStatement: gap?.targetStatement || '',
+        // Report provenance. 'rules' means the AI narrative was unavailable and
+        // the findings are rule-based; usedClientInput says whether the client's
+        // own goal/pain/corrections reached the report at all. Both matter when
+        // judging why a lead's report reads generic.
+        reportSource: seoReportData?.report?.source || '',
+        reportUsedClientInput: seoReportData?.report?.usedClientInput ? 'YES' : 'No',
+        reportFallbackReason: seoReportData?.report?.fallbackReason || '',
+        lighthouseError: lighthouseError || '',
+    };
+
+    try {
+        fetch(CONFIG.GOOGLE_SHEETS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        // The lead's row now exists (or is in flight), so the SEO update has
+        // something to match against.
+        initialSheetRowSent = true;
+        flushSeoSheetQueue();
+    } catch (e) {
+        console.warn('Sheets submission error:', e);
+    }
+}
+
+/**
+ * Send any SEO payload that finished before the initial row was created.
+ * Deliberately delayed: mode:'no-cors' gives us no completion signal, so we
+ * cannot await the first POST — a short delay lets the Apps Script commit the
+ * appended row before handleSeoUpdate() searches for it.
+ */
+function flushSeoSheetQueue() {
+    if (!pendingSeoSheetResults) return;
+    const queued = pendingSeoSheetResults;
+    pendingSeoSheetResults = null;
+    setTimeout(() => submitSeoToSheets(queued), 4000);
+}
+
+/**
+ * Send the SEO half of the assessment to the Sheet.
+ *
+ * This function did not exist. It was called behind a
+ * `typeof submitSeoToSheets === 'function'` guard, so the call was a silent
+ * no-op and all 55 SEO_HEADERS columns in the Sheet were permanently blank —
+ * every score, pillar, GBP field, on-page flag and the top opportunity.
+ *
+ * The receiving end was already complete: google-apps-script.js's
+ * handleSeoUpdate() looks for _type:'seo_update', finds the row matching this
+ * email + url (searching bottom-up for the most recent), and writes these keys
+ * into it. Hence email and url are required for the match — without them the
+ * Apps Script appends an orphan row instead of updating the lead's.
+ */
+function submitSeoToSheets(results) {
+    if (!CONFIG.GOOGLE_SHEETS_URL || CONFIG.GOOGLE_SHEETS_URL.includes('PASTE_YOUR')) return;
+    if (!results) return;
+    // Ordering matters: runSeoIntelligence() starts during the analysis phase,
+    // long before submitToSheets() runs on the results screen. handleSeoUpdate()
+    // matches on email + url and APPENDS AN ORPHAN ROW when it finds no match, so
+    // sending this first would split one lead across two rows. Buffer until the
+    // initial row exists; flushSeoSheetQueue() sends it.
+    if (!initialSheetRowSent) {
+        pendingSeoSheetResults = results;
+        return;
+    }
+
+    const rep = results.report || {};
+    const pillars = rep.pillarScores || {};
+    const lh = results.lighthouse || {};
+    const mob = lh.mobile || {};
+    const desk = lh.desktop || {};
+    const audit = results.siteAudit || {};
+    const pr = results.pageRank || {};
+    const biz = results.places?.business || {};
+    const locs = results.places?.locations || [];
+    const comps = results.places?.competitors || [];
+    const findings = rep.findings || [];
+
+    // ?? not || throughout: a real score of 0 is data, and coercing it to '' or a
+    // default is the same falsy-zero bug fixed in api/seo-report.js.
+    const payload = {
+        _type: 'seo_update',
+        timestamp: new Date().toISOString(),
+        // Row-matching keys — handleSeoUpdate() needs both.
+        email: userAnswers.email || '',
+        url: userAnswers.url || '',
+
+        seoOverallScore: rep.overallScore ?? '',
+        seoGrade: rep.grade ?? '',
+        seoHeadline: rep.headline ?? '',
+        topOpportunity: rep.topOpportunity ?? '',
+
+        pillarPageSpeed: pillars.pageSpeed ?? '',
+        pillarOnPageSeo: pillars.onPageSeo ?? '',
+        pillarLocalGbp: pillars.localGbp ?? '',
+        pillarBacklinks: pillars.backlinks ?? '',
+        pillarTechnical: pillars.technical ?? '',
+
+        mobilePerformance: mob.performance ?? '',
+        mobileSeo: mob.seo ?? '',
+        mobileAccessibility: mob.accessibility ?? '',
+        mobileLcp: mob.lcp ?? '',
+        mobileFcp: mob.fcp ?? '',
+        desktopPerformance: desk.performance ?? '',
+        desktopLcp: desk.lcp ?? '',
+
+        domainAuthority: pr.pageRank ?? '',
+        domainAuthorityLabel: pr.label ?? '',
+
+        gbpName: biz.name ?? '',
+        gbpRating: biz.rating ?? '',
+        gbpReviewCount: biz.reviewCount ?? '',
+        gbpPhotoCount: biz.photoCount ?? '',
+        gbpHasHours: biz.hasHours ? 'Yes' : 'No',
+        gbpCategory: biz.primaryCategory ?? '',
+        gbpStatus: biz.businessStatus ?? '',
+        gbpAddress: biz.address ?? '',
+        gbpPhone: biz.phone ?? '',
+        gbpMapsUrl: biz.mapsUrl ?? '',
+        gbpLocationCount: locs.length,
+        gbpAllLocations: locs.map(l => l.name || l.address).filter(Boolean).join('; '),
+
+        competitorCount: comps.length,
+        competitors: comps.map(c => `${c.name} (${c.rating ?? 'n/a'}★, ${c.reviewCount ?? 0})`).join('; '),
+
+        auditSsl: audit.ssl ? 'Yes' : 'No',
+        auditTitleTag: audit.titleTag ?? '',
+        auditTitleLength: audit.titleLength ?? '',
+        auditMetaDesc: audit.metaDescription ?? '',
+        auditMetaDescLength: audit.metaDescriptionLength ?? '',
+        auditH1: audit.h1 ?? '',
+        auditH1Count: audit.h1Count ?? '',
+        auditHasSchema: audit.hasSchemaMarkup ? 'Yes' : 'No',
+        auditHasLocalSchema: audit.hasLocalBusinessSchema ? 'Yes' : 'No',
+        auditHasCanonical: audit.hasCanonical ? 'Yes' : 'No',
+        auditHasViewport: audit.hasViewport ? 'Yes' : 'No',
+        auditHasSitemap: audit.hasSitemap ? 'Yes' : 'No',
+        auditSitemapUrls: audit.sitemapUrlCount ?? '',
+        auditHasRobots: audit.hasRobots ? 'Yes' : 'No',
+        auditBlocksGooglebot: audit.blocksGooglebot ? 'YES' : 'No',
+        auditAltTextCoverage: audit.altTextCoverage ?? '',
+        auditHasOgTitle: audit.hasOgTitle ? 'Yes' : 'No',
+        auditHasOgImage: audit.hasOgImage ? 'Yes' : 'No',
+        auditHasBookingCta: audit.hasOnlineBooking ? 'Online booking' : audit.hasBookingCTA ? 'Basic link' : 'No',
+
+        findingsCount: findings.length,
+        findingsCritical: findings.filter(f => f.severity === 'critical').length,
+        findingsWarning: findings.filter(f => f.severity === 'warning').length,
     };
 
     try {
@@ -4557,7 +4925,7 @@ function submitToSheets() {
             body: JSON.stringify(payload),
         });
     } catch (e) {
-        console.warn('Sheets submission error:', e);
+        console.warn('SEO sheets submission error:', e);
     }
 }
 
@@ -4872,6 +5240,20 @@ async function runSeoIntelligence(url) {
 
         results.report = reportResp;
 
+        // Log degradation loudly for staff without putting diagnostics in front of
+        // a prospect. A 'rules' report means the narrative is generic rather than
+        // tailored to what the client told us — worth knowing when a lead looks
+        // oddly boilerplate. Also carried into the Sheet (see submitToSheets).
+        if (reportResp && reportResp.source === 'rules') {
+            console.warn(
+                '[seo-report] AI narrative unavailable — served the rule-based fallback.\n'
+                + '  reason: ' + (reportResp.fallbackReason || 'unknown') + '\n'
+                + '  client input used: ' + (reportResp.usedClientInput ? 'yes' : 'NO')
+            );
+        } else if (reportResp && reportResp.usedClientInput === false) {
+            console.warn('[seo-report] AI narrative generated with NO client input — corrections were empty.');
+        }
+
     } catch (err) {
         console.error('SEO intelligence error:', err);
     }
@@ -4883,9 +5265,7 @@ async function runSeoIntelligence(url) {
     renderClientAuditPanels(results);
 
     // Submit SEO data to Google Sheets (internal capture)
-    if (typeof submitSeoToSheets === 'function') {
-        submitSeoToSheets(results);
-    }
+    submitSeoToSheets(results);
 
     // Fire search rankings check async (doesn't block SEO section display)
     runSearchRankings().catch(err => console.error('Search rankings error:', err));
@@ -4973,12 +5353,20 @@ function renderSeoSection(data) {
     // ── Score Breakdown Bars ──
     const pillars = report.pillarScores || {};
     const crawlerBlocked = report.crawlerBlocked || false;
+    // No `?? 0` here on purpose. A null pillar means "we could not measure this",
+    // and defaulting it to 0 rendered unknown data as a red zero — i.e. reported
+    // a measurement failure as a terrible score.
     const barData = [
-        { label: 'Page Speed', value: pillars.pageSpeed ?? mobile.performance ?? 0 },
-        { label: 'On-Page SEO', value: pillars.onPageSeo },
-        { label: 'Local / GBP', value: pillars.localGbp ?? 0 },
-        { label: 'Backlinks', value: pillars.backlinks ?? 0 },
-        { label: 'Technical', value: pillars.technical },
+        { label: 'Page Speed', value: pillars.pageSpeed ?? mobile.performance ?? null,
+          why: 'Performance audit unavailable for this site' },
+        { label: 'On-Page SEO', value: pillars.onPageSeo,
+          why: report.crawlerBlocked ? 'Could not fetch — site blocked our crawler' : 'On-page data unavailable' },
+        { label: 'Local / GBP', value: pillars.localGbp ?? null,
+          why: 'No Google Business Profile match found' },
+        { label: 'Backlinks', value: pillars.backlinks ?? null,
+          why: 'Domain authority data unavailable' },
+        { label: 'Technical', value: pillars.technical,
+          why: report.crawlerBlocked ? 'Could not fetch — site blocked our crawler' : 'On-page data unavailable' },
     ];
 
     document.getElementById('seoBreakdownBars').innerHTML = barData.map(b => {
@@ -4986,7 +5374,7 @@ function renderSeoSection(data) {
             return `<div class="seo-bar-row">
                 <div class="seo-bar-label">${b.label}</div>
                 <div class="seo-bar-track" style="position:relative">
-                    <div style="position:absolute;inset:0;display:flex;align-items:center;padding-left:8px;font-size:11px;color:rgba(0,0,0,.4)">Could not fetch — site blocked our crawler</div>
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;padding-left:8px;font-size:11px;color:rgba(0,0,0,.4)">${b.why}</div>
                 </div>
                 <div class="seo-bar-value" style="color:#999">N/A</div>
             </div>`;

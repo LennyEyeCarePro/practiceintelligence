@@ -42,7 +42,11 @@ export default async function handler(req, res) {
 
         // Poll for completion (max 120 seconds)
         const startTime = Date.now();
-        const MAX_WAIT = 120000;
+        // Was 120000, exactly equal to this function's vercel.json maxDuration, so
+        // a slow actor run left zero time to serialise a response — Vercel killed
+        // the process at the same instant the loop gave up. 105s leaves headroom to
+        // return a clean error the frontend can surface.
+        const MAX_WAIT = 105000;
         const POLL_INTERVAL = 3000;
 
         while (Date.now() - startTime < MAX_WAIT) {

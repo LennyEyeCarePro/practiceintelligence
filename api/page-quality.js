@@ -95,20 +95,39 @@ async function handleLighthouse(req, res) {
         };
     }
 
-    try {
-        const [mobile, desktop] = await Promise.all([
-            runPageSpeed('mobile'),
-            runPageSpeed('desktop'),
-        ]);
-        return res.status(200).json({ mobile, desktop });
-    } catch (err) {
-        try {
-            const mobile = await runPageSpeed('mobile');
-            return res.status(200).json({ mobile, desktop: null });
-        } catch (fallbackErr) {
-            return res.status(500).json({ error: err.message });
-        }
+    // allSettled, not all: with Promise.all a desktop failure discarded the
+    // already-successful mobile result, and the old fallback then re-ran mobile
+    // from scratch. Two 45s attempts against a 60s maxDuration meant one flaky
+    // strategy could kill the whole function and return 504 — so a partial
+    // outage looked like a total one.
+    const [mobileRes, desktopRes] = await Promise.allSettled([
+        runPageSpeed('mobile'),
+        runPageSpeed('desktop'),
+    ]);
+
+    const mobile = mobileRes.status === 'fulfilled' ? mobileRes.value : null;
+    const desktop = desktopRes.status === 'fulfilled' ? desktopRes.value : null;
+
+    const errors = {};
+    if (mobileRes.status === 'rejected') errors.mobile = String(mobileRes.reason?.message || mobileRes.reason);
+    if (desktopRes.status === 'rejected') errors.desktop = String(desktopRes.reason?.message || desktopRes.reason);
+
+    // Only a total failure is an error. Mobile alone is a usable result — it's
+    // what the scoring actually reads.
+    if (!mobile && !desktop) {
+        return res.status(502).json({
+            error: errors.mobile || errors.desktop || 'PageSpeed unavailable',
+            errors,
+        });
     }
+
+    return res.status(200).json({
+        mobile,
+        desktop,
+        // Present only on partial failure, so the client can say which half is
+        // missing instead of silently showing blanks.
+        ...(Object.keys(errors).length ? { partial: true, errors } : {}),
+    });
 }
 
 // ═══════════════════════════════════════════════════

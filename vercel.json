@@ -21,6 +21,15 @@
         "api/site-info.js": {
             "maxDuration": 30
         },
+        "api/search-rankings.js": {
+            "maxDuration": 120
+        },
+        "api/keyword-research.js": {
+            "maxDuration": 60
+        },
+        "api/places.js": {
+            "maxDuration": 30
+        },
         "api/scan-data.js": {
             "maxDuration": 30
         }

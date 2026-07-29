@@ -1,0 +1,30 @@
+# Dead file containing a plaintext Apify proxy password. It is a syntax error
+# (`process.env.http://auto:...`), imported by nothing, and has never been
+# committed — ignored so it stays that way. Rotate the token and delete the file.
+api/proxy-agent.js
+
+# Secrets — never commit. hubspot-setup/.env and serp-mvp/.env hold live API
+# tokens and were nearly committed by a `git add -A`.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+**/!.env.example
+
+node_modules/
+local/node_modules/
+local/public/
+.vercel
+.DS_Store
+
+# Standalone side projects that live in this directory but are not part of the
+# deployed app. Kept out of the repo deliberately.
+hubspot-setup/
+serp-mvp/
+sales-handoff/
+kit-host/
+post-suspension/
+Documents/
+main
+screen5_backup_COMPLETE.html
