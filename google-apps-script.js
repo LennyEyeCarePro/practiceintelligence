@@ -240,6 +240,93 @@ function handleSeoUpdate(sheet, data) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+//   PARTNER MIRROR — run on a time trigger, NOT via the web app
+// ═══════════════════════════════════════════════════════════
+/**
+ * Mirror one brand's rows into that brand's own spreadsheet.
+ *
+ * WHY A TRIGGER AND NOT doPost ROUTING
+ * The live web app serves a PINNED version of this script. Changing doPost would
+ * require deploying a new version, and on this Workspace that risks losing the
+ * grandfathered Access="Anyone" setting — which is the only reason anonymous
+ * lead capture works at all. A time-driven trigger, by contrast, runs the latest
+ * SAVED code and needs no deployment. So: save this file, add a trigger, and the
+ * live web app is untouched.
+ *
+ * WHY A SEPARATE DOCUMENT AND NOT A TAB
+ * Google Sheets permissions are per-document, not per-tab. Sharing the master
+ * sheet would expose every EyeCarePro prospect to the partner; hiding or
+ * protecting a tab does not prevent a viewer reading it via IMPORTRANGE or the
+ * API. Only a separate file is an actual boundary.
+ *
+ * SETUP (one time, no deployment needed)
+ *   1. Save this file in the Apps Script editor (Ctrl+S). Do NOT deploy.
+ *   2. Left sidebar → Triggers (clock icon) → Add Trigger
+ *        Function:        syncPartnerSheets
+ *        Event source:    Time-driven
+ *        Type:            Minutes timer → every 15 minutes
+ *   3. Grant the authorisation prompt (it needs access to the target file).
+ *   4. Share the partner spreadsheet with the partner as VIEWER — not Editor.
+ *      An Editor could rewrite the sheet or its formulas.
+ *
+ * The mirror is a full replace each run: idempotent, no dedupe state to drift,
+ * and safe to run as often as you like at lead volumes.
+ */
+function syncPartnerSheets() {
+  for (const source in BRAND_SHEETS) {
+    const targetId = BRAND_SHEETS[source];
+    // Skip the bound sheet (empty id) and anything unconfigured.
+    if (!targetId || targetId.indexOf('PASTE_') === 0) continue;
+    try {
+      mirrorRowsForSource(source, targetId);
+    } catch (err) {
+      console.error('Mirror failed for "' + source + '": ' + err);
+    }
+  }
+}
+
+function mirrorRowsForSource(source, targetId) {
+  const master = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (!master) throw new Error('Master tab "' + SHEET_NAME + '" not found');
+
+  const lastRow = master.getLastRow();
+  const lastCol = master.getLastColumn();
+  if (lastRow < 1 || lastCol < 1) return;
+
+  const all = master.getRange(1, 1, lastRow, lastCol).getValues();
+  const headers = all[0].map(function (h) { return String(h); });
+
+  const srcCol = headers.indexOf('source');
+  if (srcCol === -1) {
+    // Without a source column every row would look like it belongs to the
+    // partner. Refuse rather than leak the whole list.
+    throw new Error('No "source" column in the master sheet — refusing to mirror');
+  }
+
+  const matching = all.slice(1).filter(function (row) {
+    return String(row[srcCol]).trim().toLowerCase() === source.toLowerCase();
+  });
+
+  const target = SpreadsheetApp.openById(targetId);
+  let tab = target.getSheetByName(SHEET_NAME);
+  if (!tab) {
+    tab = target.insertSheet(SHEET_NAME);
+  }
+
+  // Full replace. clear() rather than deleting the sheet so any manual
+  // formatting, filters or frozen rows the partner relies on survive.
+  tab.clear();
+  tab.getRange(1, 1, 1, headers.length).setValues([headers]);
+  tab.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+  if (matching.length > 0) {
+    tab.getRange(2, 1, matching.length, headers.length).setValues(matching);
+  }
+  tab.setFrozenRows(1);
+
+  console.log('Mirrored ' + matching.length + ' "' + source + '" row(s) to ' + targetId);
+}
+
 // ─── HELPERS ────────────────────────────────────────────────
 
 function getHeaders(sheet) {
