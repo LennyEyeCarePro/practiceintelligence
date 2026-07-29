@@ -1,31 +1,35 @@
 /**
- * PartnerMirror.gs — ADD THIS AS A NEW FILE in the existing Apps Script project.
+ * PartnerMirror.gs — a SELF-CONTAINED Apps Script file.
  *
  * Copies each partner brand's rows out of the EyeCarePro master sheet into that
  * partner's own spreadsheet, on a timer.
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * WHY A SEPARATE FILE INSTEAD OF REPLACING Code.gs
- * Apps Script files in one project share a single global scope, so this can add
- * functions without touching the existing code. That matters here: the live web
- * app is the only working anonymous lead-capture path, and pasting over Code.gs
- * would overwrite anything that has drifted in the editor and was never
- * committed back to the repo.
+ * IT DOES NOT MATTER WHICH PROJECT THIS GOES IN
+ * Every name here is prefixed MIRROR_ / PARTNER_ so it cannot collide with an
+ * existing Code.gs, and the master spreadsheet is opened by ID rather than via
+ * getActiveSpreadsheet(). So this works in a bound script, a standalone script,
+ * or a brand-new empty project, and it never needs to read or edit any other
+ * file in the project.
  *
- * ⚠️ DO NOT also paste the full google-apps-script.js into this project. That
- * file now contains its own BRAND_SHEETS declaration, and two `const
- * BRAND_SHEETS` in the same project is a duplicate-declaration error that breaks
- * every function, including doPost. Use one or the other, not both.
+ * An earlier version referenced a SHEET_NAME constant declared in the
+ * lead-capture Code.gs. That was wrong: the spreadsheet's own bound project
+ * turned out to be an empty stub (opening Extensions → Apps Script CREATES one
+ * if none exists), so the live web app lives in a different project entirely.
+ * Depending on a constant from a file that may not be there would have thrown
+ * ReferenceError at runtime.
  *
- * This file deliberately does NOT declare SHEET_NAME — Code.gs already does, and
- * redeclaring it would be the same kind of error.
+ * ⚠️ Do NOT also paste google-apps-script.js into the same project. Its
+ * BRAND_SHEETS / SHEET_NAME declarations are separate from the ones here; two
+ * declarations of the same name in one project is an error that breaks every
+ * function in it. This file alone is enough for the mirror.
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * WHY A TRIGGER AND NOT doPost ROUTING
+ * WHY A TRIGGER AND NOT ROUTING INSIDE doPost
  * The live web app serves a PINNED script version. Routing inside doPost would
  * require deploying a new version, which on this Workspace risks losing the
- * grandfathered Access="Anyone" setting. A time-driven trigger runs the latest
- * SAVED code and needs no deployment at all.
+ * grandfathered Access="Anyone" setting that anonymous lead capture depends on.
+ * A time-driven trigger runs the latest SAVED code and needs no deployment.
  *
  * WHY A SEPARATE DOCUMENT AND NOT A TAB
  * Google Sheets permissions are per-document, not per-tab. Sharing the master
@@ -33,40 +37,48 @@
  * boundary, since a viewer can still read it via IMPORTRANGE or the API.
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * SETUP — where to click
- *   1. Open the EyeCarePro Sheet → Extensions → Apps Script
- *   2. In the left "Files" panel, click the + → Script
- *   3. Name it  PartnerMirror   (the .gs is added for you)
- *   4. Delete the stub `myFunction() {}` it creates, paste this whole file, Ctrl+S
- *      → DO NOT click Deploy
- *   5. Left sidebar → Triggers (the clock icon) → Add Trigger (bottom right)
- *        Choose which function to run ......  syncPartnerSheets
- *        Which runs at deployment ..........  Head
- *        Select event source ...............  Time-driven
- *        Select type of time based trigger .  Minutes timer
- *        Select minute interval ............  Every 15 minutes
- *      → Save, then accept the authorisation prompt
- *   6. Share the partner spreadsheet with the partner as VIEWER, not Editor.
- *      An Editor could widen the range and read everything.
+ * SETUP
+ *   1. Fill in MIRROR_MASTER_ID below — the master spreadsheet's ID, taken from
+ *      its URL. This is the only edit required.
+ *   2. Paste this file into any Apps Script project (a new one is fine) and save
+ *      with Ctrl+S. DO NOT click Deploy.
+ *   3. Left sidebar → Triggers (clock icon) → Add Trigger
+ *        Function ..........  syncPartnerSheets
+ *        Deployment ........  Head
+ *        Event source ......  Time-driven
+ *        Type ..............  Minutes timer → Every 15 minutes
+ *      Save, then approve the authorisation prompt.
+ *   4. Share the partner spreadsheet with the partner as VIEWER, not Editor.
  *
- * TO TEST IT IMMEDIATELY: pick syncPartnerSheets in the toolbar function
- * dropdown and press Run. Check View → Logs for the row count.
+ * TO TEST NOW: select syncPartnerSheets in the toolbar dropdown, press Run, and
+ * read the Execution log.
  * ─────────────────────────────────────────────────────────────────────────────
  */
+
+/**
+ * The master spreadsheet that lead capture writes into — the one whose
+ * Assessments tab has a `source` column.
+ *
+ * Opened by ID on purpose. getActiveSpreadsheet() only works in a script bound
+ * to that spreadsheet, and this file is meant to run from anywhere.
+ *
+ * ⚠️ REQUIRED. Take it from the master spreadsheet URL:
+ *   docs.google.com/spreadsheets/d/<THIS_PART>/edit
+ */
+const MIRROR_MASTER_ID = 'PASTE_MASTER_SPREADSHEET_ID';
+
+/** Tab name in both the master and each partner spreadsheet. */
+const MIRROR_TAB_NAME = 'Assessments';
 
 /**
  * Partner destination spreadsheets, keyed by the `source` value written by
  * index.html (BRAND.name).
  *
- * The empty string for EyeCarePro means "the bound spreadsheet" and is skipped
- * by the mirror — the master is the source, not a destination.
+ * EyeCarePro is intentionally absent: it is the source, not a destination.
  *
- * TO ADD A PARTNER: create their spreadsheet and paste its ID here. The ID is
- * the long segment of the URL:
- *   docs.google.com/spreadsheets/d/<THIS_PART>/edit
+ * TO ADD A PARTNER: create their spreadsheet and paste its ID here.
  */
-const BRAND_SHEETS = {
-  'EyeCarePro': '',
+const PARTNER_SHEETS = {
   'Eyefinity': '1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4',
 };
 
@@ -75,9 +87,15 @@ const BRAND_SHEETS = {
  * One partner failing does not stop the others.
  */
 function syncPartnerSheets() {
-  for (const source in BRAND_SHEETS) {
-    const targetId = BRAND_SHEETS[source];
-    if (!targetId || targetId.indexOf('PASTE_') === 0) continue;
+  if (!MIRROR_MASTER_ID || MIRROR_MASTER_ID.indexOf('PASTE_') === 0) {
+    throw new Error('MIRROR_MASTER_ID is not set — put the master spreadsheet ID at the top of this file');
+  }
+  for (const source in PARTNER_SHEETS) {
+    const targetId = PARTNER_SHEETS[source];
+    if (!targetId || targetId.indexOf('PASTE_') === 0) {
+      console.warn('Skipping "' + source + '": no spreadsheet ID configured');
+      continue;
+    }
     try {
       mirrorRowsForSource(source, targetId);
     } catch (err) {
@@ -91,8 +109,8 @@ function syncPartnerSheets() {
  * Full replace each run: idempotent, with no dedupe state that can drift.
  */
 function mirrorRowsForSource(source, targetId) {
-  const master = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-  if (!master) throw new Error('Master tab "' + SHEET_NAME + '" not found');
+  const master = SpreadsheetApp.openById(MIRROR_MASTER_ID).getSheetByName(MIRROR_TAB_NAME);
+  if (!master) throw new Error('Master tab "' + MIRROR_TAB_NAME + '" not found in ' + MIRROR_MASTER_ID);
 
   const lastRow = master.getLastRow();
   const lastCol = master.getLastColumn();
@@ -113,8 +131,8 @@ function mirrorRowsForSource(source, targetId) {
   });
 
   const target = SpreadsheetApp.openById(targetId);
-  let tab = target.getSheetByName(SHEET_NAME);
-  if (!tab) tab = target.insertSheet(SHEET_NAME);
+  let tab = target.getSheetByName(MIRROR_TAB_NAME);
+  if (!tab) tab = target.insertSheet(MIRROR_TAB_NAME);
 
   // clear() rather than deleting the sheet, so any formatting or filter views
   // the partner has set up survive the refresh.
