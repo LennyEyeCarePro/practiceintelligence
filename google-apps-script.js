@@ -12,6 +12,56 @@
 // ─── CONFIGURATION ──────────────────────────────────────────
 const SHEET_NAME = 'Assessments';  // Change this if your sheet tab has a different name
 
+/**
+ * Per-brand destination spreadsheets, keyed by the payload's `source` field
+ * (set from BRAND.name in index.html).
+ *
+ * WHY THIS EXISTS
+ * A second Apps Script deployment cannot be created with Access = "Anyone" on
+ * this Workspace any more — the admin policy now blocks it, though THIS
+ * deployment predates the policy and still works. So every brand posts to this
+ * one web app, and it fans out to a separate spreadsheet per brand.
+ *
+ * This must NOT be solved by pointing partners at the EyeCarePro sheet: that
+ * would expose the entire EyeCarePro prospect list to a channel partner. Each
+ * brand's leads stay in their own file, and the partner is granted view access
+ * to theirs alone.
+ *
+ * The script executes as its owner, so openById() can reach any spreadsheet the
+ * owner can — the partner needs no Google identity and no write access.
+ *
+ * TO ADD A BRAND: create the spreadsheet, then put its ID here. The ID is the
+ * long segment in the URL:
+ *   docs.google.com/spreadsheets/d/<THIS_PART>/edit
+ * An empty string means "use the spreadsheet this script is bound to".
+ */
+const BRAND_SHEETS = {
+  'EyeCarePro': '',  // bound spreadsheet — do not change
+  // ⚠️ PLACEHOLDER — paste the Eyefinity spreadsheet ID here. Until it is set,
+  // Eyefinity rows fall back to the bound sheet and are only distinguishable by
+  // their `source` column, which is NOT acceptable for sharing.
+  'Eyefinity': 'PASTE_EYEFINITY_SPREADSHEET_ID',
+};
+
+/**
+ * Resolve the spreadsheet for a payload's brand.
+ * Falls back to the bound spreadsheet so an unknown or missing source can never
+ * silently discard a lead.
+ */
+function getSpreadsheetForSource(source) {
+  const id = BRAND_SHEETS[source];
+  if (!id || id.indexOf('PASTE_') === 0) {
+    return SpreadsheetApp.getActiveSpreadsheet();
+  }
+  try {
+    return SpreadsheetApp.openById(id);
+  } catch (err) {
+    // Wrong ID, or the owner lost access. Keep the lead rather than drop it.
+    console.error('Could not open spreadsheet for source "' + source + '": ' + err);
+    return SpreadsheetApp.getActiveSpreadsheet();
+  }
+}
+
 // ─── Column headers for the initial submission ──────────────
 const INITIAL_HEADERS = [
   'timestamp', 'source', 'name', 'email', 'url',
@@ -73,7 +123,11 @@ const SEO_HEADERS = [
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Route to the brand's own spreadsheet. An seo_update carries the same
+    // `source` as the initial submission, so both halves of a lead land in the
+    // same file and handleSeoUpdate() can still find the row to update.
+    const ss = getSpreadsheetForSource(data.source);
     let sheet = ss.getSheetByName(SHEET_NAME);
 
     // Auto-create sheet with headers if it doesn't exist

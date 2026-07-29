@@ -1992,10 +1992,21 @@ const BRANDS = {
         offVerticalCtaUrl: 'https://outlook.office.com/bookwithme/user/16e247ed50a44063a1d9632eea1a3c6a@vsp.com/meetingtype/FulZBjeg-k6Qexcvj11zrA2?anonymous&ismsaljsauthenabled&ep=mCardFromTile',
         footerHtml: '&copy; 2026 Eyefinity &bull; <a href="https://www.eyefinity.com" target="_blank" style="color:var(--text-muted)">eyefinity.com</a>'
             + '<br><span style="opacity:.75">Powered by <a href="https://www.eyecarepro.net" target="_blank" style="color:var(--text-muted)">EyeCarePro</a></span>',
-        // ⚠ This deployment must have Access = "Anyone". As of 2026-07-28 it
-        // 302s anonymous requests to a Google login, which silently drops every
-        // lead (submitToSheets posts with mode:'no-cors', so nothing surfaces).
-        sheetsUrl: 'https://script.google.com/macros/s/AKfycbz9vTjthiBkhXQ4rGFlFQ8qSvQJMuSW9ysx5rnnJfYegEQv1hu_MoK7vGqc9XaV6WtCGw/exec',
+        // Deliberately the SAME Apps Script deployment as EyeCarePro.
+        //
+        // The Eyefinity-specific deployment (AKfycbz9...) cannot be opened to
+        // anonymous traffic: this Workspace now blocks Access="Anyone" on NEW
+        // deployments, and verified on 2026-07-29 it 302s to a Google login. Since
+        // submitToSheets posts with mode:'no-cors', that dropped every lead
+        // silently. This deployment predates the policy and still accepts
+        // anonymous POSTs, so both brands post here.
+        //
+        // Separation happens server-side, NOT by sharing one file: the script
+        // routes on the payload's `source` field to a per-brand spreadsheet via
+        // BRAND_SHEETS in google-apps-script.js. Eyefinity gets view access to
+        // their spreadsheet only — pointing them at the EyeCarePro sheet would
+        // expose the entire EyeCarePro prospect list to a channel partner.
+        sheetsUrl: 'https://script.google.com/macros/s/AKfycbyB00hqNLm3Krby8c9UnngJ9wjG2AgVoqZiUjnOWu4LTcdRZX3B6Z5Au-FNQWibGHVgVw/exec',
         crmSubmit: false,
         copy: {
             // Deliberately brand-neutral where an existing EyeCarePro site is
@@ -4881,6 +4892,10 @@ function submitSeoToSheets(results) {
     const payload = {
         _type: 'seo_update',
         timestamp: new Date().toISOString(),
+        // Required for spreadsheet routing: the Apps Script fans out per brand via
+        // BRAND_SHEETS[source]. Omit this and an Eyefinity update lands in the
+        // EyeCarePro sheet, splitting one lead across two files.
+        source: BRAND.name,
         // Row-matching keys — handleSeoUpdate() needs both.
         email: userAnswers.email || '',
         url: userAnswers.url || '',

@@ -1,0 +1,33 @@
+# Vercel serves root files statically, so anything uploaded here can become
+# fetchable. Git-connected deploys only ever ship committed files, but a CLI
+# deploy (`vercel deploy`) uploads from the working directory — which in this
+# repo contains untracked side projects holding live API tokens.
+#
+# Keep this in sync with .gitignore.
+
+# Secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+
+# Dead file containing a plaintext Apify proxy password
+api/proxy-agent.js
+
+# Standalone side projects that live here but are not part of the deployed app
+hubspot-setup/
+serp-mvp/
+sales-handoff/
+kit-host/
+post-suspension/
+Documents/
+
+# Local dev server — never runs on Vercel
+local/
+
+# Junk
+node_modules/
+main
+screen5_backup_COMPLETE.html
+.git/
