@@ -12,8 +12,10 @@
 **/.env
 **/.env.*
 
-# Dead file containing a plaintext Apify proxy password
-api/proxy-agent.js
+# Real client data. Files under api/ are served statically, so a deployed dossier
+# would be publicly fetchable at /api/<filename>.
+api/*.txt
+api/Dossier*
 
 # Standalone side projects that live here but are not part of the deployed app
 hubspot-setup/

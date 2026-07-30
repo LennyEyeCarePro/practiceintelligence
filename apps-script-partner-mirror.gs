@@ -62,13 +62,12 @@
  * Opened by ID on purpose. getActiveSpreadsheet() only works in a script bound
  * to that spreadsheet, and this file is meant to run from anywhere.
  *
- * Identified by CONTENT, not by name: this document is titled "Untitled
- * spreadsheet". Its Assessments tab holds ~112 columns of real prospect data
- * including the isEyeCarePro column, which only lead capture produces. Verified
- * 2026-07-30 by opening it and reading the title.
+ * Identify this document by CONTENT, not by name — it was titled "Untitled
+ * spreadsheet" when this id was verified on 2026-07-30 and has since been renamed.
+ * The reliable signature is an Assessments tab with ~130 columns of real prospect
+ * data including an isEyeCarePro column, which only lead capture produces.
  *
- * Renaming this document is safe and recommended — the id is what matters here,
- * and an unnamed master is easy to lose or delete by accident.
+ * Renaming is harmless: everything here keys off the id, never the title.
  */
 const MIRROR_MASTER_ID = '1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4';
 

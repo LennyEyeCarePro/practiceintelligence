@@ -1,7 +1,10 @@
-# Dead file containing a plaintext Apify proxy password. It is a syntax error
-# (`process.env.http://auto:...`), imported by nothing, and has never been
-# committed — ignored so it stays that way. Rotate the token and delete the file.
-api/proxy-agent.js
+# Real client data that must never be committed or deployed. Anything under api/
+# is served as a static file by Vercel, so a committed dossier would be publicly
+# fetchable at /api/<filename>. This one is a client onboarding document
+# (Lakeshore Optical) including staff names. It does not belong in api/ at all —
+# move it out of the repo.
+api/*.txt
+api/Dossier*
 
 # Secrets — never commit. hubspot-setup/.env and serp-mvp/.env hold live API
 # tokens and were nearly committed by a `git add -A`.
