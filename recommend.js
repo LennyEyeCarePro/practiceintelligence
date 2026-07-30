@@ -271,6 +271,80 @@
      * Ordered, first match wins. Each rule returns the triggers it fired, most
      * significant first — triggers[0] becomes primary_trigger_code.
      */
+    /**
+     * Prospect-facing copy per package, from section 2/4 of the spec.
+     *
+     * Lives beside the ruleset rather than in index.html markup so a brand's
+     * products and the words describing them stay in one place. Deliberately no
+     * prices: the spec assigns none to the Eyefinity packages, and inventing them
+     * in front of a prospect would be worse than omitting them.
+     */
+    const PACKAGE_COPY = {
+        eyefinity: {
+            Base: {
+                label: 'Eyefinity Base',
+                purpose: 'Establishing digital credibility',
+                capabilities: [
+                    'Fully managed web presence',
+                    'Initial SEO setup',
+                    'Basic online scheduling link',
+                    'Site administration and updates',
+                    'Analytics and reporting dashboard',
+                    'Eyefinity EPM / OfficeMate compatibility',
+                ],
+            },
+            Advanced: {
+                label: 'Eyefinity Advanced',
+                purpose: 'Foundational local visibility, maintained',
+                capabilities: [
+                    'Everything in Base',
+                    'Strategic SEO maintenance (4 blog posts a year)',
+                    'Review and reputation management',
+                    'Social media publishing',
+                    'Call and lead analytics',
+                    'Semi-annual strategy consults',
+                ],
+            },
+            Pro: {
+                label: 'Eyefinity Pro',
+                purpose: 'Filling the exam schedule with new patients',
+                capabilities: [
+                    'Everything in Advanced',
+                    'Conversion-focused website design',
+                    'Ongoing general eyecare SEO',
+                    '6 SEO-optimised blog posts a year',
+                    'Two-way texting',
+                    'Google Reserve integration',
+                    'Bi-monthly strategy consults',
+                ],
+            },
+            Deluxe: {
+                label: 'Eyefinity Deluxe',
+                purpose: 'Growing high-margin specialty and optical revenue',
+                capabilities: [
+                    'Everything in Pro',
+                    'Specialty or optical-focused SEO architecture',
+                    '12 SEO-optimised posts or specialty landing pages a year',
+                    'Custom practice photoshoot (one-time)',
+                    'Video editing and optimisation',
+                    'Monthly strategy consults',
+                ],
+            },
+            Ultimate: {
+                label: 'Eyefinity Ultimate',
+                purpose: 'Multi-location governance and competitive metro growth',
+                capabilities: [
+                    'Everything in Deluxe',
+                    'High-velocity local SEO strategy',
+                    '24 SEO-optimised posts or pages a year',
+                    'Multi-location site architecture (up to 5 locations)',
+                    'Competitive market positioning',
+                    'Monthly strategy consults',
+                ],
+            },
+        },
+    };
+
     const PACKAGE_RULESETS = {
         eyefinity: [
             {
@@ -458,7 +532,24 @@
             triggers = [['BASELINE_PRESENCE_ONLY', 'No growth, specialty or scale signals found']];
         }
 
+        const copy = (PACKAGE_COPY[brandId] && PACKAGE_COPY[brandId][matched]) || null;
+
         return {
+            // Prospect-facing copy for the matched package. Separate from
+            // `recommendation` because that block is the spec's payload for sales
+            // systems, while this exists only for rendering.
+            display: copy ? {
+                label: copy.label,
+                purpose: copy.purpose,
+                capabilities: copy.capabilities,
+                // Rationale worth showing a prospect: their own declared answers
+                // first, since those read as "you told us", then site findings.
+                why: triggers
+                    .slice()
+                    .sort((a, b) => (b[0].indexOf('DECLARED_') === 0) - (a[0].indexOf('DECLARED_') === 0))
+                    .map(t => t[1])
+                    .slice(0, 4),
+            } : null,
             practice_identity: {
                 url: (input.userAnswers && input.userAnswers.url) || null,
                 name: s.practiceName,

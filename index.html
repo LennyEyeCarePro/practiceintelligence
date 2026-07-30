@@ -1083,6 +1083,77 @@ body {
 .insight-text { color: var(--text-secondary); }
 
 /* ─── Strategic Focus Card ─── */
+/* ─── Recommended package (Eyefinity and any future brand with a ruleset) ─── */
+.package-rec {
+    background: var(--surface);
+    border: 2px solid var(--brand);
+    border-radius: var(--radius-lg);
+    padding: 24px 24px 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+}
+.package-rec-badge {
+    display: inline-block;
+    background: var(--brand);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+}
+.package-rec-name {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--brand-dark);
+    letter-spacing: -.4px;
+}
+.package-rec-purpose {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin: 4px 0 18px;
+}
+.package-rec-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+@media (max-width: 560px) {
+    .package-rec-cols { grid-template-columns: 1fr; gap: 14px; }
+}
+.package-rec-h {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .6px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.package-rec-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.package-rec-list li {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+    padding-left: 18px;
+    position: relative;
+    margin-bottom: 6px;
+}
+.package-rec-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand);
+}
+
 .strategic-focus-card {
     position: relative;
     background: linear-gradient(135deg, #0B2948 0%, #143D65 50%, #1A4F7A 100%);
@@ -1872,6 +1943,25 @@ body {
             <p class="strategic-focus-text" id="strategicAdviceText"></p>
         </div>
 
+        <!-- ═══ RECOMMENDED PACKAGE ═══
+             Populated by renderPackageRecommendation(); hidden entirely for
+             brands with no ruleset, so EyeCarePro is unaffected. -->
+        <div id="packageRecSection" class="package-rec" style="display:none;">
+            <div class="package-rec-badge">RECOMMENDED FOR YOUR PRACTICE</div>
+            <div class="package-rec-name" id="packageRecName"></div>
+            <div class="package-rec-purpose" id="packageRecPurpose"></div>
+            <div class="package-rec-cols">
+                <div>
+                    <div class="package-rec-h">Why this fits</div>
+                    <ul class="package-rec-list" id="packageRecWhy"></ul>
+                </div>
+                <div>
+                    <div class="package-rec-h">What's included</div>
+                    <ul class="package-rec-list" id="packageRecIncluded"></ul>
+                </div>
+            </div>
+        </div>
+
         <!-- ═══ SECTION 7: THE PATH FORWARD ═══ -->
         <div class="results-cta">
             <div class="results-cta-text" id="ctaTitle">Ready to close these gaps?</div>
@@ -2112,6 +2202,36 @@ function buildPackageRecommendation() {
 /** Indirection so a missing recommend.js is a null, not a ReferenceError. */
 function global_PracticeRecommender() {
     return (typeof window !== 'undefined' && window.PracticeRecommender) || null;
+}
+
+/**
+ * Show the matched package on the results screen.
+ *
+ * Stays hidden unless the active brand has both a ruleset and display copy, so
+ * EyeCarePro is completely unaffected — it renders nothing new.
+ *
+ * Deliberately shows only the package, why it fits, and what is included. The
+ * deficits list stays internal: it reads as a teardown, and for a prospect whose
+ * site we built the reseller safeguard exists precisely to avoid that. Keeping it
+ * out means this block is safe regardless of isEyeCarePro.
+ */
+function renderPackageRecommendation(rec) {
+    const section = document.getElementById('packageRecSection');
+    if (!section) return;
+
+    const d = rec && rec.display;
+    if (!d) { section.style.display = 'none'; return; }
+
+    document.getElementById('packageRecName').textContent = d.label;
+    document.getElementById('packageRecPurpose').textContent = d.purpose;
+
+    const li = (items) => (items || []).map(t =>
+        `<li>${String(t).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</li>`
+    ).join('');
+
+    document.getElementById('packageRecWhy').innerHTML = li(d.why);
+    document.getElementById('packageRecIncluded').innerHTML = li(d.capabilities);
+    section.style.display = '';
 }
 let seoReportData = null; // Full SEO intelligence report
 let userAnswers = {};
@@ -3991,6 +4111,7 @@ function showResults() {
     // where all four input tiers exist: client answers, the dossier, and the
     // Places/site-audit results from the SEO phase.
     packageRecommendation = buildPackageRecommendation();
+    renderPackageRecommendation(packageRecommendation);
 
     submitToSheets(gap);
     // Partner brands capture to Sheets only — their leads are not ours to file.
