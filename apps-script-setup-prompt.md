@@ -38,7 +38,28 @@ reading it via IMPORTRANGE or the API.
 4. If you are ever unsure, **stop and ask me** rather than guessing. Do not click
    through dialogs you did not expect.
 
-## Step 0 — capture the master spreadsheet ID, and do not hunt for the live script
+## Step 0 — identify TWO different spreadsheets by title, and do not mix them up
+
+This involves two separate documents. Confirming which is which is the single
+most important thing in this task, because the mirror does a **full replace** on
+the destination.
+
+1. **The MASTER** — the one lead capture writes into. Its `Assessments` tab has
+   roughly 110+ columns of existing data.
+2. **The PARTNER destination** — a different document, for Eyefinity only.
+
+For **each** one: open it, and report to me **both its title and its id** from the
+URL (`docs.google.com/spreadsheets/d/<ID>/edit`). Wait for me to confirm the
+pairing before you paste either id into the code.
+
+**If the two ids are ever the same, stop.** The code will refuse to run in that
+case, but do not rely on that — a full replace against the master would destroy
+every prospect row.
+
+**Expect the master's bound script to be empty.** If Extensions → Apps Script
+shows only `function myFunction() {}`, that is normal: opening that menu on a
+spreadsheet with no bound script creates an empty one. Our live lead-capture app
+is a separate project — do not go looking for it, and do not edit it.
 
 The mirror opens the master spreadsheet **by ID**, so it can live in any Apps
 Script project. You do not need to find our lead-capture web app, and you should
@@ -85,8 +106,11 @@ exact spelling, which is case-sensitive.
    code, instead click the **+** in the left **Files** panel → **Script**, name it
    `PartnerMirror`, and paste there — leaving the existing code untouched.
 3. Paste the code block below in full.
-4. **Edit one line:** replace `PASTE_MASTER_SPREADSHEET_ID` with the master
-   spreadsheet ID from Step 0. Leave everything else exactly as written.
+4. **Edit two lines**, using the ids I confirmed in Step 0:
+   - `MIRROR_MASTER_ID` → the **master** spreadsheet id
+   - `PARTNER_SHEETS['Eyefinity']` → the **partner** spreadsheet id
+   These must be **two different ids**. If you are about to paste the same value
+   into both, stop and ask me. Leave everything else exactly as written.
 5. Press **Ctrl+S** to save.
 6. Confirm there are no red error markers. If you see "has already been declared",
    stop and tell me which name — it would mean a collision with existing code.
@@ -173,7 +197,14 @@ const MIRROR_TAB_NAME = 'Assessments';
  * TO ADD A PARTNER: create their spreadsheet and paste its ID here.
  */
 const PARTNER_SHEETS = {
-  'Eyefinity': '1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4',
+  // ⚠️ MUST be the partner's OWN spreadsheet, never the master.
+  //
+  // This previously held 1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4, which is
+  // the MASTER's id — that was a mix-up on my part, and running it would have
+  // called tab.clear() on the master and destroyed every EyeCarePro prospect
+  // row. assertDistinctFromMaster() and assertSafeToOverwrite() below now make
+  // that outcome impossible, but fill this in carefully anyway.
+  'Eyefinity': 'PASTE_EYEFINITY_PARTNER_SHEET_ID',
 };
 
 /**
@@ -202,7 +233,66 @@ function syncPartnerSheets() {
  * Copy the rows whose `source` matches into the target spreadsheet.
  * Full replace each run: idempotent, with no dedupe state that can drift.
  */
+/**
+ * First guard: the destination must not be the master.
+ *
+ * This mirror does a full replace, so pointing a partner destination at the
+ * master would clear the master and replace it with one brand's subset. That is
+ * unrecoverable, and it very nearly happened — the partner id was mistakenly set
+ * to the master id. Cheap check, catastrophic thing to catch.
+ */
+function assertDistinctFromMaster(source, targetId) {
+  if (String(targetId).trim() === String(MIRROR_MASTER_ID).trim()) {
+    throw new Error(
+      'REFUSING TO RUN: the destination for "' + source + '" is the MASTER spreadsheet (' +
+      targetId + '). This mirror does a full replace, so that would erase the master. ' +
+      'Set PARTNER_SHEETS["' + source + '"] to the partner OWN spreadsheet id.'
+    );
+  }
+}
+
+/**
+ * Second guard: never clear a destination that holds anybody else's rows.
+ *
+ * Protects against the destination being some other populated sheet — a wrong id
+ * that happens not to equal the master. If the tab already has a `source` column
+ * with values that are not this partner, we are pointed at the wrong file.
+ */
+function assertSafeToOverwrite(tab, source, targetId) {
+  const lastRow = tab.getLastRow();
+  const lastCol = tab.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return;  // empty or headers-only: safe
+
+  const existing = tab.getRange(1, 1, lastRow, lastCol).getValues();
+  const headers = existing[0].map(function (h) { return String(h); });
+  const srcCol = headers.indexOf('source');
+  if (srcCol === -1) {
+    // Has data rows but no source column — not a sheet this mirror produced.
+    throw new Error(
+      'REFUSING TO OVERWRITE ' + targetId + ': its "' + MIRROR_TAB_NAME + '" tab has ' +
+      (lastRow - 1) + ' data row(s) but no "source" column, so it was not produced by ' +
+      'this mirror. Check that this is the correct partner spreadsheet.'
+    );
+  }
+
+  const foreign = {};
+  for (let i = 1; i < existing.length; i++) {
+    const v = String(existing[i][srcCol]).trim();
+    if (v && v.toLowerCase() !== source.toLowerCase()) foreign[v] = true;
+  }
+  const names = Object.keys(foreign);
+  if (names.length > 0) {
+    throw new Error(
+      'REFUSING TO OVERWRITE ' + targetId + ': its "' + MIRROR_TAB_NAME + '" tab contains ' +
+      'rows from other sources (' + names.join(', ') + '). Clearing it would destroy data ' +
+      'that is not "' + source + '". This is almost certainly the wrong spreadsheet id.'
+    );
+  }
+}
+
 function mirrorRowsForSource(source, targetId) {
+  assertDistinctFromMaster(source, targetId);
+
   const master = SpreadsheetApp.openById(MIRROR_MASTER_ID).getSheetByName(MIRROR_TAB_NAME);
   if (!master) throw new Error('Master tab "' + MIRROR_TAB_NAME + '" not found in ' + MIRROR_MASTER_ID);
 
@@ -227,6 +317,10 @@ function mirrorRowsForSource(source, targetId) {
   const target = SpreadsheetApp.openById(targetId);
   let tab = target.getSheetByName(MIRROR_TAB_NAME);
   if (!tab) tab = target.insertSheet(MIRROR_TAB_NAME);
+
+  // Second guard, in case the destination is some other sheet holding real data:
+  // never clear a tab that contains rows belonging to anyone but this partner.
+  assertSafeToOverwrite(tab, source, targetId);
 
   // clear() rather than deleting the sheet, so any formatting or filter views
   // the partner has set up survive the refresh.
@@ -268,16 +362,19 @@ function mirrorRowsForSource(source, targetId) {
 1. In the Apps Script editor toolbar, select `syncPartnerSheets` in the function
    dropdown and click **Run**.
 2. Open the **Execution log**. Report to me exactly what it says.
-   - Expected: `Mirrored N "Eyefinity" row(s) to 1Vdgq...`
+   - Expected: `Mirrored N "Eyefinity" row(s) to <the partner id>`
+   - `REFUSING TO RUN` or `REFUSING TO OVERWRITE` → the ids are wrong. Do **not**
+     try to work around it — report it to me verbatim. These guards exist because
+     a full replace against the wrong document would destroy data.
    - `MIRROR_MASTER_ID is not set` → Step 2 item 4 was missed. Paste the master ID in.
    - `refusing to mirror` → Step 1 did not take; the `source` column is missing or
      misspelled in row 1 of the master.
    - `Master tab "Assessments" not found` → the master ID is wrong, or its tab has a
      different name. Tell me the actual tab name rather than guessing.
    - Any other error: paste it to me verbatim.
-3. Open the partner spreadsheet:
-   https://docs.google.com/spreadsheets/d/1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4
-   Confirm it now has an **Assessments** tab with a bold header row.
+3. Open the **partner** spreadsheet — the id you put in `PARTNER_SHEETS`, not the
+   master. Confirm it now has an **Assessments** tab with a bold header row, and
+   confirm the master is unchanged.
 4. **Critical check:** scan the `source` column of that partner sheet and confirm
    **every** value reads `Eyefinity`. If you see even one `EyeCarePro` row, stop
    immediately and tell me — that is a data leak and I need to fix the code.

@@ -37,12 +37,13 @@ const SHEET_NAME = 'Assessments';  // Change this if your sheet tab has a differ
  */
 const BRAND_SHEETS = {
   'EyeCarePro': '',  // bound spreadsheet — do not change
-  // Eyefinity Practice Growth Assessment sheet (supplied by Lenny 2026-07-29):
-  // docs.google.com/spreadsheets/d/1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4
-  // Takes effect only if this script is redeployed as a NEW VERSION of the
-  // existing (grandfathered) deployment. See BRANDS.eyefinity in index.html for
-  // why a fresh deployment is not an option.
-  'Eyefinity': '1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4',
+  // ⚠️ UNRESOLVED — do not fill in without checking the document title first.
+  // This briefly held 1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4, which turned
+  // out to be the MASTER spreadsheet, not a partner destination. Here that would
+  // only have written partner rows to the sheet they already land in (harmless),
+  // but the same wrong id in the mirror would have cleared the master.
+  // Confirm which document each id refers to by opening it, not by assuming.
+  'Eyefinity': 'PASTE_EYEFINITY_PARTNER_SHEET_ID',
 };
 
 /**

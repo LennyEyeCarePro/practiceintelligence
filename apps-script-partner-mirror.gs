@@ -79,7 +79,14 @@ const MIRROR_TAB_NAME = 'Assessments';
  * TO ADD A PARTNER: create their spreadsheet and paste its ID here.
  */
 const PARTNER_SHEETS = {
-  'Eyefinity': '1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4',
+  // ⚠️ MUST be the partner's OWN spreadsheet, never the master.
+  //
+  // This previously held 1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4, which is
+  // the MASTER's id — that was a mix-up on my part, and running it would have
+  // called tab.clear() on the master and destroyed every EyeCarePro prospect
+  // row. assertDistinctFromMaster() and assertSafeToOverwrite() below now make
+  // that outcome impossible, but fill this in carefully anyway.
+  'Eyefinity': 'PASTE_EYEFINITY_PARTNER_SHEET_ID',
 };
 
 /**
@@ -108,7 +115,66 @@ function syncPartnerSheets() {
  * Copy the rows whose `source` matches into the target spreadsheet.
  * Full replace each run: idempotent, with no dedupe state that can drift.
  */
+/**
+ * First guard: the destination must not be the master.
+ *
+ * This mirror does a full replace, so pointing a partner destination at the
+ * master would clear the master and replace it with one brand's subset. That is
+ * unrecoverable, and it very nearly happened — the partner id was mistakenly set
+ * to the master id. Cheap check, catastrophic thing to catch.
+ */
+function assertDistinctFromMaster(source, targetId) {
+  if (String(targetId).trim() === String(MIRROR_MASTER_ID).trim()) {
+    throw new Error(
+      'REFUSING TO RUN: the destination for "' + source + '" is the MASTER spreadsheet (' +
+      targetId + '). This mirror does a full replace, so that would erase the master. ' +
+      'Set PARTNER_SHEETS["' + source + '"] to the partner OWN spreadsheet id.'
+    );
+  }
+}
+
+/**
+ * Second guard: never clear a destination that holds anybody else's rows.
+ *
+ * Protects against the destination being some other populated sheet — a wrong id
+ * that happens not to equal the master. If the tab already has a `source` column
+ * with values that are not this partner, we are pointed at the wrong file.
+ */
+function assertSafeToOverwrite(tab, source, targetId) {
+  const lastRow = tab.getLastRow();
+  const lastCol = tab.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return;  // empty or headers-only: safe
+
+  const existing = tab.getRange(1, 1, lastRow, lastCol).getValues();
+  const headers = existing[0].map(function (h) { return String(h); });
+  const srcCol = headers.indexOf('source');
+  if (srcCol === -1) {
+    // Has data rows but no source column — not a sheet this mirror produced.
+    throw new Error(
+      'REFUSING TO OVERWRITE ' + targetId + ': its "' + MIRROR_TAB_NAME + '" tab has ' +
+      (lastRow - 1) + ' data row(s) but no "source" column, so it was not produced by ' +
+      'this mirror. Check that this is the correct partner spreadsheet.'
+    );
+  }
+
+  const foreign = {};
+  for (let i = 1; i < existing.length; i++) {
+    const v = String(existing[i][srcCol]).trim();
+    if (v && v.toLowerCase() !== source.toLowerCase()) foreign[v] = true;
+  }
+  const names = Object.keys(foreign);
+  if (names.length > 0) {
+    throw new Error(
+      'REFUSING TO OVERWRITE ' + targetId + ': its "' + MIRROR_TAB_NAME + '" tab contains ' +
+      'rows from other sources (' + names.join(', ') + '). Clearing it would destroy data ' +
+      'that is not "' + source + '". This is almost certainly the wrong spreadsheet id.'
+    );
+  }
+}
+
 function mirrorRowsForSource(source, targetId) {
+  assertDistinctFromMaster(source, targetId);
+
   const master = SpreadsheetApp.openById(MIRROR_MASTER_ID).getSheetByName(MIRROR_TAB_NAME);
   if (!master) throw new Error('Master tab "' + MIRROR_TAB_NAME + '" not found in ' + MIRROR_MASTER_ID);
 
@@ -133,6 +199,10 @@ function mirrorRowsForSource(source, targetId) {
   const target = SpreadsheetApp.openById(targetId);
   let tab = target.getSheetByName(MIRROR_TAB_NAME);
   if (!tab) tab = target.insertSheet(MIRROR_TAB_NAME);
+
+  // Second guard, in case the destination is some other sheet holding real data:
+  // never clear a tab that contains rows belonging to anyone but this partner.
+  assertSafeToOverwrite(tab, source, targetId);
 
   // clear() rather than deleting the sheet, so any formatting or filter views
   // the partner has set up survive the refresh.
