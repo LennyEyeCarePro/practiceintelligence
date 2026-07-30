@@ -44,13 +44,17 @@ This involves two separate documents. Confirming which is which is the single
 most important thing in this task, because the mirror does a **full replace** on
 the destination.
 
-1. **The MASTER** — the one lead capture writes into. Its `Assessments` tab has
-   roughly 110+ columns of existing data.
-2. **The PARTNER destination** — a different document, for Eyefinity only.
+1. **The MASTER** — the one lead capture writes into.
+   Title: **"Untitled spreadsheet"** (yes, genuinely unnamed — identify it by its
+   content: an `Assessments` tab with ~112 columns of real prospect data
+   including an `isEyeCarePro` column).
+   Id: `1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4`
+2. **The PARTNER destination** — a different, essentially empty document.
+   Title: **"Eyefinity SEO Leads"**
+   Id: `1DA7TvLjT-xlfJqufYOXqzv_YyT2uNjOo6KRsTymTC7M`
 
-For **each** one: open it, and report to me **both its title and its id** from the
-URL (`docs.google.com/spreadsheets/d/<ID>/edit`). Wait for me to confirm the
-pairing before you paste either id into the code.
+Open **each** one and confirm its title matches the id above. If either does not
+match, **stop and tell me** — do not proceed and do not try to correct it.
 
 **If the two ids are ever the same, stop.** The code will refuse to run in that
 case, but do not rely on that — a full replace against the master would destroy
@@ -106,11 +110,12 @@ exact spelling, which is case-sensitive.
    code, instead click the **+** in the left **Files** panel → **Script**, name it
    `PartnerMirror`, and paste there — leaving the existing code untouched.
 3. Paste the code block below in full.
-4. **Edit two lines**, using the ids I confirmed in Step 0:
-   - `MIRROR_MASTER_ID` → the **master** spreadsheet id
-   - `PARTNER_SHEETS['Eyefinity']` → the **partner** spreadsheet id
-   These must be **two different ids**. If you are about to paste the same value
-   into both, stop and ask me. Leave everything else exactly as written.
+4. **Do not edit the code.** Both ids are already filled in. Instead, VERIFY them
+   against what you confirmed in Step 0:
+   - `MIRROR_MASTER_ID` should be the **master** ("Untitled spreadsheet")
+   - `PARTNER_SHEETS['Eyefinity']` should be **"Eyefinity SEO Leads"**
+   If either does not match what you found, **stop and tell me** — do not correct
+   it yourself.
 5. Press **Ctrl+S** to save.
 6. Confirm there are no red error markers. If you see "has already been declared",
    stop and tell me which name — it would mean a collision with existing code.
@@ -180,10 +185,15 @@ exact spelling, which is case-sensitive.
  * Opened by ID on purpose. getActiveSpreadsheet() only works in a script bound
  * to that spreadsheet, and this file is meant to run from anywhere.
  *
- * ⚠️ REQUIRED. Take it from the master spreadsheet URL:
- *   docs.google.com/spreadsheets/d/<THIS_PART>/edit
+ * Identified by CONTENT, not by name: this document is titled "Untitled
+ * spreadsheet". Its Assessments tab holds ~112 columns of real prospect data
+ * including the isEyeCarePro column, which only lead capture produces. Verified
+ * 2026-07-30 by opening it and reading the title.
+ *
+ * Renaming this document is safe and recommended — the id is what matters here,
+ * and an unnamed master is easy to lose or delete by accident.
  */
-const MIRROR_MASTER_ID = 'PASTE_MASTER_SPREADSHEET_ID';
+const MIRROR_MASTER_ID = '1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4';
 
 /** Tab name in both the master and each partner spreadsheet. */
 const MIRROR_TAB_NAME = 'Assessments';
@@ -197,14 +207,16 @@ const MIRROR_TAB_NAME = 'Assessments';
  * TO ADD A PARTNER: create their spreadsheet and paste its ID here.
  */
 const PARTNER_SHEETS = {
-  // ⚠️ MUST be the partner's OWN spreadsheet, never the master.
+  // "Eyefinity SEO Leads" — verified 2026-07-30 by opening it: a separate
+  // document with only a Sheet1 tab and no lead data.
   //
-  // This previously held 1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4, which is
-  // the MASTER's id — that was a mix-up on my part, and running it would have
-  // called tab.clear() on the master and destroyed every EyeCarePro prospect
-  // row. assertDistinctFromMaster() and assertSafeToOverwrite() below now make
-  // that outcome impossible, but fill this in carefully anyway.
-  'Eyefinity': 'PASTE_EYEFINITY_PARTNER_SHEET_ID',
+  // ⚠️ MUST be the partner's OWN spreadsheet, never the master. This briefly
+  // held the MASTER's id (1Vdgq...) by mistake, which would have called
+  // tab.clear() on the master and destroyed every EyeCarePro prospect row.
+  // assertDistinctFromMaster() and assertSafeToOverwrite() now make that
+  // outcome impossible, but always confirm an id by opening the document and
+  // reading its title rather than assuming.
+  'Eyefinity': '1DA7TvLjT-xlfJqufYOXqzv_YyT2uNjOo6KRsTymTC7M',
 };
 
 /**

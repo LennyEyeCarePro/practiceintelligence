@@ -37,13 +37,15 @@ const SHEET_NAME = 'Assessments';  // Change this if your sheet tab has a differ
  */
 const BRAND_SHEETS = {
   'EyeCarePro': '',  // bound spreadsheet — do not change
-  // ⚠️ UNRESOLVED — do not fill in without checking the document title first.
-  // This briefly held 1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4, which turned
-  // out to be the MASTER spreadsheet, not a partner destination. Here that would
-  // only have written partner rows to the sheet they already land in (harmless),
-  // but the same wrong id in the mirror would have cleared the master.
-  // Confirm which document each id refers to by opening it, not by assuming.
-  'Eyefinity': 'PASTE_EYEFINITY_PARTNER_SHEET_ID',
+  // "Eyefinity SEO Leads", verified 2026-07-30 by opening the document.
+  // NOT 1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4 — that is the MASTER, and it
+  // was briefly set here by mistake. Always confirm an id by opening the document
+  // and reading its title.
+  //
+  // Dormant: this routing only applies if the web app is redeployed as a new
+  // version, which we are deliberately not doing. The live separation is done by
+  // the trigger in apps-script-partner-mirror.gs instead.
+  'Eyefinity': '1DA7TvLjT-xlfJqufYOXqzv_YyT2uNjOo6KRsTymTC7M',
 };
 
 /**

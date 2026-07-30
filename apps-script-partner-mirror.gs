@@ -62,10 +62,15 @@
  * Opened by ID on purpose. getActiveSpreadsheet() only works in a script bound
  * to that spreadsheet, and this file is meant to run from anywhere.
  *
- * ⚠️ REQUIRED. Take it from the master spreadsheet URL:
- *   docs.google.com/spreadsheets/d/<THIS_PART>/edit
+ * Identified by CONTENT, not by name: this document is titled "Untitled
+ * spreadsheet". Its Assessments tab holds ~112 columns of real prospect data
+ * including the isEyeCarePro column, which only lead capture produces. Verified
+ * 2026-07-30 by opening it and reading the title.
+ *
+ * Renaming this document is safe and recommended — the id is what matters here,
+ * and an unnamed master is easy to lose or delete by accident.
  */
-const MIRROR_MASTER_ID = 'PASTE_MASTER_SPREADSHEET_ID';
+const MIRROR_MASTER_ID = '1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4';
 
 /** Tab name in both the master and each partner spreadsheet. */
 const MIRROR_TAB_NAME = 'Assessments';
@@ -79,14 +84,16 @@ const MIRROR_TAB_NAME = 'Assessments';
  * TO ADD A PARTNER: create their spreadsheet and paste its ID here.
  */
 const PARTNER_SHEETS = {
-  // ⚠️ MUST be the partner's OWN spreadsheet, never the master.
+  // "Eyefinity SEO Leads" — verified 2026-07-30 by opening it: a separate
+  // document with only a Sheet1 tab and no lead data.
   //
-  // This previously held 1VdgqiSirZNxdtFvm1cCpWM5iy3iAPApxyRWA7gT19B4, which is
-  // the MASTER's id — that was a mix-up on my part, and running it would have
-  // called tab.clear() on the master and destroyed every EyeCarePro prospect
-  // row. assertDistinctFromMaster() and assertSafeToOverwrite() below now make
-  // that outcome impossible, but fill this in carefully anyway.
-  'Eyefinity': 'PASTE_EYEFINITY_PARTNER_SHEET_ID',
+  // ⚠️ MUST be the partner's OWN spreadsheet, never the master. This briefly
+  // held the MASTER's id (1Vdgq...) by mistake, which would have called
+  // tab.clear() on the master and destroyed every EyeCarePro prospect row.
+  // assertDistinctFromMaster() and assertSafeToOverwrite() now make that
+  // outcome impossible, but always confirm an id by opening the document and
+  // reading its title rather than assuming.
+  'Eyefinity': '1DA7TvLjT-xlfJqufYOXqzv_YyT2uNjOo6KRsTymTC7M',
 };
 
 /**
