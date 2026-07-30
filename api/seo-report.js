@@ -34,10 +34,21 @@ export default async function handler(req, res) {
 
     const clientContext = buildClientContext(userCorrections);
 
+    // ── Provider selection ──────────────────────────────────────────────────
+    // OpenAI is preferred when configured. The Gemini key was retired after its
+    // free-tier quota ran out and every request started returning HTTP 429 —
+    // which silently degraded every report to the rule-based fallback.
+    //
+    // OPEN_AI_KEY is the name used in this project's Vercel env; OPENAI_API_KEY is
+    // accepted too since that is the conventional name and an easy slip.
+    const OPENAI_KEY = process.env.OPEN_AI_KEY || process.env.OPENAI_API_KEY;
     const GEMINI_KEY = process.env.GEMINI_API_KEY;
 
+    // Overridable without a code change, so a model swap is a Vercel env edit.
+    const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+
     // Every fallback path below passes userCorrections through. It used to be
-    // dropped, so any Gemini hiccup produced a report with zero client input —
+    // dropped, so any AI hiccup produced a report with zero client input —
     // pure boilerplate, and nothing in the UI said so.
     const ruleBased = (reason) => generateRuleBasedReport(
         url,
@@ -46,9 +57,69 @@ export default async function handler(req, res) {
         reason,
     );
 
-    // If no Gemini key, return a rule-based interpretation
-    if (!GEMINI_KEY) {
-        return res.json(ruleBased('GEMINI_API_KEY not configured'));
+    if (!OPENAI_KEY && !GEMINI_KEY) {
+        return res.json(ruleBased('No AI provider configured (set OPEN_AI_KEY)'));
+    }
+
+    /**
+     * Ask OpenAI for the report JSON. Returns the raw text of the response.
+     *
+     * The body is deliberately minimal. Token-limit and sampling parameter names
+     * differ across model families (max_tokens vs max_completion_tokens, and some
+     * models reject a custom temperature), and the response here is ~600 tokens
+     * of JSON, so there is nothing to gain by constraining it and a real chance of
+     * a 400 that would push every report back to the rule-based path.
+     */
+    async function callOpenAI(prompt) {
+        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + OPENAI_KEY,
+            },
+            body: JSON.stringify({
+                model: OPENAI_MODEL,
+                messages: [
+                    { role: 'system', content: 'You are an SEO analyst for eye care practices. Reply with JSON only.' },
+                    { role: 'user', content: prompt },
+                ],
+                response_format: { type: 'json_object' },
+            }),
+            signal: AbortSignal.timeout(30000),
+        });
+
+        if (!resp.ok) {
+            const errText = await resp.text();
+            throw new Error(`OpenAI HTTP ${resp.status} (model ${OPENAI_MODEL}): ${errText.slice(0, 300)}`);
+        }
+        const data = await resp.json();
+        return data.choices?.[0]?.message?.content || '';
+    }
+
+    /** Ask Gemini for the report JSON. Retained as a fallback provider. */
+    async function callGemini(prompt) {
+        const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${GEMINI_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        temperature: 0.3,
+                        maxOutputTokens: 1024,
+                        responseMimeType: 'application/json',
+                    },
+                }),
+                signal: AbortSignal.timeout(20000),
+            }
+        );
+        if (!resp.ok) {
+            const errText = await resp.text();
+            throw new Error(`Gemini HTTP ${resp.status}: ${errText.slice(0, 300)}`);
+        }
+        const data = await resp.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     }
 
     try {
@@ -135,37 +206,52 @@ Scoring rules:
 - Include a finding that honestly states our crawler was blocked if applicable.
 - Page Speed 25%, On-Page SEO 20%, Google Business Profile 25%, Domain Authority 15%, Technical 15%.`;
 
-        const geminiResp = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${GEMINI_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: {
-                        temperature: 0.3,
-                        maxOutputTokens: 1024,
-                        responseMimeType: 'application/json',
-                    },
-                }),
-                signal: AbortSignal.timeout(20000),
-            }
-        );
+        // Try OpenAI first, then Gemini. If the primary provider fails we still
+        // attempt the other before giving up on an AI narrative entirely, since
+        // the rule-based report is materially less useful.
+        const providers = [];
+        if (OPENAI_KEY) providers.push({ name: 'openai', call: callOpenAI });
+        if (GEMINI_KEY) providers.push({ name: 'gemini', call: callGemini });
 
-        if (!geminiResp.ok) {
-            const errText = await geminiResp.text();
-            console.error('Gemini API error:', errText);
-            return res.json(ruleBased(`Gemini HTTP ${geminiResp.status}: ${errText.slice(0, 200)}`));
+        let aiText = '';
+        let usedProvider = null;
+        const providerErrors = [];
+
+        for (const p of providers) {
+            try {
+                aiText = await p.call(prompt);
+                if (aiText) { usedProvider = p.name; break; }
+                providerErrors.push(`${p.name}: empty response`);
+            } catch (err) {
+                console.error(`${p.name} error:`, err.message);
+                providerErrors.push(err.message);
+            }
         }
 
-        const geminiData = await geminiResp.json();
-        const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (!usedProvider) {
+            return res.json(ruleBased(providerErrors.join(' | ') || 'All AI providers failed'));
+        }
 
-        // Parse JSON from Gemini's response
         const jsonMatch = aiText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             const aiReport = JSON.parse(jsonMatch[0]);
+
+            // Derive the grade from the score rather than trusting the model's own.
+            // Observed: it returned overallScore 86 with grade "B", while our scale
+            // puts 86 at "A" — an internal contradiction a prospect would notice.
+            // The numeric score is the source of truth.
+            if (typeof aiReport.overallScore === 'number' && Number.isFinite(aiReport.overallScore)) {
+                const derived = gradeForScore(aiReport.overallScore);
+                if (aiReport.grade !== derived) {
+                    console.warn(`Overriding model grade "${aiReport.grade}" with "${derived}" for score ${aiReport.overallScore}`);
+                }
+                aiReport.grade = derived;
+            }
+
             aiReport.source = 'ai';
+            // Which provider actually answered — so a swap can be confirmed from
+            // the response rather than inferred.
+            aiReport.aiProvider = usedProvider;
             // Report whether the client's own words were actually in the prompt,
             // so "did this use their input?" is answerable from the response.
             aiReport.usedClientInput = clientContext.length > 0;
@@ -173,12 +259,25 @@ Scoring rules:
         }
 
         // Fallback to rule-based if AI response can't be parsed
-        return res.json(ruleBased('Gemini response contained no parseable JSON'));
+        return res.json(ruleBased(`${usedProvider} response contained no parseable JSON`));
 
     } catch (err) {
         console.error('SEO report error:', err);
         return res.json(ruleBased(err.message || 'Gemini request failed'));
     }
+}
+
+/**
+ * The single grading scale, shared by the AI and rule-based paths so a given
+ * score always maps to the same letter regardless of which produced it.
+ */
+function gradeForScore(score) {
+    if (typeof score !== 'number' || !Number.isFinite(score)) return null;
+    if (score >= 85) return 'A';
+    if (score >= 70) return 'B';
+    if (score >= 55) return 'C';
+    if (score >= 40) return 'D';
+    return 'F';
 }
 
 /**
@@ -281,13 +380,7 @@ function generateRuleBasedReport(url, data, userCorrections, fallbackReason) {
         ? Math.round(pillars.reduce((s, p) => s + p.value * p.weight, 0) / totalWeight)
         : null;
 
-    let grade;
-    if (overallScore === null) grade = null;
-    else if (overallScore >= 85) grade = 'A';
-    else if (overallScore >= 70) grade = 'B';
-    else if (overallScore >= 55) grade = 'C';
-    else if (overallScore >= 40) grade = 'D';
-    else grade = 'F';
+    const grade = gradeForScore(overallScore);
 
     // ── Client-stated services ──────────────────────────────────────────────
     // If the client told us they offer something, never call it "missing" — the
