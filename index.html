@@ -7,6 +7,11 @@
 <title>Practice Growth Assessment</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!-- Core package recommendation engine. Kept out of this file on purpose: it is
+     brand-agnostic logic with its own ruleset per brand, and it is the one part
+     of this app with a real test suite. Absent (e.g. blocked request) the
+     wizard still works — buildPackageRecommendation() degrades to null. -->
+<script src="/recommend.js"></script>
 <style>
 /* ═══════════════════════════════════════════════════════════
    JEDI v2 — Practice Growth Assessment
@@ -2077,6 +2082,37 @@ let lighthouseError = null;    // set when the performance audit fails or is par
 // submitSeoToSheets() / flushSeoSheetQueue().
 let initialSheetRowSent = false;
 let pendingSeoSheetResults = null;
+// Output of recommend.js — the core package match for brands that have a ruleset.
+// Null for brands without one (they keep their existing recommendedTier).
+let packageRecommendation = null;
+
+/**
+ * Run the package recommendation engine over everything collected so far.
+ *
+ * Returns null rather than throwing if recommend.js failed to load or the active
+ * brand has no ruleset — this is a sales-side signal, and it must never be able
+ * to break the prospect's assessment.
+ */
+function buildPackageRecommendation() {
+    try {
+        if (!global_PracticeRecommender()) return null;
+        return global_PracticeRecommender().recommendPackage({
+            brandId: BRAND.id,
+            dossier: dossier,
+            userAnswers: userAnswers,
+            places: seoReportData && seoReportData.places,
+            siteAudit: seoReportData && seoReportData.siteAudit,
+        });
+    } catch (err) {
+        console.warn('Package recommendation failed:', err);
+        return null;
+    }
+}
+
+/** Indirection so a missing recommend.js is a null, not a ReferenceError. */
+function global_PracticeRecommender() {
+    return (typeof window !== 'undefined' && window.PracticeRecommender) || null;
+}
 let seoReportData = null; // Full SEO intelligence report
 let userAnswers = {};
 let confirmedSteps = { step1: false, step2: false, step3: false };
@@ -3951,6 +3987,11 @@ function showResults() {
     showScreen(5);
     // gap is passed through so the Sheet captures the revenue gap and narrative
     // fields even on brands that don't write to HubSpot.
+    // Core package recommendation. Computed here because this is the first point
+    // where all four input tiers exist: client answers, the dossier, and the
+    // Places/site-audit results from the SEO phase.
+    packageRecommendation = buildPackageRecommendation();
+
     submitToSheets(gap);
     // Partner brands capture to Sheets only — their leads are not ours to file.
     if (BRAND.crmSubmit) submitToHubSpot(gap);
@@ -4786,6 +4827,14 @@ function submitToSheets(gap) {
         reportUsedClientInput: seoReportData?.report?.usedClientInput ? 'YES' : 'No',
         reportFallbackReason: seoReportData?.report?.fallbackReason || '',
         lighthouseError: lighthouseError || '',
+        // Core package match (recommend.js). Blank for brands with no ruleset.
+        recommendedPackage: packageRecommendation?.recommendation?.recommended_core_package || '',
+        packagePrimaryTrigger: packageRecommendation?.recommendation?.primary_trigger_code || '',
+        packageSecondaryTrigger: packageRecommendation?.recommendation?.secondary_trigger_code || '',
+        packageConfidence: packageRecommendation?.recommendation?.confidence_score ?? '',
+        packageAllTriggers: (packageRecommendation?.all_trigger_codes || []).join('; '),
+        packageRationale: (packageRecommendation?.rationale_summary || []).join(' | '),
+        packageDeficits: (packageRecommendation?.gap_deficits_identified || []).join(' | '),
     };
 
     try {

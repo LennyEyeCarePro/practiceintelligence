@@ -100,6 +100,8 @@ const INITIAL_HEADERS = [
   // shifts quote-pairing for every entry after it, which silently hid these
   // four columns from tooling that parses this file.
   'reportSource', 'reportUsedClientInput', 'reportFallbackReason', 'lighthouseError',
+  // Core package recommendation (recommend.js). Blank for brands without a ruleset.
+  'recommendedPackage', 'packagePrimaryTrigger', 'packageSecondaryTrigger', 'packageConfidence', 'packageAllTriggers', 'packageRationale', 'packageDeficits',
 ];
 
 // ─── Column headers for the SEO update (appended to same row) ──

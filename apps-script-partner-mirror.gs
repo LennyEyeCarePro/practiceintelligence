@@ -108,6 +108,7 @@ const MIRROR_REQUIRED_HEADERS = [
   'revenueGapMonthly', 'strategicFocus', 'strategicAdvice',
   'malignancySummary', 'technicalRootCause', 'emotionalRootCause', 'targetStatement',
   'reportSource', 'reportUsedClientInput', 'reportFallbackReason', 'lighthouseError',
+  'recommendedPackage', 'packagePrimaryTrigger', 'packageSecondaryTrigger', 'packageConfidence', 'packageAllTriggers', 'packageRationale', 'packageDeficits',
 ];
 
 /**
