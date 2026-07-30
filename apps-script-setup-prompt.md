@@ -80,27 +80,22 @@ lead-capture app is a separate project. Do not go and find it, do not edit it,
 and do not worry that it is missing here — this mirror is fully self-contained and
 does not depend on it.
 
-## Step 1 — add the missing column headers to the master sheet
+## Step 1 — the column headers are added BY CODE, not by typing
 
-The script writes a row by matching the payload's field names against the header
-names in **row 1**. Several fields have no column yet, so their data is being
-discarded — including `source`, which the mirror depends on.
+The master sheet needs 17 extra columns in row 1. **Do not type or paste
+them into cells.** A function in the code below does it, and it runs in Step 4.
 
-In the master spreadsheet, on the tab named **Assessments**:
+Why it is worth being firm about this: entering a tab-separated line as keystrokes
+puts literal tab characters inside a **single** cell rather than advancing across
+cells, and typing 17 names by hand risks a typo that silently discards that
+field forever with no error anywhere. `addMissingHeadersToMaster()` writes them
+programmatically, so the spelling is exact by construction. It also detects and
+clears any row-1 cell containing tab characters, which repairs a botched paste.
 
-1. Find the **first empty cell in row 1** (scroll right past the last header).
-2. Paste this single tab-separated line into that cell. Google Sheets will spread
-   it across consecutive columns:
+If you already pasted headers into the master, leave them exactly as they are —
+the function handles both cases and will not duplicate anything.
 
-```
-source	capacityOptometry	capacitySurgical	capacityOptical	ehrPmsDetected	isEyefinityPms	revenueGapMonthly	strategicFocus	strategicAdvice	malignancySummary	technicalRootCause	emotionalRootCause	targetStatement	reportSource	reportUsedClientInput	reportFallbackReason	lighthouseError
-```
-
-3. Confirm to me that a column named exactly `source` now exists in row 1, and
-   tell me which column letter it landed in.
-
-Do not reorder or rename any existing headers. Order does not matter — only the
-exact spelling, which is case-sensitive.
+Nothing to do in this step. Continue to Step 2.
 
 ## Step 2 — create the script file
 
@@ -218,6 +213,82 @@ const PARTNER_SHEETS = {
   // reading its title rather than assuming.
   'Eyefinity': '1DA7TvLjT-xlfJqufYOXqzv_YyT2uNjOo6KRsTymTC7M',
 };
+
+/**
+ * Column names the lead-capture payload sends that the master sheet may not have
+ * a column for yet. handleInitialSubmission() writes a row by matching payload
+ * field names against the header names in row 1, so a field with no column is
+ * silently discarded — including `source`, which the mirror depends on.
+ */
+const MIRROR_REQUIRED_HEADERS = [
+  'source',
+  'capacityOptometry', 'capacitySurgical', 'capacityOptical',
+  'ehrPmsDetected', 'isEyefinityPms',
+  'revenueGapMonthly', 'strategicFocus', 'strategicAdvice',
+  'malignancySummary', 'technicalRootCause', 'emotionalRootCause', 'targetStatement',
+  'reportSource', 'reportUsedClientInput', 'reportFallbackReason', 'lighthouseError',
+];
+
+/**
+ * ONE-OFF SETUP — run this once, manually, before the mirror will work.
+ *
+ * Adds any missing names from MIRROR_REQUIRED_HEADERS to row 1 of the master.
+ *
+ * WHY THIS EXISTS RATHER THAN TYPING THE HEADERS BY HAND
+ * Pasting a tab-separated line into a cell is unreliable: entering it as
+ * keystrokes puts literal tab characters inside ONE cell instead of advancing
+ * across cells, which produced a single 282-character cell and no `source`
+ * column at all. Typing 17 names by hand is no better — one typo and that field
+ * is silently dropped forever, with no error anywhere. Writing them
+ * programmatically makes the spelling exact by construction.
+ *
+ * Safe to run repeatedly: it only appends names that are genuinely absent, and
+ * only ever writes to row 1.
+ */
+function addMissingHeadersToMaster() {
+  const sheet = SpreadsheetApp.openById(MIRROR_MASTER_ID).getSheetByName(MIRROR_TAB_NAME);
+  if (!sheet) throw new Error('Master tab "' + MIRROR_TAB_NAME + '" not found in ' + MIRROR_MASTER_ID);
+
+  const lastCol = Math.max(sheet.getLastColumn(), 1);
+  const row1 = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+
+  // A header containing a tab is the botched single-cell paste described above.
+  // A real header name never contains one, so clearing it is safe.
+  let repaired = 0;
+  for (let i = 0; i < row1.length; i++) {
+    if (String(row1[i]).indexOf('\t') !== -1) {
+      console.warn('Clearing malformed header in column ' + (i + 1) +
+        ' (contained tab characters): ' + String(row1[i]).slice(0, 60) + '...');
+      sheet.getRange(1, i + 1).clearContent();
+      row1[i] = '';
+      repaired++;
+    }
+  }
+
+  const existing = {};
+  row1.forEach(function (h) {
+    const name = String(h).trim();
+    if (name) existing[name] = true;
+  });
+
+  const missing = MIRROR_REQUIRED_HEADERS.filter(function (h) { return !existing[h]; });
+  if (missing.length === 0) {
+    console.log('Nothing to do — all ' + MIRROR_REQUIRED_HEADERS.length + ' required headers already present'
+      + (repaired ? ' (repaired ' + repaired + ' malformed cell(s))' : ''));
+    return;
+  }
+
+  // First truly empty column, so nothing existing is overwritten.
+  let startCol = row1.length;
+  while (startCol > 0 && String(row1[startCol - 1]).trim() === '') startCol--;
+  startCol += 1;
+
+  sheet.getRange(1, startCol, 1, missing.length).setValues([missing]);
+  sheet.getRange(1, startCol, 1, missing.length).setFontWeight('bold');
+
+  console.log('Added ' + missing.length + ' header(s) starting at column ' + startCol + ': ' + missing.join(', ')
+    + (repaired ? ' | repaired ' + repaired + ' malformed cell(s)' : ''));
+}
 
 /**
  * Entry point for the time-driven trigger. Mirrors every configured partner.
@@ -369,18 +440,33 @@ function mirrorRowsForSource(source, targetId) {
    warning, choose **Advanced → Go to (project name)**, since this is our own
    script.
 
-## Step 4 — test it now, do not wait 15 minutes
+## Step 4 — run the header setup, then the mirror
 
-1. In the Apps Script editor toolbar, select `syncPartnerSheets` in the function
-   dropdown and click **Run**.
+### 4a. Add the headers (run once)
+
+1. In the toolbar function dropdown, select **`addMissingHeadersToMaster`** and
+   click **Run**.
+2. Report the Execution log line. Expect one of:
+   - `Added N header(s) starting at column X: source, capacityOptometry, ...`
+   - `Nothing to do — all 17 required headers already present`
+   - `Clearing malformed header in column X (contained tab characters)` — that is
+     the repair working; a previous paste had crammed everything into one cell.
+3. Open the master's `Assessments` tab and confirm row 1 now contains a cell whose
+   value is **exactly** `source` — not `source` followed by other text. Tell me
+   which column letter it is in.
+
+### 4b. Run the mirror
+
+1. Select `syncPartnerSheets` in the function dropdown and click **Run**.
 2. Open the **Execution log**. Report to me exactly what it says.
    - Expected: `Mirrored N "Eyefinity" row(s) to <the partner id>`
    - `REFUSING TO RUN` or `REFUSING TO OVERWRITE` → the ids are wrong. Do **not**
      try to work around it — report it to me verbatim. These guards exist because
      a full replace against the wrong document would destroy data.
    - `MIRROR_MASTER_ID is not set` → Step 2 item 4 was missed. Paste the master ID in.
-   - `refusing to mirror` → Step 1 did not take; the `source` column is missing or
-     misspelled in row 1 of the master.
+   - `refusing to mirror` → there is still no cell in row 1 whose value is exactly
+     `source`. Re-run `addMissingHeadersToMaster` and check step 4a item 3. Do not
+     hand-edit cells to get around this.
    - `Master tab "Assessments" not found` → the master ID is wrong, or its tab has a
      different name. Tell me the actual tab name rather than guessing.
    - Any other error: paste it to me verbatim.

@@ -97,6 +97,82 @@ const PARTNER_SHEETS = {
 };
 
 /**
+ * Column names the lead-capture payload sends that the master sheet may not have
+ * a column for yet. handleInitialSubmission() writes a row by matching payload
+ * field names against the header names in row 1, so a field with no column is
+ * silently discarded — including `source`, which the mirror depends on.
+ */
+const MIRROR_REQUIRED_HEADERS = [
+  'source',
+  'capacityOptometry', 'capacitySurgical', 'capacityOptical',
+  'ehrPmsDetected', 'isEyefinityPms',
+  'revenueGapMonthly', 'strategicFocus', 'strategicAdvice',
+  'malignancySummary', 'technicalRootCause', 'emotionalRootCause', 'targetStatement',
+  'reportSource', 'reportUsedClientInput', 'reportFallbackReason', 'lighthouseError',
+];
+
+/**
+ * ONE-OFF SETUP — run this once, manually, before the mirror will work.
+ *
+ * Adds any missing names from MIRROR_REQUIRED_HEADERS to row 1 of the master.
+ *
+ * WHY THIS EXISTS RATHER THAN TYPING THE HEADERS BY HAND
+ * Pasting a tab-separated line into a cell is unreliable: entering it as
+ * keystrokes puts literal tab characters inside ONE cell instead of advancing
+ * across cells, which produced a single 282-character cell and no `source`
+ * column at all. Typing 17 names by hand is no better — one typo and that field
+ * is silently dropped forever, with no error anywhere. Writing them
+ * programmatically makes the spelling exact by construction.
+ *
+ * Safe to run repeatedly: it only appends names that are genuinely absent, and
+ * only ever writes to row 1.
+ */
+function addMissingHeadersToMaster() {
+  const sheet = SpreadsheetApp.openById(MIRROR_MASTER_ID).getSheetByName(MIRROR_TAB_NAME);
+  if (!sheet) throw new Error('Master tab "' + MIRROR_TAB_NAME + '" not found in ' + MIRROR_MASTER_ID);
+
+  const lastCol = Math.max(sheet.getLastColumn(), 1);
+  const row1 = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+
+  // A header containing a tab is the botched single-cell paste described above.
+  // A real header name never contains one, so clearing it is safe.
+  let repaired = 0;
+  for (let i = 0; i < row1.length; i++) {
+    if (String(row1[i]).indexOf('\t') !== -1) {
+      console.warn('Clearing malformed header in column ' + (i + 1) +
+        ' (contained tab characters): ' + String(row1[i]).slice(0, 60) + '...');
+      sheet.getRange(1, i + 1).clearContent();
+      row1[i] = '';
+      repaired++;
+    }
+  }
+
+  const existing = {};
+  row1.forEach(function (h) {
+    const name = String(h).trim();
+    if (name) existing[name] = true;
+  });
+
+  const missing = MIRROR_REQUIRED_HEADERS.filter(function (h) { return !existing[h]; });
+  if (missing.length === 0) {
+    console.log('Nothing to do — all ' + MIRROR_REQUIRED_HEADERS.length + ' required headers already present'
+      + (repaired ? ' (repaired ' + repaired + ' malformed cell(s))' : ''));
+    return;
+  }
+
+  // First truly empty column, so nothing existing is overwritten.
+  let startCol = row1.length;
+  while (startCol > 0 && String(row1[startCol - 1]).trim() === '') startCol--;
+  startCol += 1;
+
+  sheet.getRange(1, startCol, 1, missing.length).setValues([missing]);
+  sheet.getRange(1, startCol, 1, missing.length).setFontWeight('bold');
+
+  console.log('Added ' + missing.length + ' header(s) starting at column ' + startCol + ': ' + missing.join(', ')
+    + (repaired ? ' | repaired ' + repaired + ' malformed cell(s)' : ''));
+}
+
+/**
  * Entry point for the time-driven trigger. Mirrors every configured partner.
  * One partner failing does not stop the others.
  */
