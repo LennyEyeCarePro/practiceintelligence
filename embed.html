@@ -2077,9 +2077,10 @@ const BRANDS = {
         logoUrl: '/assets/eyefinity-logo.svg',
         logoAlt: 'Eyefinity — a VSP Vision company',
         // Full lockup (2.22:1) including the "a vsp vision company" tagline,
-        // which is only ~13% of its height, so this runs large. Renders 489px
-        // wide; ceiling is ~290px before the 680px wrap caps the width.
-        logoHeight: 220,
+        // which is only ~13% of its height, so this runs large. Renders ~245px
+        // wide (Lenny 2026-10-16: halved from 220px); ceiling is ~290px before the
+        // 680px wrap caps the width.
+        logoHeight: 110,
         brandHex: '#1A73E8', brandLightHex: '#4C8FF0', brandDarkHex: '#1257B5',
         surfaceHex: '#FFFFFF', textHex: '#202124',
         ctaUrl: 'https://outlook.office.com/bookwithme/user/16e247ed50a44063a1d9632eea1a3c6a@vsp.com/meetingtype/FulZBjeg-k6Qexcvj11zrA2?anonymous&ismsaljsauthenabled&ep=mCardFromTile',
@@ -2203,6 +2204,30 @@ let lighthouseError = null;    // set when the performance audit fails or is par
 // submitSeoToSheets() / flushSeoSheetQueue().
 let initialSheetRowSent = false;
 let pendingSeoSheetResults = null;
+// PatientEngage copy of each lead (Practice Intelligence > Prospect leads), sent
+// through our own /api/lead function, which signs it; the Sheet keeps getting
+// every lead exactly as before. One id per visit ties the lead and its SEO
+// results together on PatientEngage's side, whichever arrives first.
+const LEAD_ID = (window.crypto && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+
+/** Fire-and-forget: never throws, never delays the Sheet write or the screen. */
+function sendLeadToPatientEngage(kind, payload) {
+    try {
+        const body = JSON.stringify({ lead_id: LEAD_ID, kind, payload });
+        fetch('/api/lead', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            // keepalive lets the request finish if the prospect leaves the page; browsers
+            // cap keepalive bodies at 64 KB, so larger ones go without it.
+            keepalive: body.length < 60000,
+        }).catch(e => console.warn('PatientEngage lead copy failed:', e));
+    } catch (e) {
+        console.warn('PatientEngage lead copy failed:', e);
+    }
+}
 // Output of recommend.js — the core package match for brands that have a ruleset.
 // Null for brands without one (they keep their existing recommendedTier).
 let packageRecommendation = null;
@@ -4989,6 +5014,8 @@ function submitToSheets(gap) {
         packageDeficits: (packageRecommendation?.gap_deficits_identified || []).join(' | '),
     };
 
+    sendLeadToPatientEngage('lead', payload);
+
     try {
         fetch(CONFIG.GOOGLE_SHEETS_URL, {
             method: 'POST',
@@ -5132,6 +5159,8 @@ function submitSeoToSheets(results) {
         findingsCritical: findings.filter(f => f.severity === 'critical').length,
         findingsWarning: findings.filter(f => f.severity === 'warning').length,
     };
+
+    sendLeadToPatientEngage('seo', payload);
 
     try {
         fetch(CONFIG.GOOGLE_SHEETS_URL, {
