@@ -1,6 +1,10 @@
 /**
  * /api/lead - forwards a finished assessment's lead to PatientEngage.
  *
+ * Not a function of its own (the leading _ keeps Vercel from deploying it as one: the Hobby plan
+ * allows 12 and all are used). vercel.json rewrites /api/lead to /api/hubspot?to=patientengage,
+ * and hubspot.js hands the request straight to this handler.
+ *
  * The page still writes every lead to its brand's Google Sheet exactly as before; this is the
  * second copy, inside PatientEngage (Practice Intelligence > Prospect leads). A lead is sent in two
  * parts, like the Sheet gets it: kind "lead" when the prospect submits, kind "seo" when the SEO scan

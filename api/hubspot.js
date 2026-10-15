@@ -7,7 +7,12 @@
  *   4. Creates a Deal tied to both
  *
  * POST /api/hubspot
+ *
+ * Also serves POST /api/lead (vercel.json rewrites it here with ?to=patientengage): the
+ * PatientEngage lead copy, implemented in ./_lead.js. It shares this function only because the
+ * Hobby plan caps a deployment at 12 functions and every other slot is used; the two never mix.
  */
+import forwardLeadToPatientEngage from './_lead.js';
 
 const HUBSPOT_TOKEN = process.env.HUBSPOT_API_TOKEN;
 const BASE = 'https://api.hubapi.com';
@@ -310,6 +315,9 @@ function buildReportNote(data, domain) {
 
 // ── Main handler ──────────────────────────────────────────────────────
 export default async function handler(req, res) {
+    // Before any CORS header: /api/lead is same-origin only (see _lead.js).
+    if (req.query?.to === 'patientengage') return forwardLeadToPatientEngage(req, res);
+
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');

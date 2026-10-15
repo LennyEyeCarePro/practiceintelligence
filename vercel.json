@@ -33,5 +33,11 @@
         "api/scan-data.js": {
             "maxDuration": 30
         }
-    }
+    },
+    "rewrites": [
+        {
+            "source": "/api/lead",
+            "destination": "/api/hubspot?to=patientengage"
+        }
+    ]
 }
