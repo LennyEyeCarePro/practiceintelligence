@@ -60,7 +60,7 @@ async function handlePageRank(req, res, domain) {
 
         const queryString = allDomains.map(d => `domains[]=${encodeURIComponent(d)}`).join('&');
         const resp = await fetch(
-            `https://openpagerank.com/api/v1.0/getPageRank?${queryString}`,
+            `https://openpagerank.keywordseverywhere.com/api/v1.0/getPageRank?${queryString}`,
             { headers: { 'API-OPR': API_KEY }, signal: AbortSignal.timeout(10000) }
         );
 
