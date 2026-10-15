@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         const localizedQueries = keywords.map(kw => `${kw} ${city} ${stateAbbr}`.trim());
 
         // ── Step 2: Run Apify Google Search Scraper ──
-        const ACTOR_ID = 'apify/google-search-scraper';
+        const ACTOR_ID = 'apify~google-search-scraper'; // Apify ids in a URL path use ~ ; the / form is a 404
         const startResp = await fetch(
             `https://api.apify.com/v2/acts/${ACTOR_ID}/runs?token=${APIFY_TOKEN}`,
             {
