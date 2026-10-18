@@ -400,19 +400,56 @@ async function findCompetitors(lat, lng, excludePlaceIds, apiKey) {
             { signal: AbortSignal.timeout(8000) }
         );
         const nearbyData = await nearbyResp.json();
-        const excludeSet = new Set(excludePlaceIds);
-        return (nearbyData.results || [])
-            .filter(c => !excludeSet.has(c.place_id))
-            .slice(0, 4)
-            .map(c => ({
-                name: c.name,
-                rating: c.rating || null,
-                reviewCount: c.user_ratings_total || 0,
-                address: c.vicinity || null,
-            }));
+        return cleanCompetitors(nearbyData.results || [], new Set(excludePlaceIds)).slice(0, 4);
     } catch (_) {
         return [];
     }
+}
+
+// Words that mark a listing as a practice rather than a person.
+const BUSINESS_WORDS = /\b(eye|eyes|vision|optical|optic|optics|optometr\w*|ophthalm\w*|clinic|care|center|centre|associates|group|institute|laser|lasik|sight|spectacle\w*|glasses|eyewear|specialists?|surgery|surgeons?|medical|health|family|doctors|eyecare|retina|cornea|cataract|pc|llc|inc|ltd|pllc)\b/i;
+
+/**
+ * Nearby-search results as competitors: open practices only, one row per
+ * practice, readable names.
+ *  - Trailing junk some listings carry in their name ("... hours", "... reviews") is removed.
+ *  - Individual practitioner listings ("Steven Siezak", "Dr. Jane Doe OD") are
+ *    dropped: they are a doctor's personal profile, not a competing practice, and
+ *    their handful of reviews drags the competitor average down.
+ *  - The same practice listed twice (two branches, or a duplicate listing) is kept
+ *    once, with its higher review count.
+ *  - Closed businesses are dropped.
+ */
+export function cleanCompetitors(results, excludeSet = new Set()) {
+    const byName = new Map();
+    for (const c of results) {
+        if (!c || excludeSet.has(c.place_id)) continue;
+        if (c.business_status && c.business_status !== 'OPERATIONAL') continue;
+        const name = String(c.name || '')
+            .replace(/\s*[-|,]?\s*\b(hours( of operation)?|reviews?|phone( number)?|near me|directions)\s*$/i, '')
+            .trim();
+        if (!name || isPersonListing(name)) continue;
+        const entry = {
+            name,
+            rating: c.rating || null,
+            reviewCount: c.user_ratings_total || 0,
+            address: c.vicinity || null,
+        };
+        const key = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const seen = byName.get(key);
+        if (!seen || entry.reviewCount > seen.reviewCount) byName.set(key, entry);
+    }
+    return [...byName.values()];
+}
+
+/** "Steven Siezak", "Dr. Jane M. Doe, OD" - a person's name with no practice words. */
+export function isPersonListing(name) {
+    if (BUSINESS_WORDS.test(name)) return false;
+    const core = name
+        .replace(/^dr\.?\s+/i, '')
+        .replace(/[,\s]+(o\.?d\.?|m\.?d\.?|faao|do|phd)\.?$/gi, '')
+        .trim();
+    return /^[A-Z][a-zA-Z'\-]+(\s+[A-Z]\.?)?(\s+[A-Z][a-zA-Z'\-]+){1,2}$/.test(core);
 }
 
 function categorizeBusiness(types) {

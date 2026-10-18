@@ -3919,56 +3919,125 @@ const connectivityLogic = {
     }
 };
 
-function mapFrustrationToRootCause(painAnswer) {
-    const p = (painAnswer || '').toLowerCase();
-    if (p.includes('don\'t show up') || p.includes('google') || p.includes('visibility') || p.includes('search'))
-        return "Your current visibility score is creating a 'digital blackout.' You are effectively invisible to the 70% of local patients currently searching for a provider.";
-    if (p.includes('outdated') || p.includes('doesn\'t reflect') || p.includes('generic') || p.includes('where to start'))
-        return "Your practice is suffering from 'clinical invisibility.' By looking like every other generic office, you are forcing patients to choose based on zip code rather than your clinical expertise.";
-    if (p.includes('roi') || p.includes('spending money') || p.includes('ads'))
-        return "This is what we call a 'Leaky Bucket' cycle. You're investing in driving traffic, but the intake experience may not be converting those visitors into booked patients as effectively as it could.";
-    if (p.includes('vendor') || p.includes('doesn\'t understand') || p.includes('eye care'))
-        return "This is what we call 'The Generalist Tax.' When a marketing partner isn't specialized in eye care, they often miss the specific nuances of patient intent that drive high-value exams and specialty bookings.";
-    if (p.includes('no real') || p.includes('strategy') || p.includes('sits there') || p.includes('no digital') || p.includes('autopilot'))
-        return "Your practice appears to be on 'Digital Autopilot.' Without an active strategy, it's easy for competitors with more aggressive marketing to capture the patients searching in your area.";
-    if (p.includes('referral') || p.includes('capabilities'))
-        return "Your referral network can't send you patients for services they don't know you offer. You have a 'Referral Visibility Gap' that's costing you high-value surgical cases every month.";
-    if (p.includes('competitor') || p.includes('losing'))
-        return "Your competitors aren't clinically better — they're digitally louder. Patients are choosing them because they appear first, look more modern, and make it easier to act.";
-    if (p.includes('booking') || p.includes('specialty services'))
-        return "You built the clinical expertise but your website isn't translating that into patient demand. You have a 'Conversion Disconnect' between your capabilities and your digital storefront.";
-    if (p.includes('instagram') || p.includes('social') || p.includes('engagement'))
-        return "Your social presence isn't generating the awareness your practice needs. In a market driven by visual trust signals, a silent social profile tells prospective patients you're not a serious contender.";
-    if (p.includes('warby') || p.includes('online retailer') || p.includes('compete'))
-        return "You're not losing to online retailers on price — you're losing on convenience and visibility. Your unique advantage is in-person expertise, but patients can't act on what they can't find.";
-    return "Your current marketing approach may have room to grow. The opportunities identified here suggest there's untapped potential worth exploring.";
+// ─── Narrative cards: the prospect's own answers + what the scan measured ───
+// "Your Goal vs. Your Current Model" and "The Real Issue" used to be fixed lines
+// keyed on the answer (with labels like 'Conversion Disconnect' and an invented
+// "70% of local patients"). They now quote what the prospect told us and add one
+// sentence from a real finding. A sentence whose fact was not measured is skipped,
+// never filled in. Builders return plain text (it also goes to the Sheet); it is
+// escaped where it is put on the page. For a site EyeCarePro built, nothing critical of the site or
+// competitor comparison is said (the reseller safeguard).
+
+function escHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-function mapGoalToTargetStatement(goalAnswer) {
-    const g = (goalAnswer || '').toLowerCase();
-    if (g.includes('new patient') || g.includes('volume') || g.includes('foot traffic'))
-        return "a high-velocity acquisition engine that fills every available lane";
-    if (g.includes('specialty') || g.includes('dry eye') || g.includes('myopia') || g.includes('medical'))
-        return "becoming the undisputed clinical authority for specialty care in your radius";
-    if (g.includes('optical') || g.includes('frame') || g.includes('transaction'))
-        return "a high-margin retail powerhouse that eliminates RX leakage";
-    if (g.includes('multi-location') || g.includes('brand consistency'))
-        return "a scalable enterprise model designed for market leadership and maximum valuation";
-    if (g.includes('surgical') || g.includes('cataract') || g.includes('lasik'))
-        return "a surgical pipeline that consistently fills your OR days with high-value cases";
-    if (g.includes('referral'))
-        return "a referral engine where every provider in your radius knows exactly what you offer — and sends their most complex cases to you";
-    if (g.includes('premium') || g.includes('iol') || g.includes('refractive'))
-        return "a premium conversion machine where patients understand — and choose — your advanced lens and refractive options before the consultation";
-    if (g.includes('reputation') || g.includes('review'))
-        return "a reputation fortress where your online presence reflects the exceptional care you deliver";
-    if (g.includes('retention') || g.includes('recall') || g.includes('loyalty'))
-        return "a patient loyalty engine that maximizes lifetime value and eliminates attrition to competitors";
-    if (g.includes('e-commerce') || g.includes('online'))
-        return "an omnichannel retail model that captures patients where they already shop";
-    if (g.includes('instagram') || g.includes('social'))
-        return "a brand that dominates the local visual landscape and makes your practice the aspirational choice";
-    return "sustainable, measurable growth across every dimension of your practice";
+/** What this scan measured that the narrative may quote. Absent = not measured. */
+function collectNarrativeFacts() {
+    const places = seoReportData?.places || {};
+    const biz = places.locations?.[0] || places.business || {};
+    const compReviews = (places.competitors || []).map(c => Number(c.reviewCount) || 0);
+    const avgComp = compReviews.length ? Math.round(compReviews.reduce((a, b) => a + b, 0) / compReviews.length) : null;
+    const reviews = typeof biz.reviewCount === 'number' ? biz.reviewCount : null;
+    const audit = seoReportData?.siteAudit || null;
+    const lh = lighthouseData || {};
+    const specialtyIds = (window.PracticeRecommender?.SPECIALTY_SERVICE_IDS || [])
+        .concat(['scleral_lens', 'ortho_k', 'lasik', 'prk', 'smile', 'icl', 'premium_iol', 'cataract', 'laser_cataract']);
+    const specialties = (dossier?.services?.detected || [])
+        .filter(sv => sv && specialtyIds.includes(sv.id) && sv.label)
+        .map(sv => sv.label);
+    return {
+        reviews,
+        avgComp,
+        reviewsBehind: reviews !== null && avgComp !== null && reviews < avgComp,
+        schemaMissing: !!(audit && !audit.error && !audit.hasLocalBusinessSchema),
+        noBlog: dossier?.content?.blogExists === false,
+        mobileSpeed: typeof lh.performance === 'number' ? lh.performance : null,
+        lcp: lh.lcp || null,
+        specialties: [...new Set(specialties)].slice(0, 4),
+        frameBrands: Number(dossier?.optical?.totalBrands || 0),
+        socialCount: Number(dossier?.social?.platformCount || 0),
+    };
+}
+
+function listOf(items) {
+    return items.length <= 1 ? (items[0] || '') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+/**
+ * One sentence about being found on Google, from the first measured fact not in
+ * `avoid` (so the two narrative cards never repeat the same sentence).
+ */
+function visibilityFact(f, isECP, avoid = '') {
+    if (isECP) return '';
+    const facts = [];
+    if (f.reviewsBehind) facts.push(`Patients comparing practices on Google see ${f.reviews} reviews for you against an average of ${f.avgComp} for the practices around you.`);
+    if (f.schemaMissing) facts.push('Google can read your pages, but nothing on the site tells it your services, hours and locations in the structured form it uses for local results.');
+    if (f.noBlog) facts.push('There is no blog or other content on the site answering the questions patients search for.');
+    if (f.reviews !== null && f.avgComp !== null && !f.reviewsBehind) facts.push(`Your ${f.reviews} Google reviews already lead the practices around you; the next step is turning that reputation into booked exams.`);
+    return facts.find(x => !avoid.includes(x)) || '';
+}
+
+function specialtyFact(f, isECP) {
+    if (f.specialties.length) return `Your site lists ${listOf(f.specialties)}; the work is getting those services found by the patients searching for them.`;
+    return isECP ? 'Dedicated pages for the specialty services you want to grow are the place to start.'
+        : "Your site doesn't market a specialty service yet, so patients searching for one won't find you.";
+}
+
+/** "Your Goal vs. Your Current Model". */
+function buildGoalStatement(goal, f, isECP) {
+    const g = String(goal || '').trim();
+    if (!g) return visibilityFact(f, isECP) || 'The findings below show where growth is most likely to come from.';
+    const lead = `You told us your goal is ${g.replace(/\s*\(.*\)\s*$/, '').toLowerCase()}.`;
+    const cat = window.PracticeRecommender?.classifyGoal ? window.PracticeRecommender.classifyGoal(g) : null;
+    let fact = '';
+    if (cat === 'specialty') fact = specialtyFact(f, isECP);
+    else if (cat === 'optical') fact = f.frameBrands
+        ? `Your site shows ${f.frameBrands} frame brands; patients need to find them and see why to buy from you rather than online.`
+        : (isECP ? '' : "Your site doesn't show your frame selection, so patients can't see why to buy from you rather than online.");
+    else if (cat === 'retention') fact = f.socialCount
+        ? `You're on ${f.socialCount} social platform${f.socialCount === 1 ? '' : 's'}; keeping patients coming back is about staying in front of them between visits.`
+        : (isECP ? '' : "We didn't find social profiles linked from your site, one of the simplest ways to stay in front of patients between visits.");
+    else fact = visibilityFact(f, isECP);
+    return fact ? `${lead} ${fact}` : lead;
+}
+
+/** "The Real Issue": the prospect's own words, then the finding that bears on them. */
+function buildRealIssue(pain, f, isECP, avoid = '') {
+    const raw = String(pain || '').trim();
+    const p = raw.toLowerCase();
+    const lead = raw ? `You told us: “${raw.replace(/[.!]+$/, '')}.”` : '';
+    let fact = '';
+    if (/show up|google|find us|exist|better online|better marketing|losing/.test(p)) {
+        fact = visibilityFact(f, isECP, avoid);
+    } else if (/outdated|doesn't reflect|showcase/.test(p)) {
+        fact = !isECP && f.mobileSpeed !== null
+            ? `On a phone, your site scores ${f.mobileSpeed}/100 for speed${f.lcp ? ` and takes ${f.lcp} to show its main content` : ''}, and that first impression is what patients judge.`
+            : '';
+    } else if (/roi|spending money|ads/.test(p)) {
+        fact = `We can't see your ad results from outside, but every ad lands on your website${!isECP && f.mobileSpeed !== null ? `, which scores ${f.mobileSpeed}/100 for speed on a phone` : ''}; that page decides whether a click becomes an appointment.`;
+    } else if (/specialty services|premium iol|capabilities|referral/.test(p)) {
+        fact = specialtyFact(f, isECP);
+        if (avoid.includes(fact)) fact = visibilityFact(f, isECP, avoid);
+    } else if (/instagram|social|engagement/.test(p)) {
+        fact = f.socialCount ? `We found ${f.socialCount} social profile${f.socialCount === 1 ? '' : 's'} linked from your site.`
+            : (isECP ? '' : "We didn't find social profiles linked from your site.");
+    } else if (/warby|online retailer/.test(p)) {
+        fact = f.frameBrands ? `Your site shows ${f.frameBrands} frame brands, an advantage an online retailer can't match in person.` : '';
+    } else if (/no real|strategy|sits there|no digital|no email/.test(p)) {
+        fact = !isECP && f.noBlog ? "There's no blog or regular content on the site, a sign it isn't being actively worked on." : visibilityFact(f, isECP, avoid);
+    }
+    if (!fact) fact = 'The findings below show where to start.';
+    return lead ? `${lead} ${fact}` : fact;
+}
+
+/** Website & SEO Health badge: the weakest score decides; listed problems and no SSL count. */
+function setHealthBadge(badgeEl, scores, issueCount, noSsl) {
+    const measured = scores.filter(n => typeof n === 'number');
+    const worst = measured.length ? Math.min(...measured) : 0;
+    const level = (worst < 50 || noSsl) ? 'critical' : (worst < 75 || issueCount > 0) ? 'warning' : 'good';
+    badgeEl.textContent = { good: 'Healthy', warning: 'Needs Work', critical: 'Critical' }[level];
+    badgeEl.className = `audit-panel-badge audit-badge-${level}`;
 }
 
 function generateScreen6Data() {
@@ -4015,14 +4084,18 @@ function generateScreen6Data() {
     // when it is missing: the speed score is not an SEO score.
     const seoScore = typeof lighthouseData?.seo === 'number' ? lighthouseData.seo : 0;
     const siteAudit = seoReportData?.siteAudit || null;
-    const schemaNote = !siteAudit ? ''
+    // Never a criticism of a site EyeCarePro built (the reseller safeguard).
+    const schemaNote = (!siteAudit || isECP) ? ''
         : siteAudit.hasLocalBusinessSchema ? ''
         : siteAudit.hasSchemaMarkup
             ? " Its schema markup is generic, though: it doesn't tell Google you are a local eye care practice, or give your services, hours and locations."
             : " What that check doesn't cover is schema markup: the structured data that tells Google your services, hours, doctors and locations is missing, so Google has to guess.";
 
-    const emotionalRootCause = mapFrustrationToRootCause(userAnswers.pain);
-    const targetStatement = mapGoalToTargetStatement(userAnswers.goal);
+    const narrativeFacts = collectNarrativeFacts();
+    // Schema is already explained in "Why This Is Happening" when schemaNote is set.
+    if (schemaNote) narrativeFacts.schemaMissing = false;
+    const goalStatement = buildGoalStatement(userAnswers.goal, narrativeFacts, isECP);
+    const emotionalRootCause = buildRealIssue(userAnswers.pain, narrativeFacts, isECP, goalStatement);
 
     // Competitor theft text
     const competitors = seoReportData?.places?.competitors || [];
@@ -4051,7 +4124,7 @@ function generateScreen6Data() {
             ? `Your site scores ${seoScore}/100 on Google's basic page check (Lighthouse SEO): some pages are missing things search engines look for first, such as titles, descriptions, readable links or mobile readiness.${schemaNote}`
             : `Your digital presence has gaps that may be limiting how patients discover your practice.${schemaNote}`,
         emotionalRootCause,
-        targetStatement: `You want to achieve ${targetStatement}. Your current marketing approach — website, SEO, and patient acquisition strategy — may need to evolve to get you there.`,
+        targetStatement: goalStatement,
         competitorTheftText,
         competitorNames,
         annualGap: Math.round(annualGap),
@@ -4102,41 +4175,19 @@ function showResults() {
 
     // ═══ SECTION 3: ROOT CAUSE ═══
     document.getElementById('gapTechnicalCause').innerHTML = `<p>${gap.technicalRootCause}</p>`;
-    document.getElementById('gapEmotionalCause').innerHTML = `<p>${gap.emotionalRootCause}</p>`;
+    document.getElementById('gapEmotionalCause').innerHTML = `<p>${escHtml(gap.emotionalRootCause)}</p>`;
 
     // ═══ SECTION 4: GOAL vs. REALITY ═══
-    document.getElementById('gapTargetBody').innerHTML = `<p>${gap.targetStatement}</p>`;
+    document.getElementById('gapTargetBody').innerHTML = `<p>${escHtml(gap.targetStatement)}</p>`;
 
     // ═══ SECTION 5: COMPETITOR ANCHOR ═══
     document.getElementById('gapCompetitorText').innerHTML = `<p>${gap.competitorTheftText}</p>`;
 
-    // Build competitor comparison chart if data available
+    // The comparison chart is shown once, in What We Found > Local Visibility; this
+    // card is the narrative only.
     const competitors = seoReportData?.places?.competitors || [];
-    const chartEl = document.getElementById('gapCompetitorChart');
-    if (competitors.length > 0) {
-        const primaryLoc = seoReportData?.places?.locations?.[0] || seoReportData?.places?.business || {};
-        const allEntries = [
-            { name: primaryLoc.name || name, rating: primaryLoc.rating || 0, reviewCount: primaryLoc.reviewCount || 0, isThis: true },
-            ...competitors.slice(0, 3),
-        ].sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0));
-        const maxReviews = Math.max(...allEntries.map(c => c.reviewCount || 0), 1);
-
-        chartEl.innerHTML = `<div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Local Market Comparison</div>` +
-            allEntries.map(c => {
-                const pct = ((c.reviewCount || 0) / maxReviews) * 100;
-                const barColor = c.isThis ? '#4CAF50' : '#378ADD';
-                return `<div class="audit-comp-row">
-                    <div class="audit-comp-name ${c.isThis ? 'highlight' : ''}">${c.isThis ? '★ ' : ''}${c.name}</div>
-                    <div class="audit-comp-bar"><div class="audit-comp-fill" style="width:${pct}%;background:${barColor}"></div></div>
-                    <div class="audit-comp-score">${c.rating ? c.rating + '★' : 'N/A'} · ${c.reviewCount || 0}</div>
-                </div>`;
-            }).join('') +
-            `<div style="font-size:11px;color:#aaa;margin-top:6px;">Rating · Review count within 5 miles</div>`;
-    } else {
-        chartEl.innerHTML = '';
-        // Hide competitor section if no data
-        document.getElementById('gapCompetitorSection').style.display = competitors.length === 0 && !gap.competitorNames.length ? 'none' : '';
-    }
+    document.getElementById('gapCompetitorChart').innerHTML = '';
+    document.getElementById('gapCompetitorSection').style.display = competitors.length === 0 && !gap.competitorNames.length ? 'none' : '';
 
     // ═══ SECTION 6: CORE AUDIT (existing panels, still live) ═══
     renderCoreAuditFromDossier(d);
@@ -4336,10 +4387,8 @@ function renderCoreAuditFromDossier(d) {
             seoHtml += `<div class="audit-metric"><span class="audit-metric-label">SEO Score</span><span class="audit-metric-value ${seoScoreColor}">${lh.seo}/100</span></div>`;
         }
 
-        // Badge
-        const avgScore = Math.round(((lh.performance || 0) + (lh.seo || 0)) / 2);
-        seoBadge.textContent = avgScore >= 75 ? 'Healthy' : avgScore >= 50 ? 'Needs Work' : 'Critical';
-        seoBadge.className = `audit-panel-badge ${avgScore >= 75 ? 'audit-badge-good' : avgScore >= 50 ? 'audit-badge-warning' : 'audit-badge-critical'}`;
+        // Badge: the weakest score decides (an average let a 100 hide a 67).
+        setHealthBadge(seoBadge, [lh.performance, lh.seo], 0, false);
     } else {
         seoHtml = `<div style="color:#888;font-size:13px;padding:8px 0;">
             <div class="spinner" style="display:inline-block;width:14px;height:14px;border-width:2px;margin-right:6px;vertical-align:middle;"></div>
@@ -4573,12 +4622,10 @@ function renderClientAuditPanels(data) {
         if (!audit.hasSitemap) seoHtml += `<div class="audit-metric"><span class="audit-metric-label">Sitemap</span><span class="audit-metric-value warning">Not Found</span></div>`;
     }
 
-    // Badge
-    const avgPerf = typeof mPerf === 'number' ? mPerf : 0;
-    const avgSeo = mobile.seo || 0;
-    const combinedSeo = Math.round((avgPerf + avgSeo) / 2);
-    seoBadge.textContent = combinedSeo >= 75 ? 'Healthy' : combinedSeo >= 50 ? 'Needs Work' : 'Critical';
-    seoBadge.className = `audit-panel-badge ${combinedSeo >= 75 ? 'audit-badge-good' : combinedSeo >= 50 ? 'audit-badge-warning' : 'audit-badge-critical'}`;
+    // Badge: the weakest score decides, and the problems listed above count too.
+    const auditRead = !!audit.domain && !auditBlockedEarly;
+    const auditIssues = auditRead ? [!audit.hasLocalBusinessSchema, !audit.hasSitemap].filter(Boolean).length : 0;
+    setHealthBadge(seoBadge, [mPerf, mobile.seo], auditIssues, auditRead && !audit.ssl);
 
     // Insight
     if (typeof mPerf === 'number' && mPerf < 50) {
