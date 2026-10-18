@@ -4008,8 +4008,17 @@ function generateScreen6Data() {
     const monthlyGap = weeklyGap * 4.33;
     const annualGap = monthlyGap * 12;
 
-    // SEO score from lighthouse or dossier
-    const seoScore = lighthouseData?.seo || lighthouseData?.performance || dossier?.scores?.digitalPresence || 0;
+    // Google's Lighthouse "SEO" category: a basic page check (crawlable, title, meta
+    // description, readable links, mobile-ready). It does NOT cover schema or how the
+    // site is built, so it must never be called "technical SEO". No substitute score
+    // when it is missing: the speed score is not an SEO score.
+    const seoScore = typeof lighthouseData?.seo === 'number' ? lighthouseData.seo : 0;
+    const siteAudit = seoReportData?.siteAudit || null;
+    const schemaNote = !siteAudit ? ''
+        : siteAudit.hasLocalBusinessSchema ? ''
+        : siteAudit.hasSchemaMarkup
+            ? " Its schema markup is generic, though: it doesn't tell Google you are a local eye care practice, or give your services, hours and locations."
+            : " What that check doesn't cover is schema markup: the structured data that tells Google your services, hours, doctors and locations is missing, so Google has to guess.";
 
     const emotionalRootCause = mapFrustrationToRootCause(userAnswers.pain);
     const targetStatement = mapGoalToTargetStatement(userAnswers.goal);
@@ -4036,10 +4045,10 @@ function generateScreen6Data() {
                 : `You are leaving ${emptySlotsWeekly} slots empty every week. At a conservative realized value of $${averageValue} per patient (${valueType}), this represents an annual cost of $${Math.round(annualGap).toLocaleString()}.`)
             : `Based on your inputs, there's a significant growth opportunity. Let's quantify what better marketing could mean for ${name}.`,
         technicalRootCause: seoScore >= 80
-            ? `Your website's technical SEO structure scores ${seoScore}/100 — that's a strong foundation. The opportunity now is in the strategy layer: content, service visibility, local search presence, and patient conversion paths.`
+            ? `Your site scores ${seoScore}/100 on Google's basic page check (Lighthouse SEO), so search engines can find and read your pages.${schemaNote} The bigger opportunities are content, service visibility, local search presence, and turning searches into booked exams.`
             : seoScore > 0
-            ? `Your website's technical SEO structure scores ${seoScore}/100, which means there are foundational issues that could be limiting how easily patients find your practice online.`
-            : `Your digital presence has structural gaps that may be limiting how patients discover your practice.`,
+            ? `Your site scores ${seoScore}/100 on Google's basic page check (Lighthouse SEO): some pages are missing things search engines look for first, such as titles, descriptions, readable links or mobile readiness.${schemaNote}`
+            : `Your digital presence has gaps that may be limiting how patients discover your practice.${schemaNote}`,
         emotionalRootCause,
         targetStatement: `You want to achieve ${targetStatement}. Your current marketing approach — website, SEO, and patient acquisition strategy — may need to evolve to get you there.`,
         competitorTheftText,
@@ -4785,8 +4794,8 @@ function generateInsights(d) {
     if (!isECP && lh && lh.seo < 70) {
         insights.push({
             icon: '🔍', iconClass: 'insight-icon-red', priority: 6,
-            title: `Are Technical SEO Issues Holding You Back?`,
-            text: `Your SEO score of ${lh.seo}/100 suggests there may be structural issues — missing meta descriptions, heading hierarchy, or schema markup — that could be limiting your Google visibility. Have you had an SEO audit recently?`,
+            title: `Are Basic Page Issues Holding You Back in Google?`,
+            text: `Your site scores ${lh.seo}/100 on Google's basic page check (Lighthouse SEO), which usually means missing page titles or meta descriptions, unreadable link text, or pages Google can't crawl. Those are quick fixes that can be limiting your Google visibility. Have you had an SEO audit recently?`,
         });
     }
 
