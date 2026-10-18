@@ -32,7 +32,7 @@
  *
  * 3. "1 to 4 blog posts per year" — the scraper gives a total post count and a
  *    last-post date, never a per-year rate. blogCadence() approximates from
- *    those two and the approximation is labelled in the output.
+ *    those two and the approximation is labeled in the output.
  *
  * TIER RULES - Lenny's "Eyefinity Evaluator Logic Update" (2026-10-18)
  * The first version let ANY one signal win a tier, and signals like "mentions
@@ -49,7 +49,7 @@
  *             with a goal other than new patients or specialty
  *   Base      everything else
  * Capacity is the form's 4-option question, read by POSITION across practice
- * types (exam slots / surgical utilisation / optical walk-ins): 0 = "< 5",
+ * types (exam slots / surgical utilization / optical walk-ins): 0 = "< 5",
  * 1 = "5 to 15", 2 = "15 to 25", 3 = "25+".
  * Real-time booking is NOT a tier signal: the scheduler is included for
  * Eyefinity EPM / OfficeMate customers (Lenny, hard rule).
@@ -372,7 +372,7 @@
                     'Everything in Advanced',
                     'Conversion-focused website design',
                     'Ongoing general eyecare SEO',
-                    '6 SEO-optimised blog posts a year',
+                    '6 SEO-optimized blog posts a year',
                     'Two-way texting',
                     'Google Reserve integration',
                     'Bi-monthly strategy consults',
@@ -384,9 +384,9 @@
                 capabilities: [
                     'Everything in Pro',
                     'Specialty or optical-focused SEO architecture',
-                    '12 SEO-optimised posts or specialty landing pages a year',
+                    '12 SEO-optimized posts or specialty landing pages a year',
                     'Custom practice photoshoot (one-time)',
-                    'Video editing and optimisation',
+                    'Video editing and optimization',
                     'Monthly strategy consults',
                 ],
             },
@@ -396,7 +396,7 @@
                 capabilities: [
                     'Everything in Deluxe',
                     'High-velocity local SEO strategy',
-                    '24 SEO-optimised posts or pages a year',
+                    '24 SEO-optimized posts or pages a year',
                     'Multi-location site architecture (up to 5 locations)',
                     'Competitive market positioning',
                     'Monthly strategy consults',
