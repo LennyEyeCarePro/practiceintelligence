@@ -33,3 +33,6 @@ node_modules/
 main
 screen5_backup_COMPLETE.html
 .git/
+
+# Tests - not part of the deployed app
+*.test.js

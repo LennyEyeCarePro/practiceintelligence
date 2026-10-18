@@ -34,21 +34,29 @@
  *    last-post date, never a per-year rate. blogCadence() approximates from
  *    those two and the approximation is labelled in the output.
  *
- * ONE SPEC AMBIGUITY, AND HOW IT IS RESOLVED
- * Section 3's flow chart is an OR-based waterfall; section 4 lists Advanced and
- * Base trigger conditions as "All Must Apply". In a first-match-wins waterfall
- * those cannot both hold — by the time evaluation reaches Advanced, the Pro,
- * Deluxe and Ultimate conditions are already known false, so re-testing "single
- * location, general optometry" is redundant. The flow chart is implemented as
- * the operative logic and section 4's lists are read as describing the
- * archetype. Flip ADVANCED_REQUIRES_ALL to change that.
+ * TIER RULES - Lenny's "Eyefinity Evaluator Logic Update" (2026-10-18)
+ * The first version let ANY one signal win a tier, and signals like "mentions
+ * dry eye" or "fewer reviews than competitors" are near-universal, so almost
+ * every practice landed on Deluxe or Ultimate. A tier now needs a declared goal
+ * AND site evidence or capacity. Still first-match-wins, top down:
+ *   Ultimate  3+ locations; or 2 locations + dense market (top competitor
+ *             > 250 reviews) + a multi-location or growth goal
+ *   Deluxe    specialty goal + specialty on the site; or optical goal + upscale
+ *             (luxury/premium) optical; or expansion free text + 15+ capacity
+ *   Pro       new-patient or visibility goal; or 15+ capacity; or a specialty /
+ *             optical goal whose evidence the site does not show
+ *   Advanced  retention goal with < 15 capacity; or "website feels outdated"
+ *             with a goal other than new patients or specialty
+ *   Base      everything else
+ * Capacity is the form's 4-option question, read by POSITION across practice
+ * types (exam slots / surgical utilisation / optical walk-ins): 0 = "< 5",
+ * 1 = "5 to 15", 2 = "15 to 25", 3 = "25+".
+ * Real-time booking is NOT a tier signal: the scheduler is included for
+ * Eyefinity EPM / OfficeMate customers (Lenny, hard rule).
  * ═══════════════════════════════════════════════════════════════════════════
  */
 (function (global) {
     'use strict';
-
-    // See the spec-ambiguity note above.
-    const ADVANCED_REQUIRES_ALL = false;
 
     /** Services that count as a clinical specialty for the Deluxe path. */
     const SPECIALTY_SERVICE_IDS = [
@@ -69,7 +77,16 @@
         vision_therapy: 'vision therapy',
     };
 
-    const HIGH_END_OPTICAL_POSITIONING = ['luxury', 'premium', 'independent'];
+    // Upscale = luxury or premium frame brands. The scraper's third value is
+    // 'boutique/independent', which describes most private practices, so it is
+    // deliberately not upscale.
+    const HIGH_END_OPTICAL_POSITIONING = ['luxury', 'premium'];
+
+    /** Ophthalmology services that evidence a premium IOL / refractive goal. */
+    const REFRACTIVE_SERVICE_IDS = ['lasik', 'prk', 'smile', 'icl', 'premium_iol', 'laser_cataract'];
+
+    /** Goals that count as growth for Ultimate rule B and Pro rule A. */
+    const GROWTH_GOALS = ['new_patients', 'visibility'];
 
     /** Top-competitor review count above which a market reads as high-density. */
     const METRO_REVIEW_THRESHOLD = 250;
@@ -160,6 +177,45 @@
      * Flatten every input source into one signals object. Nothing here knows
      * about packages or brands.
      */
+    /**
+     * The single goal the prospect picked, as a category. Covers every practice
+     * type's option list in index.html (GOAL_OPTIONS); order matters where two
+     * patterns could both match.
+     */
+    function classifyGoal(goal) {
+        const g = String(goal || '').toLowerCase();
+        if (!g) return null;
+        if (g.includes('multi-location') || g.includes('multi location')) return 'multi_location';
+        if (g.includes('specialty services') || g.includes('premium iol') || g.includes('refractive')) return 'specialty';
+        if (g.includes('optical sales') || g.includes('frame sales') || g.includes('e-commerce eyewear') || g.includes('revenue per patient')) return 'optical';
+        if (g.includes('new patient volume') || g.includes('surgical case volume') || g.includes('referral network') || g.includes('foot traffic')) return 'new_patients';
+        if (g.includes('visibility') || g.includes('search ranking') || g.includes('brand awareness') || g.includes('social media')) return 'visibility';
+        if (g.includes('retention') || g.includes('recall') || g.includes('loyalty') || g.includes('reputation') || g.includes('patient experience')) return 'retention';
+        return null;
+    }
+
+    /** One capacity answer as its position, 0 (least spare) to 3 (most); null if unanswered. */
+    function capacityPosition(text) {
+        const t = String(text || '').trim().toLowerCase();
+        if (!t) return null;
+        if (/^(less than 5|operating at 90%\+|0-2)/.test(t)) return 0;
+        if (/^(5 to 15|70% - 90%|3-5)/.test(t)) return 1;
+        if (/^(15 to 25|50% - 70%|6-10)/.test(t)) return 2;
+        if (/^(25\+|below 50%|10\+)/.test(t)) return 3;
+        return null;
+    }
+
+    /**
+     * The capacity question the form asked this practice type. Multi-specialty
+     * and unknown types may have answered more than one; the most spare wins.
+     */
+    function capacityBucket(answers, practiceType) {
+        const byType = { optometry: 'capacityOptometry', ophthalmology: 'capacitySurgical', optical: 'capacityOptical' };
+        const keys = byType[practiceType] ? [byType[practiceType]] : Object.values(byType);
+        const found = keys.map(k => capacityPosition(answers[k])).filter(b => b !== null);
+        return found.length ? Math.max.apply(null, found) : null;
+    }
+
     function deriveSignals(input) {
         const d = (input && input.dossier) || {};
         const answers = (input && input.userAnswers) || {};
@@ -223,6 +279,10 @@
 
             // declared intent, matched on keywords rather than exact strings so
             // copy edits to GOAL_OPTIONS/PAIN_OPTIONS do not silently break this
+            goalCategory: classifyGoal(goal),
+            capacityBucket: capacityBucket(answers, (d.practice && d.practice.type) || null),
+            refractiveDetected: REFRACTIVE_SERVICE_IDS.some(id => detectedIds.includes(id)),
+            painIsOutdatedSite: matchesAny(pain, ['website feels outdated']),
             goalRaw: goal,
             painRaw: pain,
             freetext: String(answers.freetext || ''),
@@ -345,86 +405,92 @@
         },
     };
 
+    const GOAL_LABELS = {
+        multi_location: 'multi-location growth',
+        new_patients: 'new patient volume',
+        visibility: 'online visibility and local search',
+        specialty: 'specialty service revenue',
+        optical: 'optical and frame revenue',
+        retention: 'patient retention',
+    };
+    const CAPACITY_LABELS = ['fewer than 5', '5 to 15', '15 to 25', '25+'];
+
+    function declaredGoal(s) {
+        return ['DECLARED_GOAL_' + String(s.goalCategory).toUpperCase(), `You told us your goal is ${GOAL_LABELS[s.goalCategory]}`];
+    }
+    function declaredCapacity(s) {
+        return ['DECLARED_CAPACITY_' + s.capacityBucket, `You have ${CAPACITY_LABELS[s.capacityBucket]} open slots a week`];
+    }
+    function specialtyEvidence(s) {
+        const names = s.specialtiesDetected.map(id => SPECIALTY_LABELS[id] || id);
+        if (s.scleralSignals) names.push('scleral / keratoconus / ortho-k');
+        if (s.refractiveDetected) names.push('refractive or premium IOL surgery');
+        return names;
+    }
+
     const PACKAGE_RULESETS = {
         eyefinity: [
             {
                 package: 'Ultimate',
                 evaluate(s) {
-                    const t = [];
-                    if (s.locationCount >= 2) t.push(['MULTI_LOCATION', `${s.locationCount} physical locations detected`]);
-                    if (s.doctorCount >= 3) t.push(['LARGE_DOCTOR_TEAM', `${s.doctorCount} doctors on staff`]);
-                    if (s.goalIsMultiLocation) t.push(['DECLARED_MULTI_LOCATION_GOAL', 'Client selected multi-location brand consistency as their goal']);
-                    if (s.highDensityMarket) t.push(['METRO_COMPETITIVE_DENSITY', `High-density market — top competitor holds ${s.topCompetitorReviews} reviews`]);
-                    return t;
+                    if (s.locationCount >= 3) {
+                        return [['MULTI_LOCATION_3_PLUS', `${s.locationCount} locations found on your site`]];
+                    }
+                    if (s.locationCount === 2 && s.highDensityMarket
+                        && (s.goalCategory === 'multi_location' || GROWTH_GOALS.includes(s.goalCategory))) {
+                        return [
+                            declaredGoal(s),
+                            ['TWO_LOCATIONS_DENSE_MARKET', `2 locations in a competitive market (the top nearby competitor has ${s.topCompetitorReviews} reviews)`],
+                        ];
+                    }
+                    return [];
                 },
             },
             {
                 package: 'Deluxe',
                 evaluate(s) {
-                    const t = [];
-                    // Specialty path
-                    s.specialtiesDetected.forEach(id => {
-                        t.push([
-                            'SPECIALTY_' + id.toUpperCase() + '_DETECTED',
-                            `Site markets ${SPECIALTY_LABELS[id] || id}`,
-                        ]);
-                    });
-                    if (s.scleralSignals) {
-                        t.push(['SPECIALTY_SCLERAL_DETECTED_TEXT', 'Scleral / keratoconus / ortho-k language found in page text (not a distinctly scraped service)']);
+                    const evidence = specialtyEvidence(s);
+                    if (s.goalCategory === 'specialty' && evidence.length) {
+                        return [declaredGoal(s), ['SPECIALTY_EVIDENCE_ON_SITE', `Your site markets ${evidence.join(', ')}`]];
                     }
-                    if (s.capacitySurgical === 'open') t.push(['DECLARED_SURGICAL_CAPACITY', 'Client declared unused surgical capacity']);
-                    if (s.capacityOptometry === 'open') t.push(['DECLARED_OPTOMETRY_CAPACITY', 'Client declared unused exam capacity']);
-                    if (s.capacityOptical === 'open' && s.hasOptical) t.push(['DECLARED_OPTICAL_CAPACITY', 'Client declared unused optical retail capacity']);
-                    if (s.freetextMentionsExpansion) t.push(['FREETEXT_SPECIALTY_EXPANSION', 'Client described launching or expanding a service line']);
-                    if (s.goalIsSpecialty) t.push(['DECLARED_SPECIALTY_GOAL', 'Client selected specialty service revenue as their goal']);
-                    // Optical capture path
-                    if (s.opticalIsHighEnd) {
-                        t.push([
-                            'OPTICAL_' + String(s.opticalPositioning).toUpperCase() + '_POSITIONING',
-                            `Optical positioned as ${s.opticalPositioning}${s.frameBrandCount ? ` (${s.frameBrandCount} frame brands)` : ''}`,
-                        ]);
+                    if (s.goalCategory === 'optical' && s.opticalIsHighEnd) {
+                        return [
+                            declaredGoal(s),
+                            ['UPSCALE_OPTICAL_ON_SITE', `Your optical carries ${s.opticalPositioning} frame lines${s.frameBrandCount ? ` (${s.frameBrandCount} brands found)` : ''}`],
+                        ];
                     }
-                    if (s.goalIsOptical) t.push(['DECLARED_OPTICAL_GOAL', 'Client selected optical or frame revenue as their goal']);
-                    return t;
+                    if (s.freetextMentionsExpansion && s.capacityBucket !== null && s.capacityBucket >= 2) {
+                        return [['DECLARED_EXPANSION', 'You told us you are launching or expanding a service line'], declaredCapacity(s)];
+                    }
+                    return [];
                 },
             },
             {
                 package: 'Pro',
                 evaluate(s) {
                     const t = [];
-                    if (s.goalIsPatientVolume) t.push(['GOAL_PATIENT_ACQUISITION', 'Client selected new patient volume as their goal']);
-                    if (s.painIsVisibility) t.push(['PAIN_SEARCH_VISIBILITY', 'Client described a visibility or outdated-presence problem']);
-                    if (!s.isRealTimeBooking) {
-                        t.push([
-                            'NO_REALTIME_BOOKING',
-                            s.hasOnlineScheduling
-                                ? 'Scheduling links out rather than booking in real time'
-                                : 'Booking relies on a static contact form',
-                        ]);
+                    if (GROWTH_GOALS.includes(s.goalCategory)) t.push(declaredGoal(s));
+                    if (s.capacityBucket !== null && s.capacityBucket >= 2) t.push(declaredCapacity(s));
+                    if (s.goalCategory === 'specialty' || s.goalCategory === 'optical') {
+                        // The Deluxe goal without the Deluxe evidence: fill the schedule first.
+                        t.push(declaredGoal(s));
+                        t.push(['GOAL_WITHOUT_SITE_EVIDENCE', s.goalCategory === 'specialty'
+                            ? "Your site doesn't market a specialty service yet"
+                            : "Your site doesn't show an upscale optical yet"]);
                     }
-                    if (s.reviewsBelowCompetitorAverage) {
-                        t.push(['REVIEWS_BELOW_COMPETITOR_AVERAGE', `Google reviews (${s.gbpReviewCount}) lag the 8km competitor average (${s.avgCompetitorReviews})`]);
-                    }
-                    if (s.goalIsVisibility) t.push(['DECLARED_VISIBILITY_GOAL', 'Client selected online visibility or search ranking as their goal']);
                     return t;
                 },
             },
             {
                 package: 'Advanced',
                 evaluate(s) {
-                    const t = [];
-                    if (s.blogCadence === 'sporadic') {
-                        t.push(['BLOG_SPORADIC_ACTIVITY', `Blog is live but sparse (~${s.estimatedBlogPosts} posts found)`]);
+                    if (s.goalCategory === 'retention' && (s.capacityBucket === null || s.capacityBucket < 2)) {
+                        return [declaredGoal(s)];
                     }
-                    if (s.blogCadence === 'active') {
-                        t.push(['CONTENT_ENGINE_ACTIVE', 'Blog is actively maintained; needs maintenance rather than build-out']);
+                    if (s.painIsOutdatedSite && s.goalCategory !== 'new_patients' && s.goalCategory !== 'specialty') {
+                        return [['DECLARED_PAIN_OUTDATED_SITE', 'You told us your website feels outdated']];
                     }
-                    if (ADVANCED_REQUIRES_ALL) {
-                        const singleSolo = s.locationCount <= 1 && s.doctorCount <= 1;
-                        const noSpecialty = !s.specialtiesDetected.length && !s.opticalIsHighEnd;
-                        if (!(singleSolo && noSpecialty && t.length)) return [];
-                    }
-                    return t;
+                    return [];
                 },
             },
             {
@@ -435,9 +501,7 @@
                     if (s.blogCadence === 'none') t.push(['NO_ACTIVE_CONTENT_ENGINE', 'No blog or content engine detected']);
                     if (s.blogCadence === 'stale') t.push(['BLOG_STALE', `Last blog post was ~${s.monthsSinceLastPost} months ago`]);
                     if (!s.hasViewport) t.push(['LEGACY_NON_RESPONSIVE', 'No mobile viewport — site is not responsive']);
-                    if (!s.cms) t.push(['NO_RECOGNISED_CMS', 'No recognised content platform detected']);
-                    if (!s.marketingVendor) t.push(['NO_MARKETING_VENDOR', 'No marketing vendor detected — likely word-of-mouth only']);
-                    if (!t.length) t.push(['BASELINE_PRESENCE_ONLY', 'No growth, specialty or scale signals found']);
+                    if (!t.length) t.push(['BASELINE_PRESENCE_ONLY', 'Establishing a credible online presence']);
                     return t;
                 },
             },
@@ -480,31 +544,27 @@
      * inputs the tier depends on are missing.
      */
     function computeConfidence(pkg, triggers, s) {
-        let c = 0.55;
+        const codes = triggers.map(t => t[0]);
+        let c = 0.50;
 
-        // A client-declared trigger is worth more than an inferred one.
-        const primary = triggers.length ? triggers[0][0] : '';
-        if (primary.indexOf('DECLARED_') === 0) c += 0.20;
-        else if (primary.indexOf('SPECIALTY_') === 0 || primary.indexOf('MULTI_LOCATION') === 0) c += 0.15;
+        // The declared goal and what the site shows point the same way.
+        const aligned = (pkg === 'Deluxe' && (codes.includes('SPECIALTY_EVIDENCE_ON_SITE') || codes.includes('UPSCALE_OPTICAL_ON_SITE')))
+            || (pkg === 'Ultimate' && s.goalCategory === 'multi_location' && s.locationCount >= 2);
+        if (aligned) c += 0.25;
 
-        // Corroboration, with diminishing weight.
-        c += Math.min(0.20, Math.max(0, triggers.length - 1) * 0.07);
+        // Declared capacity fits the package: room to grow for the growth tiers,
+        // little spare for the light ones.
+        const b = s.capacityBucket;
+        if (b !== null && ((b >= 2 && ['Pro', 'Deluxe', 'Ultimate'].includes(pkg)) || (b <= 1 && ['Advanced', 'Base'].includes(pkg)))) {
+            c += 0.15;
+        }
 
-        // Any client-declared signal anywhere in the set.
-        if (triggers.some(t => t[0].indexOf('DECLARED_') === 0)) c += 0.05;
+        // Missing inputs, or the answers and the site disagree.
+        const missing = !s.goalCategory || b === null;
+        const conflict = codes.includes('GOAL_WITHOUT_SITE_EVIDENCE') || (s.goalCategory === 'retention' && b !== null && b >= 2);
+        if (missing || conflict) c -= 0.20;
 
-        // Penalise thin inputs, since the whole waterfall leans on these.
-        if (s.gbpReviewCount === null) c -= 0.05;
-        if (!s.detectedServiceIds.length) c -= 0.10;
-        if (s.locationCount === 0) c -= 0.05;
-
-        // A text-derived scleral match is weaker evidence than a scraped service.
-        if (primary === 'SPECIALTY_SCLERAL_DETECTED_TEXT') c -= 0.08;
-
-        // The terminal fallback is a residual, not a positive identification.
-        if (pkg === 'Base' && primary === 'BASELINE_PRESENCE_ONLY') c = Math.min(c, 0.5);
-
-        return Math.max(0.3, Math.min(0.98, Math.round(c * 100) / 100));
+        return Math.max(0.1, Math.min(0.95, Math.round(c * 100) / 100));
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -580,5 +640,7 @@
         PACKAGE_RULESETS,
         SPECIALTY_SERVICE_IDS,
         METRO_REVIEW_THRESHOLD,
+        classifyGoal,
+        capacityBucket,
     };
 })(typeof window !== 'undefined' ? window : globalThis);

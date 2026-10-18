@@ -4953,7 +4953,9 @@ function submitToSheets(gap) {
         scorePatientExp: d.scores?.patientExperience || 0,
         scoreMarketing: d.scores?.marketingMaturity || 0,
         scoreOverall: d.scores?.overall || 0,
-        recommendedTier: d.recommendedTier || '',
+        // Brands with a package ruleset (Eyefinity) put their own package in this early
+        // column instead of the EyeCarePro tier (Lenny 2026-10-18).
+        recommendedTier: packageRecommendation?.display?.label || d.recommendedTier || '',
         gapCount: (d.gaps || []).length,
         topGaps: (d.gaps || []).slice(0, 5).map(g => `[${g.severity}] ${g.finding}`).join('; '),
         hasOptical: d.optical?.hasOptical ? 'Yes' : 'No',
